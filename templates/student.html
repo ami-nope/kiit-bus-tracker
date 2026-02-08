@@ -10,105 +10,468 @@
             box-sizing: border-box;
         }
         body {
-            font-family: Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0f0f23;
             min-height: 100vh;
+            color: white;
         }
         .header {
-            background: white;
-            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 25px 20px;
             text-align: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
         }
         .header h1 {
+            color: white;
+            margin-bottom: 5px;
+            font-size: 28px;
+        }
+        .header p {
+            color: rgba(255,255,255,0.9);
+            font-size: 14px;
+        }
+        .main-container {
+            display: flex;
+            padding: 20px;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .sidebar {
+            flex: 1;
+            min-width: 300px;
+            max-width: 400px;
+        }
+        .map-container {
+            flex: 3;
+            min-height: 600px;
+        }
+        #map {
+            height: 100%;
+            min-height: 600px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            border: 2px solid #1a1a2e;
+        }
+        .card {
+            background: #1a1a2e;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            border: 1px solid #2a2a3e;
+        }
+        .card h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .active-buses {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .bus-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 15px;
+            background: #0f0f23;
+            border-radius: 10px;
+            border-left: 4px solid;
+            transition: all 0.3s;
+        }
+        .bus-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        .bus-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .bus-dot {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 2px solid black;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 0 0 3px rgba(0,0,0,0.5);
+        }
+        .bus-name {
+            font-weight: 600;
+            font-size: 15px;
+        }
+        .bus-status {
+            font-size: 12px;
+            color: #4CAF50;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .pulse {
+            width: 8px;
+            height: 8px;
+            background: #4CAF50;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+        .stat-box {
+            background: #0f0f23;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
             color: #667eea;
             margin-bottom: 5px;
         }
-        .header p {
-            color: #666;
-        }
-        #map {
-            height: 500px;
-            margin: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-        }
-        .info-box {
-            background: white;
-            margin: 20px;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-        }
-        .status {
-            display: inline-block;
-            padding: 8px 16px;
-            background: #4CAF50;
-            color: white;
-            border-radius: 20px;
-            font-weight: bold;
+        .stat-label {
+            font-size: 12px;
+            color: #999;
+            text-transform: uppercase;
         }
         .last-update {
+            color: #999;
+            font-size: 13px;
+            text-align: center;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #2a2a3e;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
             color: #666;
-            margin-top: 10px;
-            font-size: 14px;
+        }
+        .empty-state svg {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+        @media (max-width: 968px) {
+            .main-container {
+                flex-direction: column;
+            }
+            .sidebar {
+                max-width: 100%;
+            }
+            .map-container {
+                min-height: 400px;
+            }
+            #map {
+                min-height: 400px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>🚌 KIIT Campus Shuttle</h1>
-        <p>Student View - Live Bus Location</p>
+        <h1>🚌 KIIT Campus Shuttle Tracker</h1>
+        <p>Real-time bus locations across all campuses</p>
     </div>
 
-    <div class="info-box">
-        <span class="status">● Bus Active</span>
-        <p class="last-update">Last updated: <span id="lastUpdate">Loading...</span></p>
-    </div>
+    <div class="main-container">
+        <div class="sidebar">
+            <div class="card">
+                <h3>
+                    <span>📊</span>
+                    Live Statistics
+                </h3>
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-number" id="busCount">0</div>
+                        <div class="stat-label">Active Buses</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number">4</div>
+                        <div class="stat-label">Campuses</div>
+                    </div>
+                </div>
+            </div>
 
-    <div id="map"></div>
+            <div class="card">
+                <h3>
+                    <span>🚍</span>
+                    Active Buses
+                </h3>
+                <div class="active-buses" id="activeBuses">
+                    <div class="empty-state">
+                        <svg fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/>
+                            <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1V5a1 1 0 00-1-1H3zM14 7a1 1 0 00-1 1v6.05A2.5 2.5 0 0115.95 16H17a1 1 0 001-1v-5a1 1 0 00-.293-.707l-2-2A1 1 0 0015 7h-1z"/>
+                        </svg>
+                        <p>No buses currently active</p>
+                    </div>
+                </div>
+                <div class="last-update">
+                    Last updated: <span id="lastUpdate">Loading...</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="map-container">
+            <div id="map"></div>
+        </div>
+    </div>
 
     <script>
         let map;
-        let busMarker;
+        let busMarkers = {};
+        const colors = [
+            '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8',
+            '#F7DC6F', '#BB8FCE', '#85C1E2', '#F8B739', '#52B788',
+            '#E76F51', '#2A9D8F', '#E9C46A', '#F4A261', '#264653',
+            '#E63946', '#A8DADC', '#457B9D', '#1D3557', '#F1FAEE'
+        ];
+
+        const campuses = [
+            { name: 'Campus 1 (Main)', lat: 20.3549, lng: 85.8161 },
+            { name: 'Campus 3 (Engineering)', lat: 20.3600, lng: 85.8180 },
+            { name: 'Campus 5 (Law School)', lat: 20.3520, lng: 85.8140 },
+            { name: 'Campus 7 (Medical)', lat: 20.3580, lng: 85.8200 }
+        ];
+
+        const darkMapStyle = [
+            { elementType: "geometry", stylers: [{ color: "#1a1a2e" }] },
+            { elementType: "labels.text.stroke", stylers: [{ color: "#0f0f23" }] },
+            { elementType: "labels.text.fill", stylers: [{ color: "#746855" }] },
+            {
+                featureType: "administrative.locality",
+                elementType: "labels.text.fill",
+                stylers: [{ color: "#d59563" }],
+            },
+            {
+                featureType: "poi",
+                elementType: "labels.text.fill",
+                stylers: [{ color: "#d59563" }],
+            },
+            {
+                featureType: "poi.park",
+                elementType: "geometry",
+                stylers: [{ color: "#263c3f" }],
+            },
+            {
+                featureType: "poi.park",
+                elementType: "labels.text.fill",
+                stylers: [{ color: "#6b9a76" }],
+            },
+            {
+                featureType: "road",
+                elementType: "geometry",
+                stylers: [{ color: "#2a2a3e" }],
+            },
+            {
+                featureType: "road",
+                elementType: "geometry.stroke",
+                stylers: [{ color: "#212a37" }],
+            },
+            {
+                featureType: "road",
+                elementType: "labels.text.fill",
+                stylers: [{ color: "#9ca5b3" }],
+            },
+            {
+                featureType: "road.highway",
+                elementType: "geometry",
+                stylers: [{ color: "#3a3a4e" }],
+            },
+            {
+                featureType: "road.highway",
+                elementType: "geometry.stroke",
+                stylers: [{ color: "#1f2835" }],
+            },
+            {
+                featureType: "road.highway",
+                elementType: "labels.text.fill",
+                stylers: [{ color: "#f3d19c" }],
+            },
+            {
+                featureType: "transit",
+                elementType: "geometry",
+                stylers: [{ color: "#2f3948" }],
+            },
+            {
+                featureType: "transit.station",
+                elementType: "labels.text.fill",
+                stylers: [{ color: "#d59563" }],
+            },
+            {
+                featureType: "water",
+                elementType: "geometry",
+                stylers: [{ color: "#0e1626" }],
+            },
+            {
+                featureType: "water",
+                elementType: "labels.text.fill",
+                stylers: [{ color: "#515c6d" }],
+            },
+            {
+                featureType: "water",
+                elementType: "labels.text.stroke",
+                stylers: [{ color: "#0e1626" }],
+            },
+        ];
 
         function initMap() {
             map = new google.maps.Map(document.getElementById('map'), {
                 zoom: 15,
-                center: {lat: 20.3549, lng: 85.8161}
+                center: {lat: 20.3549, lng: 85.8161},
+                styles: darkMapStyle,
+                mapTypeControl: false,
+                streetViewControl: false,
+                fullscreenControl: true,
+                zoomControl: true,
             });
 
-            busMarker = new google.maps.Marker({
-                map: map,
-                icon: {
-                    path: google.maps.SymbolPath.CIRCLE,
-                    scale: 10,
-                    fillColor: '#4CAF50',
-                    fillOpacity: 1,
-                    strokeColor: 'white',
-                    strokeWeight: 3
-                }
+            campuses.forEach(campus => {
+                new google.maps.Marker({
+                    position: {lat: campus.lat, lng: campus.lng},
+                    map: map,
+                    title: campus.name,
+                    icon: {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: 8,
+                        fillColor: '#667eea',
+                        fillOpacity: 0.4,
+                        strokeColor: '#667eea',
+                        strokeWeight: 2
+                    },
+                    label: {
+                        text: campus.name,
+                        color: '#667eea',
+                        fontSize: '12px',
+                        fontWeight: 'bold'
+                    }
+                });
             });
 
-            updateBusLocation();
-            setInterval(updateBusLocation, 3000);
+            updateBuses();
+            setInterval(updateBuses, 3000);
         }
 
-        function updateBusLocation() {
-            fetch('/api/location')
+        function updateBuses() {
+            fetch('/api/buses')
                 .then(response => response.json())
-                .then(data => {
-                    const position = {lat: data.lat, lng: data.lng};
-                    busMarker.setPosition(position);
-                    map.setCenter(position);
-                    
+                .then(buses => {
+                    const busNumbers = Object.keys(buses);
+                    document.getElementById('busCount').textContent = busNumbers.length;
+
+                    const existingBuses = Object.keys(busMarkers);
+                    existingBuses.forEach(busNum => {
+                        if (!busNumbers.includes(busNum)) {
+                            busMarkers[busNum].setMap(null);
+                            delete busMarkers[busNum];
+                        }
+                    });
+
+                    busNumbers.forEach(busNum => {
+                        const bus = buses[busNum];
+                        const position = {lat: bus.lat, lng: bus.lng};
+                        const color = colors[(parseInt(busNum) - 1) % colors.length];
+
+                        if (busMarkers[busNum]) {
+                            busMarkers[busNum].setPosition(position);
+                        } else {
+                            const canvas = document.createElement('canvas');
+                            canvas.width = 50;
+                            canvas.height = 50;
+                            const ctx = canvas.getContext('2d');
+
+                            ctx.fillStyle = color;
+                            ctx.strokeStyle = 'black';
+                            ctx.lineWidth = 3;
+                            ctx.beginPath();
+                            ctx.arc(25, 25, 18, 0, 2 * Math.PI);
+                            ctx.fill();
+                            ctx.stroke();
+
+                            ctx.fillStyle = 'white';
+                            ctx.font = 'bold 16px Arial';
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            ctx.fillText(busNum, 25, 25);
+
+                            busMarkers[busNum] = new google.maps.Marker({
+                                position: position,
+                                map: map,
+                                icon: {
+                                    url: canvas.toDataURL(),
+                                    scaledSize: new google.maps.Size(50, 50),
+                                    anchor: new google.maps.Point(25, 25)
+                                },
+                                title: `Bus ${busNum}`,
+                                animation: google.maps.Animation.DROP
+                            });
+                        }
+                    });
+
+                    updateActiveBusList(busNumbers, buses);
                     const now = new Date().toLocaleTimeString();
                     document.getElementById('lastUpdate').textContent = now;
                 })
                 .catch(error => console.error('Error:', error));
         }
+
+        function updateActiveBusList(busNumbers, buses) {
+            const container = document.getElementById('activeBuses');
+            
+            if (busNumbers.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <svg fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/>
+                            <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1V5a1 1 0 00-1-1H3zM14 7a1 1 0 00-1 1v6.05A2.5 2.5 0 0115.95 16H17a1 1 0 001-1v-5a1 1 0 00-.293-.707l-2-2A1 1 0 0015 7h-1z"/>
+                        </svg>
+                        <p>No buses currently active</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = '';
+            busNumbers.sort((a, b) => parseInt(a) - parseInt(b));
+
+            busNumbers.forEach(busNum => {
+                const color = colors[(parseInt(busNum) - 1) % colors.length];
+                const item = document.createElement('div');
+                item.className = 'bus-item';
+                item.style.borderLeftColor = color;
+                item.innerHTML = `
+                    <div class="bus-info">
+                        <div class="bus-dot" style="background-color: ${color};">${busNum}</div>
+                        <div class="bus-name">Bus ${busNum}</div>
+                    </div>
+                    <div class="bus-status">
+                        <div class="pulse"></div>
+                        Active
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
     </script>
 
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAVONditKeml-368lYW5VGQudNcT-q761M&callback=initMap" async defer></script>
+   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAVONditKeml-368lYW5VGQudNcT-q761M&callback=initMap" async defer></script>
 </body>
 </html>

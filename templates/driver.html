@@ -33,6 +33,26 @@
             color: #666;
             margin-bottom: 30px;
         }
+        .bus-selector {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .bus-selector label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        select {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background: white;
+        }
         .status-card {
             background: #f0f0f0;
             padding: 20px;
@@ -102,6 +122,13 @@
         <h1>🚌 Driver Companion</h1>
         <p class="subtitle">Campus Shuttle Tracking</p>
 
+        <div class="bus-selector">
+            <label for="busNumber">Select Your Bus Number:</label>
+            <select id="busNumber">
+                <option value="">-- Choose Bus --</option>
+            </select>
+        </div>
+
         <div class="status-card">
             <h3>
                 <span class="status-indicator" id="statusDot"></span>
@@ -115,19 +142,35 @@
 
         <div class="info">
             <p><strong>ℹ️ How it works:</strong></p>
+            <p>• Select your bus number from the dropdown</p>
             <p>• Click "Start Shift" to begin tracking</p>
-            <p>• Your location updates automatically every 5 seconds</p>
-            <p>• Students can see the bus location in real-time</p>
+            <p>• Your location updates automatically</p>
+            <p>• Students can see your bus on the map</p>
             <p>• Click "End Shift" when done</p>
         </div>
     </div>
 
     <script>
-        let trackingInterval = null;
         let updateCount = 0;
         let watchId = null;
+        let selectedBus = null;
+
+        const busSelect = document.getElementById('busNumber');
+        for (let i = 1; i <= 20; i++) {
+            const option = document.createElement('option');
+            option.value = i;
+            option.textContent = `Bus ${i}`;
+            busSelect.appendChild(option);
+        }
 
         function startTracking() {
+            selectedBus = busSelect.value;
+            
+            if (!selectedBus) {
+                alert('Please select a bus number first!');
+                return;
+            }
+
             if (!navigator.geolocation) {
                 alert('Geolocation is not supported by your browser');
                 return;
@@ -139,11 +182,12 @@
                 {enableHighAccuracy: true, maximumAge: 0}
             );
 
-            document.getElementById('trackingStatus').textContent = 'Active';
+            document.getElementById('trackingStatus').textContent = `Active - Bus ${selectedBus}`;
             document.getElementById('statusDot').classList.add('active');
             document.getElementById('statusDot').classList.remove('inactive');
             document.getElementById('startBtn').disabled = true;
             document.getElementById('stopBtn').disabled = false;
+            busSelect.disabled = true;
         }
 
         function stopTracking() {
@@ -152,20 +196,34 @@
                 watchId = null;
             }
 
+            if (selectedBus) {
+                fetch(`/api/bus/${selectedBus}`, {
+                    method: 'DELETE'
+                }).then(() => {
+                    console.log(`Bus ${selectedBus} removed from map`);
+                });
+            }
+
             document.getElementById('trackingStatus').textContent = 'Inactive';
             document.getElementById('statusDot').classList.remove('active');
             document.getElementById('statusDot').classList.add('inactive');
             document.getElementById('startBtn').disabled = false;
             document.getElementById('stopBtn').disabled = true;
+            busSelect.disabled = false;
+            updateCount = 0;
+            document.getElementById('updateCount').textContent = '0';
         }
 
         function sendLocation(position) {
+            if (!selectedBus) return;
+
             const location = {
                 lat: position.coords.latitude,
-                lng: position.coords.longitude
+                lng: position.coords.longitude,
+                lastUpdate: new Date().toISOString()
             };
 
-            fetch('/api/location', {
+            fetch(`/api/bus/${selectedBus}`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(location)
@@ -174,7 +232,7 @@
             .then(data => {
                 updateCount++;
                 document.getElementById('updateCount').textContent = updateCount;
-                console.log('Location updated:', location);
+                console.log(`Bus ${selectedBus} location updated:`, location);
             })
             .catch(error => console.error('Error:', error));
         }
@@ -198,14 +256,3 @@
     </script>
 </body>
 </html>
-```
-
----
-
-## **Your Final Folder Structure**
-```
-Campus Transport/
-├── app.py
-└── templates/
-    ├── student.html
-    └── driver.html
