@@ -4,117 +4,42 @@
     <title>Bus Tracker - Driver App</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            font-family: Arial, sans-serif;
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0b0c10;
+            color: #e6eef8;
             min-height: 100vh;
-            padding: 20px;
+            padding: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .container {
-            max-width: 600px;
+            width: 420px;
             margin: 0 auto;
-            background: white;
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            background: #0f1724;
+            border-radius: 12px;
+            padding: 18px;
+            box-shadow: 0 6px 24px rgba(2,6,23,0.7);
+            border: 1px solid rgba(255,255,255,0.03);
         }
-        h1 {
-            color: #f5576c;
-            text-align: center;
-            margin-bottom: 10px;
-        }
-        .subtitle {
-            text-align: center;
-            color: #666;
-            margin-bottom: 30px;
-        }
-        .bus-selector {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-        }
-        .bus-selector label {
-            display: block;
-            font-weight: bold;
-            margin-bottom: 10px;
-            color: #333;
-        }
-        select {
-            width: 100%;
-            padding: 12px;
-            font-size: 16px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            background: white;
-        }
-        .status-card {
-            background: #f0f0f0;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-        }
-        .status-card h3 {
-            color: #333;
-            margin-bottom: 10px;
-        }
-        .status-indicator {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            margin-right: 8px;
-        }
-        .status-indicator.active {
-            background: #4CAF50;
-        }
-        .status-indicator.inactive {
-            background: #f44336;
-        }
-        button {
-            width: 100%;
-            padding: 15px;
-            font-size: 18px;
-            font-weight: bold;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            margin-bottom: 15px;
-            transition: all 0.3s;
-        }
-        #startBtn {
-            background: #4CAF50;
-            color: white;
-        }
-        #startBtn:hover {
-            background: #45a049;
-        }
-        #stopBtn {
-            background: #f44336;
-            color: white;
-        }
-        #stopBtn:hover {
-            background: #da190b;
-        }
-        #stopBtn:disabled, #startBtn:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-        }
-        .info {
-            background: #e3f2fd;
-            padding: 15px;
-            border-radius: 8px;
-            border-left: 4px solid #2196F3;
-        }
-        .info p {
-            color: #1976D2;
-            margin: 5px 0;
-        }
+        h1 { font-size: 20px; color: #dbeafe; text-align: left; margin-bottom: 6px; }
+        .subtitle { color: #9aa4b2; font-size: 13px; margin-bottom: 14px; }
+        .bus-selector { background: transparent; padding: 8px 0; margin-bottom: 12px; }
+        .bus-selector label { display:block; color:#9aa4b2; font-size:13px; margin-bottom:6px }
+        select { width:100%; padding:10px; font-size:14px; border-radius:8px; border:1px solid rgba(255,255,255,0.06); background:#0b1220; color:#e6eef8 }
+        .status-card { background: rgba(255,255,255,0.02); padding: 10px; border-radius: 8px; margin-bottom: 12px; }
+        .status-card h3 { color: #dbeafe; margin-bottom: 6px; font-size:14px }
+        .status-indicator { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:8px; vertical-align:middle; }
+        .status-indicator.active { background: #34d399; box-shadow: 0 0 6px rgba(52,211,153,0.15); }
+        .status-indicator.inactive { background: #fb7185; }
+        button { width:100%; padding:10px; font-size:15px; border-radius:8px; border:1px solid rgba(255,255,255,0.04); cursor:pointer; background:transparent; color:#dbeafe }
+        #startBtn { background: linear-gradient(90deg,#0ea5e9,#6366f1); color:white; border:none }
+        #stopBtn { background: transparent; border:1px solid rgba(255,255,255,0.06); color:#fda4af }
+        #startBtn:disabled, #stopBtn:disabled { opacity:0.5; cursor:not-allowed }
+        .info { background: transparent; padding: 8px; border-radius: 6px; color:#9aa4b2; font-size:13px }
+        .info p { margin:6px 0; }
     </style>
 </head>
 <body>

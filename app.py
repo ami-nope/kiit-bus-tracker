@@ -18,6 +18,11 @@ def student_view():
 def driver_view():
     return render_template('driver.html')
 
+
+@app.route('/admin')
+def admin_view():
+    return render_template('admin.html')
+
 @app.route('/api/buses', methods=['GET'])
 def get_all_buses():
     with open(BUSES_FILE, 'r') as f:

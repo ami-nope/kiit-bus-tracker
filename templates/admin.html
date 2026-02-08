@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Bus Tracker - Admin</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #07070a; color:#e6eef8; padding:24px; }
+        .panel { max-width:1000px; margin: 0 auto; background: #0d1117; border-radius:12px; padding:18px; border:1px solid rgba(255,255,255,0.03); box-shadow: 0 8px 30px rgba(2,6,23,0.7); }
+        h1 { margin:0 0 6px 0; font-size:20px }
+        p.subtitle { margin:0 0 14px 0; color:#9aa4b2 }
+        .controls { display:flex; gap:10px; align-items:center; margin-bottom:12px }
+        input, select { padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.04); background:#07101a; color:#e6eef8 }
+        button { background:transparent; color:#e6eef8; border:1px solid rgba(255,255,255,0.04); padding:8px 12px; border-radius:8px; cursor:pointer }
+        table { width:100%; border-collapse:collapse; margin-top:12px }
+        thead th { text-align:left; padding:10px; font-size:13px; color:#9aa4b2; border-bottom:1px solid rgba(255,255,255,0.03) }
+        tbody td { padding:10px; vertical-align:middle; border-bottom:1px dashed rgba(255,255,255,0.02) }
+        .small { font-size:13px; color:#9aa4b2 }
+        .muted { color:#8893a6 }
+        .danger { color:#ff7b8a; border-color: rgba(255,123,138,0.12) }
+        .ok { color:#34d399; border-color: rgba(52,211,153,0.08) }
+        .row-actions button { margin-right:8px }
+        .empty { text-align:center; color:#8290a3; padding:20px }
+        .topbar { display:flex; justify-content:space-between; align-items:center; gap:12px }
+    </style>
+</head>
+<body>
+    <div class="panel">
+        <div class="topbar">
+            <div>
+                <h1>Admin — Bus Management</h1>
+                <p class="subtitle">View, add, edit, or remove bus locations. Changes update the live map.</p>
+            </div>
+            <div style="text-align:right">
+                <a href="/" style="color:#9aa4b2; text-decoration:none; margin-right:12px">Student View</a>
+                <a href="/driver" style="color:#9aa4b2; text-decoration:none">Driver View</a>
+            </div>
+        </div>
+
+        <div class="controls">
+            <input id="newBusNum" placeholder="Bus number (e.g. 21)" style="width:140px">
+            <input id="newLat" placeholder="Latitude" style="width:160px">
+            <input id="newLng" placeholder="Longitude" style="width:160px">
+            <button id="addBtn" class="ok">Add / Save</button>
+            <div style="flex:1"></div>
+            <button id="refreshBtn">Refresh</button>
+        </div>
+
+        <div id="listContainer">
+            <div class="empty">Loading buses...</div>
+        </div>
+    </div>
+
+    <script>
+        async function loadBuses() {
+            const res = await fetch('/api/buses');
+            const buses = await res.json();
+            renderList(buses);
+        }
+
+        function renderList(buses) {
+            const keys = Object.keys(buses).sort((a,b) => parseInt(a)-parseInt(b));
+            const container = document.getElementById('listContainer');
+            if (keys.length === 0) {
+                container.innerHTML = '<div class="empty">No active buses</div>';
+                return;
+            }
+            let html = '<table><thead><tr><th>Bus</th><th>Latitude</th><th>Longitude</th><th>Last Update</th><th></th></tr></thead><tbody>';
+            keys.forEach(k => {
+                const b = buses[k];
+                html += `<tr data-bus="${k}">`;
+                html += `<td><strong>Bus ${k}</strong></td>`;
+                html += `<td><input class="lat" value="${b.lat}" style="width:140px"></td>`;
+                html += `<td><input class="lng" value="${b.lng}" style="width:140px"></td>`;
+                html += `<td class="small muted">${b.lastUpdate || ''}</td>`;
+                html += `<td class="row-actions"><button class="save ok">Save</button><button class="remove danger">Remove</button></td>`;
+                html += `</tr>`;
+            });
+            html += '</tbody></table>';
+            container.innerHTML = html;
+
+            // attach listeners
+            container.querySelectorAll('.save').forEach(btn => btn.addEventListener('click', onSave));
+            container.querySelectorAll('.remove').forEach(btn => btn.addEventListener('click', onRemove));
+        }
+
+        async function onSave(e) {
+            const row = e.target.closest('tr');
+            const busNum = row.getAttribute('data-bus');
+            const lat = parseFloat(row.querySelector('.lat').value);
+            const lng = parseFloat(row.querySelector('.lng').value);
+            if (isNaN(lat) || isNaN(lng)) { alert('Enter valid coordinates'); return; }
+            await fetch(`/api/bus/${busNum}`, {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({ lat: lat, lng: lng, lastUpdate: new Date().toISOString() })
+            });
+            await loadBuses();
+        }
+
+        async function onRemove(e) {
+            const row = e.target.closest('tr');
+            const busNum = row.getAttribute('data-bus');
+            if (!confirm(`Remove Bus ${busNum} from active list?`)) return;
+            await fetch(`/api/bus/${busNum}`, { method: 'DELETE' });
+            await loadBuses();
+        }
+
+        document.getElementById('refreshBtn').addEventListener('click', loadBuses);
+        document.getElementById('addBtn').addEventListener('click', async () => {
+            const num = document.getElementById('newBusNum').value.trim();
+            const lat = parseFloat(document.getElementById('newLat').value);
+            const lng = parseFloat(document.getElementById('newLng').value);
+            if (!num || isNaN(lat) || isNaN(lng)) { alert('Provide bus number and valid coords'); return; }
+            await fetch(`/api/bus/${num}`, {
+                method: 'POST', headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({ lat: lat, lng: lng, lastUpdate: new Date().toISOString() })
+            });
+            document.getElementById('newBusNum').value=''; document.getElementById('newLat').value=''; document.getElementById('newLng').value='';
+            await loadBuses();
+        });
+
+        loadBuses();
+    </script>
+</body>
+</html>

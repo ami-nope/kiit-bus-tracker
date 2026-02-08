@@ -83,6 +83,7 @@
             border-radius: 10px;
             border-left: 4px solid;
             transition: all 0.3s;
+            cursor: pointer;
         }
         .bus-item:hover {
             transform: translateX(5px);
@@ -184,6 +185,7 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 </head>
 <body>
     <div class="header">
@@ -204,9 +206,24 @@
                         <div class="stat-label">Active Buses</div>
                     </div>
                     <div class="stat-box">
-                        <div class="stat-number">4</div>
-                        <div class="stat-label">Campuses</div>
+                        <div class="stat-number">20</div>
+                        <div class="stat-label">Total Fleet</div>
                     </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>
+                    <span>🎯</span>
+                    Track Bus
+                </h3>
+                <div style="display:flex;gap:10px;align-items:center;">
+                    <select id="trackBusSelect" style="flex:1;padding:10px;border-radius:8px;border:1px solid #2a2a3e;background:#0f0f23;color:#fff">
+                        <option value="">— Select bus to follow —</option>
+                    </select>
+                    <label style="display:flex;align-items:center;gap:6px;color:#9aa;white-space:nowrap">
+                        <input type="checkbox" id="followCheckbox" checked style="width:16px;height:16px"> Follow
+                    </label>
                 </div>
             </div>
 
@@ -245,129 +262,81 @@
             '#E63946', '#A8DADC', '#457B9D', '#1D3557', '#F1FAEE'
         ];
 
-        const campuses = [
-            { name: 'Campus 1 (Main)', lat: 20.3549, lng: 85.8161 },
-            { name: 'Campus 3 (Engineering)', lat: 20.3600, lng: 85.8180 },
-            { name: 'Campus 5 (Law School)', lat: 20.3520, lng: 85.8140 },
-            { name: 'Campus 7 (Medical)', lat: 20.3580, lng: 85.8200 }
-        ];
+        function createIcon(busNum, color, size = 50) {
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
 
-        const darkMapStyle = [
-            { elementType: "geometry", stylers: [{ color: "#1a1a2e" }] },
-            { elementType: "labels.text.stroke", stylers: [{ color: "#0f0f23" }] },
-            { elementType: "labels.text.fill", stylers: [{ color: "#746855" }] },
-            {
-                featureType: "administrative.locality",
-                elementType: "labels.text.fill",
-                stylers: [{ color: "#d59563" }],
-            },
-            {
-                featureType: "poi",
-                elementType: "labels.text.fill",
-                stylers: [{ color: "#d59563" }],
-            },
-            {
-                featureType: "poi.park",
-                elementType: "geometry",
-                stylers: [{ color: "#263c3f" }],
-            },
-            {
-                featureType: "poi.park",
-                elementType: "labels.text.fill",
-                stylers: [{ color: "#6b9a76" }],
-            },
-            {
-                featureType: "road",
-                elementType: "geometry",
-                stylers: [{ color: "#2a2a3e" }],
-            },
-            {
-                featureType: "road",
-                elementType: "geometry.stroke",
-                stylers: [{ color: "#212a37" }],
-            },
-            {
-                featureType: "road",
-                elementType: "labels.text.fill",
-                stylers: [{ color: "#9ca5b3" }],
-            },
-            {
-                featureType: "road.highway",
-                elementType: "geometry",
-                stylers: [{ color: "#3a3a4e" }],
-            },
-            {
-                featureType: "road.highway",
-                elementType: "geometry.stroke",
-                stylers: [{ color: "#1f2835" }],
-            },
-            {
-                featureType: "road.highway",
-                elementType: "labels.text.fill",
-                stylers: [{ color: "#f3d19c" }],
-            },
-            {
-                featureType: "transit",
-                elementType: "geometry",
-                stylers: [{ color: "#2f3948" }],
-            },
-            {
-                featureType: "transit.station",
-                elementType: "labels.text.fill",
-                stylers: [{ color: "#d59563" }],
-            },
-            {
-                featureType: "water",
-                elementType: "geometry",
-                stylers: [{ color: "#0e1626" }],
-            },
-            {
-                featureType: "water",
-                elementType: "labels.text.fill",
-                stylers: [{ color: "#515c6d" }],
-            },
-            {
-                featureType: "water",
-                elementType: "labels.text.stroke",
-                stylers: [{ color: "#0e1626" }],
-            },
-        ];
+            ctx.fillStyle = color;
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(size/2, size/2, Math.max(12, size/2 - 7), 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = 'white';
+            ctx.font = `bold ${Math.max(12, Math.round(size/3))}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(busNum, size/2, size/2);
+
+            return L.icon({
+                iconUrl: canvas.toDataURL(),
+                iconSize: [size, size],
+                iconAnchor: [Math.round(size/2), Math.round(size/2)]
+            });
+        }
+
+        let trackedBus = null;
+        let followEnabled = true;
+
+        function setTrackedBus(busNum) {
+            trackedBus = busNum || null;
+            const select = document.getElementById('trackBusSelect');
+            if (select.value !== (busNum || '')) select.value = busNum || '';
+            // update marker visuals
+            Object.keys(busMarkers).forEach(num => {
+                const marker = busMarkers[num];
+                const isTracked = trackedBus && num === trackedBus;
+                // fade others
+                try { marker.setOpacity(isTracked ? 1 : 0.2); } catch(e) {}
+                // change size for tracked
+                const color = colors[(parseInt(num) - 1) % colors.length];
+                const newIcon = createIcon(num, color, isTracked ? 70 : 40);
+                marker.setIcon(newIcon);
+            });
+        }
 
         function initMap() {
-            map = new google.maps.Map(document.getElementById('map'), {
-                zoom: 15,
-                center: {lat: 20.3549, lng: 85.8161},
-                styles: darkMapStyle,
-                mapTypeControl: false,
-                streetViewControl: false,
-                fullscreenControl: true,
-                zoomControl: true,
-            });
+            map = L.map('map', { zoomControl: true }).setView([20.3549, 85.8161], 15);
 
-            campuses.forEach(campus => {
-                new google.maps.Marker({
-                    position: {lat: campus.lat, lng: campus.lng},
-                    map: map,
-                    title: campus.name,
-                    icon: {
-                        path: google.maps.SymbolPath.CIRCLE,
-                        scale: 8,
-                        fillColor: '#667eea',
-                        fillOpacity: 0.4,
-                        strokeColor: '#667eea',
-                        strokeWeight: 2
-                    },
-                    label: {
-                        text: campus.name,
-                        color: '#667eea',
-                        fontSize: '12px',
-                        fontWeight: 'bold'
-                    }
-                });
-            });
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; <a href="https://carto.com/">CARTO</a> &copy; OpenStreetMap',
+                maxZoom: 19
+            }).addTo(map);
 
             updateBuses();
             setInterval(updateBuses, 3000);
+
+            // populate track select (1..20)
+            const sel = document.getElementById('trackBusSelect');
+            for (let i = 1; i <= 20; i++) {
+                const opt = document.createElement('option');
+                opt.value = String(i);
+                opt.textContent = `Bus ${i}`;
+                sel.appendChild(opt);
+            }
+
+            sel.addEventListener('change', () => {
+                const val = sel.value;
+                setTrackedBus(val || null);
+            });
+
+            document.getElementById('followCheckbox').addEventListener('change', (e) => {
+                followEnabled = e.target.checked;
+            });
         }
 
         function updateBuses() {
@@ -380,49 +349,35 @@
                     const existingBuses = Object.keys(busMarkers);
                     existingBuses.forEach(busNum => {
                         if (!busNumbers.includes(busNum)) {
-                            busMarkers[busNum].setMap(null);
+                            map.removeLayer(busMarkers[busNum]);
                             delete busMarkers[busNum];
                         }
                     });
 
                     busNumbers.forEach(busNum => {
                         const bus = buses[busNum];
-                        const position = {lat: bus.lat, lng: bus.lng};
+                        const position = [bus.lat, bus.lng];
                         const color = colors[(parseInt(busNum) - 1) % colors.length];
 
                         if (busMarkers[busNum]) {
-                            busMarkers[busNum].setPosition(position);
+                            busMarkers[busNum].setLatLng(position);
                         } else {
-                            const canvas = document.createElement('canvas');
-                            canvas.width = 50;
-                            canvas.height = 50;
-                            const ctx = canvas.getContext('2d');
-
-                            ctx.fillStyle = color;
-                            ctx.strokeStyle = 'black';
-                            ctx.lineWidth = 3;
-                            ctx.beginPath();
-                            ctx.arc(25, 25, 18, 0, 2 * Math.PI);
-                            ctx.fill();
-                            ctx.stroke();
-
-                            ctx.fillStyle = 'white';
-                            ctx.font = 'bold 16px Arial';
-                            ctx.textAlign = 'center';
-                            ctx.textBaseline = 'middle';
-                            ctx.fillText(busNum, 25, 25);
-
-                            busMarkers[busNum] = new google.maps.Marker({
-                                position: position,
-                                map: map,
-                                icon: {
-                                    url: canvas.toDataURL(),
-                                    scaledSize: new google.maps.Size(50, 50),
-                                    anchor: new google.maps.Point(25, 25)
-                                },
-                                title: `Bus ${busNum}`,
-                                animation: google.maps.Animation.DROP
+                            // size depends on whether this is tracked
+                            const isTracked = trackedBus && busNum === trackedBus;
+                            const icon = createIcon(busNum, color, isTracked ? 70 : 40);
+                            busMarkers[busNum] = L.marker(position, { icon: icon, title: `Bus ${busNum}` }).addTo(map);
+                            busMarkers[busNum].on('click', () => {
+                                setTrackedBus(busNum);
+                                if (followEnabled) map.setView(position, 17);
                             });
+                        }
+
+                        // apply fading and follow when updating
+                        const marker = busMarkers[busNum];
+                        const isTrackedNow = trackedBus && busNum === trackedBus;
+                        try { marker.setOpacity(isTrackedNow ? 1 : 0.2); } catch(e) {}
+                        if (isTrackedNow && followEnabled) {
+                            map.panTo(position);
                         }
                     });
 
@@ -457,6 +412,10 @@
                 const item = document.createElement('div');
                 item.className = 'bus-item';
                 item.style.borderLeftColor = color;
+                item.onclick = () => {
+                    const position = [buses[busNum].lat, buses[busNum].lng];
+                    map.setView(position, 17);
+                };
                 item.innerHTML = `
                     <div class="bus-info">
                         <div class="bus-dot" style="background-color: ${color};">${busNum}</div>
@@ -470,8 +429,10 @@
                 container.appendChild(item);
             });
         }
+
+        window.addEventListener('load', initMap);
     </script>
 
-   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAVONditKeml-368lYW5VGQudNcT-q761M&callback=initMap" async defer></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </body>
 </html>
