@@ -16,7 +16,8 @@
             justify-content: center;
         }
         .container {
-            width: 420px;
+            width: 100%;
+            max-width: 420px;
             margin: 0 auto;
             background: #0f1724;
             border-radius: 12px;
@@ -38,19 +39,45 @@
         #startBtn { background: linear-gradient(90deg,#0ea5e9,#6366f1); color:white; border:none }
         #stopBtn { background: transparent; border:1px solid rgba(255,255,255,0.06); color:#fda4af }
         #startBtn:disabled, #stopBtn:disabled { opacity:0.5; cursor:not-allowed }
+        #startDriveBtn { margin-top:8px }
+        #stopDriveBtn { margin-top:8px }
+        .progress-outer { width:100%; height:12px; background: rgba(255,255,255,0.04); border-radius:8px; overflow:hidden; margin-top:8px }
+        .progress-fill { height:100%; width:0%; background: linear-gradient(90deg,#34d399,#60a5fa); transition: width 600ms linear }
         .info { background: transparent; padding: 8px; border-radius: 6px; color:#9aa4b2; font-size:13px }
         .info p { margin:6px 0; }
+        /* small driver map */
+        #driverMap { height: 200px; border-radius: 10px; border: 2px solid rgba(255,255,255,0.06); background: #05060a; margin-top:8px }
+
+        /* Responsive / Mobile friendly */
+        @media (max-width: 520px) {
+            body { align-items: flex-start; justify-content: flex-start; padding: 12px; }
+            .container { margin: 12px 0; padding: 14px; border-radius: 10px; box-shadow: none; }
+            #driverMap { height: 260px; }
+            .bus-selector, .status-card, .info { margin-bottom: 10px }
+            select { font-size: 16px; padding: 12px }
+            button { font-size: 16px; padding: 12px; border-radius: 10px }
+            #startBtn, #stopBtn, #startDriveBtn, #stopDriveBtn { width: 100%; display:block }
+            .progress-outer { height: 14px }
+        }
     </style>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 </head>
 <body>
     <div class="container">
-        <h1>🚌 Driver Companion</h1>
+        <h1>🚌 {{ institute_name | default('INSTITUTE') }} Driver Companion</h1>
         <p class="subtitle">Campus Shuttle Tracking</p>
 
         <div class="bus-selector">
             <label for="busNumber">Select Your Bus Number:</label>
             <select id="busNumber">
                 <option value="">-- Choose Bus --</option>
+            </select>
+        </div>
+
+        <div class="bus-selector">
+            <label for="routeSelect">Select Route:</label>
+            <select id="routeSelect">
+                <option value="">-- Choose Route --</option>
             </select>
         </div>
 
@@ -64,6 +91,22 @@
 
         <button id="startBtn" onclick="startTracking()">Start Shift</button>
         <button id="stopBtn" onclick="stopTracking()" disabled>End Shift</button>
+        <button id="startDriveBtn" onclick="startDrive()">Start Route</button>
+        <button id="stopDriveBtn" onclick="stopDrive()" disabled>Stop Route</button>
+
+        <div class="card" style="margin-top:12px;">
+            <h3>🗺️ Driver Map & ETA</h3>
+            <div id="driverMap"></div>
+            <p style="color:#9aa4b2;margin-top:8px">ETA to next stop: <strong id="etaDisplay">—</strong></p>
+            <p style="color:#9aa4b2;margin-top:6px">Progress: <strong id="progressPercent">—</strong></p>
+            <div class="progress-outer"><div id="progressFill" class="progress-fill"></div></div>
+            <p style="color:#9aa4b2;margin-top:6px">Next stop: <strong id="nextStopDisplay">—</strong></p>
+            <div style="display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap">
+                <label style="color:#9aa4b2;font-size:13px"><input type="checkbox" id="driverRoutesToggle" checked> Routes</label>
+                <label style="color:#9aa4b2;font-size:13px"><input type="checkbox" id="driverHostelsToggle" checked> Hostels</label>
+                <label style="color:#9aa4b2;font-size:13px"><input type="checkbox" id="driverClassesToggle" checked> Classes</label>
+            </div>
+        </div>
 
         <div class="info">
             <p><strong>ℹ️ How it works:</strong></p>
@@ -75,109 +118,204 @@
         </div>
     </div>
 
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
+     
         let updateCount = 0;
         let watchId = null;
         let selectedBus = null;
+        let selectedRoute = null;
+        let allRoutes = [];
+
+        let driverMap = null;
+        let driverMarker = null;
+        let driverRouteLine = null;
+        let routesLayer = null;
+        let routesPolylinesMap = {};
+        let hostelsLayer = null;
+        let classesLayer = null;
+
+        
+        let driving = false;
+        let lastSentPos = null;
+        let lastSentTime = 0;
+        const MIN_SEND_INTERVAL = 1000;
+        const MIN_MOVE_DISTANCE = 5; 
 
         const busSelect = document.getElementById('busNumber');
-        for (let i = 1; i <= 20; i++) {
-            const option = document.createElement('option');
-            option.value = i;
-            option.textContent = `Bus ${i}`;
-            busSelect.appendChild(option);
+        const routeSelect = document.getElementById('routeSelect');
+
+    
+        async function loadRoutes(){
+            try{
+                const res = await fetch('/api/routes');
+                allRoutes = await res.json();
+                routeSelect.innerHTML = '<option value="">-- Choose Route --</option>';
+                allRoutes.forEach(r=>{
+                    const o = document.createElement('option'); o.value = r.id; o.textContent = r.name; routeSelect.appendChild(o);
+                });
+                initDriverMap();
+                await loadMapLayers();
+            }catch(e){console.error(e)}
         }
 
-        function startTracking() {
+        function initDriverMap(){
+            if(driverMap) return;
+            const center = (allRoutes && allRoutes[0] && allRoutes[0].waypoints && allRoutes[0].waypoints[0]) ? [allRoutes[0].waypoints[0][0], allRoutes[0].waypoints[0][1]] : [20.355,85.819];
+            try{
+                driverMap = L.map('driverMap', { zoomControl: false }).setView(center, 15);
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', { maxZoom:19 }).addTo(driverMap);
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png', { maxZoom:19, attribution:'' }).addTo(driverMap);
+            }catch(e){ console.warn('Leaflet init failed', e); }
+        }
+
+        async function loadMapLayers(){
+            if(!routesLayer) routesLayer = L.layerGroup().addTo(driverMap);
+            if(!hostelsLayer) hostelsLayer = L.layerGroup().addTo(driverMap);
+            if(!classesLayer) classesLayer = L.layerGroup().addTo(driverMap);
+
+            await renderRoutes();
+            try{ const hres = await fetch('/api/hostels'); const hostels = await hres.json(); renderHostels(hostels);}catch(e){console.warn(e)}
+            try{ const cres = await fetch('/api/classes'); const classes = await cres.json(); renderClasses(classes);}catch(e){console.warn(e)}
+
+            document.getElementById('driverRoutesToggle').addEventListener('change', (e)=>{ if(e.target.checked) driverMap.addLayer(routesLayer); else driverMap.removeLayer(routesLayer); });
+            document.getElementById('driverHostelsToggle').addEventListener('change', (e)=>{ if(e.target.checked) driverMap.addLayer(hostelsLayer); else driverMap.removeLayer(hostelsLayer); });
+            document.getElementById('driverClassesToggle').addEventListener('change', (e)=>{ if(e.target.checked) driverMap.addLayer(classesLayer); else driverMap.removeLayer(classesLayer); });
+        }
+
+        function createLocationIcon(type){
+            const iconHtml = type==='hostel'?'🏠':type==='class'?'📚':'📍';
+            const bg = type==='hostel'? '#9C27B0': type==='class'? '#2196F3' : '#FF5722';
+            return L.divIcon({ html:`<div style="background:${bg};color:white;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;border:2px solid rgba(255,255,255,0.9);box-shadow:none">${iconHtml === '🏠' || iconHtml === '📚' ? '' : ''}</div>`, iconSize:[28,28], iconAnchor:[14,14], popupAnchor:[0,-14] });
+        }
+
+        async function getOSRMRoute(waypoints){
+            try{
+                if(!waypoints || waypoints.length<2) return waypoints;
+                const coords = waypoints.map(w=>`${w[1]},${w[0]}`).join(';');
+                const url = `https://router.project-osrm.org/route/v1/driving/${coords}?geometries=geojson`;
+                const res = await fetch(url); const data = await res.json();
+                if(data.routes && data.routes[0]) return data.routes[0].geometry.coordinates.map(c=>[c[1],c[0]]);
+            }catch(e){ console.warn('OSRM error', e); }
+            return waypoints;
+        }
+
+        async function renderRoutes(){
+            if(!routesLayer) routesLayer = L.layerGroup().addTo(driverMap);
+            routesLayer.clearLayers();
+            routesPolylinesMap = {};
+            for(const route of allRoutes){
+                if(route.waypoints && route.waypoints.length){
+                    const coords = await getOSRMRoute(route.waypoints);
+                    const poly = L.polyline(coords||route.waypoints, { color: route.color||'#FF9800', weight:3, opacity:0.9, dashArray:'5,5' }).addTo(routesLayer);
+                    const stops = [];
+                    (route.stops||[]).forEach((s,i)=>{ if(route.waypoints[i]){ const m=L.circleMarker([route.waypoints[i][0], route.waypoints[i][1]], { radius:6, fillColor: route.color||'#FF9800', color:'#fff', weight:1, opacity:0.6, fillOpacity:0.6 }).bindTooltip(s,{direction:'top',offset:[0,-8]}).addTo(routesLayer); stops.push(m); } });
+                    routesPolylinesMap[route.id] = { polyline: poly, stops: stops };
+                }
+            }
+            if(selectedRoute) highlightRoute(selectedRoute);
+        }
+
+        function renderHostels(hostels){ if(!hostelsLayer) hostelsLayer=L.layerGroup().addTo(driverMap); hostelsLayer.clearLayers(); hostels.forEach(h=>{ L.marker([h.lat,h.lng], { icon:createLocationIcon('hostel'), title:h.name }).bindPopup(`<strong>${h.name}</strong><br/>Capacity: ${h.capacity||'—'}`).addTo(hostelsLayer); }); }
+        function renderClasses(classes){ if(!classesLayer) classesLayer=L.layerGroup().addTo(driverMap); classesLayer.clearLayers(); classes.forEach(c=>{ L.marker([c.lat,c.lng], { icon:createLocationIcon('class'), title:c.name }).bindPopup(`<strong>${c.name}</strong>`).addTo(classesLayer); }); }
+
+        function highlightRoute(routeId){
+            Object.entries(routesPolylinesMap).forEach(([id,obj])=>{
+                try{
+                    if(id===routeId){ obj.polyline.setStyle({ opacity:1, weight:4 }); obj.stops.forEach(s=>s.setStyle({ opacity:1, fillOpacity:0.9 })); }
+                    else { obj.polyline.setStyle({ opacity:0.08, weight:2 }); obj.stops.forEach(s=>s.setStyle({ opacity:0.2, fillOpacity:0.2 })); }
+                }catch(e){}
+            });
+            // if driver marker exists, focus map to driver and keep following
+            if(driverMarker && routeId){ try{ driverMap.setView(driverMarker.getLatLng(), Math.max(driverMap.getZoom(),15)); }catch(e){} }
+        }
+
+        // Bus selector
+        for(let i=1;i<=20;i++){ const o=document.createElement('option'); o.value=i; o.textContent=`Bus ${i}`; busSelect.appendChild(o); }
+
+        // Route select behavior
+        routeSelect.addEventListener('change', async (e)=>{
+            selectedRoute = e.target.value;
+            if(selectedBus && selectedRoute){
+                try{ await fetch(`/api/bus/${selectedBus}/route`, { method:'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ routeId: selectedRoute }) }); console.log(`Bus ${selectedBus} assigned to route ${selectedRoute}`); }catch(err){ console.error(err); }
+            }
+            // Highlight only the chosen route and follow driver
+            if(selectedRoute) highlightRoute(selectedRoute);
+        });
+
+        // Start tracking
+        function startTracking(){
             selectedBus = busSelect.value;
-            
-            if (!selectedBus) {
-                alert('Please select a bus number first!');
-                return;
-            }
+            if(!selectedBus){ alert('Please select a bus number first!'); return; }
+            if(!navigator.geolocation){ alert('Geolocation not supported'); return; }
 
-            if (!navigator.geolocation) {
-                alert('Geolocation is not supported by your browser');
-                return;
-            }
-
-            watchId = navigator.geolocation.watchPosition(
-                sendLocation,
-                showError,
-                {enableHighAccuracy: true, maximumAge: 0}
-            );
+            watchId = navigator.geolocation.watchPosition((pos)=>{
+                const now = Date.now(); const lat = pos.coords.latitude, lng = pos.coords.longitude;
+                let moved = true;
+                if(lastSentPos){ const d = Math.sqrt(Math.pow(lat-lastSentPos.lat,2)+Math.pow(lng-lastSentPos.lng,2))*111000; moved = d>=MIN_MOVE_DISTANCE; }
+                if(moved || now - lastSentTime >= MIN_SEND_INTERVAL){ updateDriverPosition(lat,lng); computeAndShowETA(lat,lng); if(driving) updateDriveProgress(lat,lng); sendLocation(pos); lastSentPos={lat,lng}; lastSentTime=now; }
+            }, showError, { enableHighAccuracy:true, maximumAge:500, timeout:5000 });
 
             document.getElementById('trackingStatus').textContent = `Active - Bus ${selectedBus}`;
-            document.getElementById('statusDot').classList.add('active');
-            document.getElementById('statusDot').classList.remove('inactive');
-            document.getElementById('startBtn').disabled = true;
-            document.getElementById('stopBtn').disabled = false;
-            busSelect.disabled = true;
+            document.getElementById('statusDot').classList.add('active'); document.getElementById('statusDot').classList.remove('inactive');
+            document.getElementById('startBtn').disabled = true; document.getElementById('stopBtn').disabled = false; busSelect.disabled = true;
+            // keep routeSelect enabled so driver can choose route while tracking
         }
 
-        function stopTracking() {
-            if (watchId) {
-                navigator.geolocation.clearWatch(watchId);
-                watchId = null;
+        function stopTracking(){
+            if(watchId){ navigator.geolocation.clearWatch(watchId); watchId=null; }
+            if(selectedBus){ fetch(`/api/bus/${selectedBus}`, { method:'DELETE' }).then(()=>console.log(`Bus ${selectedBus} removed`)); }
+            document.getElementById('trackingStatus').textContent='Inactive'; document.getElementById('statusDot').classList.remove('active'); document.getElementById('statusDot').classList.add('inactive');
+            document.getElementById('startBtn').disabled=false; document.getElementById('stopBtn').disabled=true; busSelect.disabled=false; updateCount=0; document.getElementById('updateCount').textContent='0';
+        }
+
+        function sendLocation(position){
+            if(!selectedBus) return;
+            const location = { lat: position.coords.latitude, lng: position.coords.longitude, lastUpdate: new Date().toISOString(), routeId: selectedRoute || null };
+            fetch(`/api/bus/${selectedBus}`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(location) })
+            .then(res=>res.json()).then(()=>{ updateCount++; document.getElementById('updateCount').textContent = updateCount; updateDriverPosition(location.lat, location.lng); computeAndShowETA(location.lat, location.lng); if(driving) updateDriveProgress(location.lat, location.lng); })
+            .catch(e=>console.error('send error',e));
+        }
+
+        function updateDriverPosition(lat,lng){
+            if(!driverMap) initDriverMap();
+            const latlng = [lat,lng];
+            if(!driverMarker){ driverMarker = L.circleMarker(latlng, { radius:7, color:'#34d399', fillColor:'#34d399', fillOpacity:1 }).addTo(driverMap); driverMap.setView(latlng, driverMap.getZoom()); }
+            else { driverMarker.setLatLng(latlng); }
+            // draw selected route line (if any)
+            if(selectedRoute){ const route = allRoutes.find(r=>r.id===selectedRoute); if(route && route.waypoints){ const coords = route.waypoints.map(w=>[w[0],w[1]]); if(driverRouteLine){ driverRouteLine.setLatLngs(coords); } else { driverRouteLine = L.polyline(coords, { color: route.color||'#2196F3', weight:4, opacity:0.9 }).addTo(driverMap); } }
+                // when a route is selected, follow the driver
+                try{ driverMap.panTo(latlng); }catch(e){}
             }
-
-            if (selectedBus) {
-                fetch(`/api/bus/${selectedBus}`, {
-                    method: 'DELETE'
-                }).then(() => {
-                    console.log(`Bus ${selectedBus} removed from map`);
-                });
-            }
-
-            document.getElementById('trackingStatus').textContent = 'Inactive';
-            document.getElementById('statusDot').classList.remove('active');
-            document.getElementById('statusDot').classList.add('inactive');
-            document.getElementById('startBtn').disabled = false;
-            document.getElementById('stopBtn').disabled = true;
-            busSelect.disabled = false;
-            updateCount = 0;
-            document.getElementById('updateCount').textContent = '0';
         }
 
-        function sendLocation(position) {
-            if (!selectedBus) return;
-
-            const location = {
-                lat: position.coords.latitude,
-                lng: position.coords.longitude,
-                lastUpdate: new Date().toISOString()
-            };
-
-            fetch(`/api/bus/${selectedBus}`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(location)
-            })
-            .then(response => response.json())
-            .then(data => {
-                updateCount++;
-                document.getElementById('updateCount').textContent = updateCount;
-                console.log(`Bus ${selectedBus} location updated:`, location);
-            })
-            .catch(error => console.error('Error:', error));
+        async function computeAndShowETA(lat,lng){
+            const etaEl = document.getElementById('etaDisplay'); etaEl.textContent='—';
+            if(!selectedRoute) return;
+            const route = allRoutes.find(r=>r.id===selectedRoute); if(!route||!route.waypoints||!route.waypoints.length) return;
+            let best=null,bestD=Infinity,bestIdx=0; for(let i=0;i<route.waypoints.length;i++){ const wp=route.waypoints[i]; const d=Math.hypot(lat-wp[0],lng-wp[1]); if(d<bestD){bestD=d;best=wp;bestIdx=i;} }
+            const target = best; if(!target) return;
+            const url = `https://router.project-osrm.org/route/v1/driving/${lng},${lat};${target[1]},${target[0]}?overview=false`;
+            try{ const res = await fetch(url); if(!res.ok) throw new Error('OSRM'); const j = await res.json(); if(j && j.routes && j.routes.length){ const secs = Math.round(j.routes[0].duration); document.getElementById('etaDisplay').textContent = formatSeconds(secs); return; } }catch(e){ console.warn('OSRM fail',e); }
+            const meters = Math.sqrt(Math.pow(lat-target[0],2)+Math.pow(lng-target[1],2)) * 111000; const estSecs = Math.round(meters/10); etaEl.textContent = formatSeconds(estSecs);
         }
 
-        function showError(error) {
-            let message = '';
-            switch(error.code) {
-                case error.PERMISSION_DENIED:
-                    message = 'Please allow location access to track the bus';
-                    break;
-                case error.POSITION_UNAVAILABLE:
-                    message = 'Location information unavailable';
-                    break;
-                case error.TIMEOUT:
-                    message = 'Location request timed out';
-                    break;
-            }
-            alert(message);
-            stopTracking();
-        }
+        function formatSeconds(s){ if(!isFinite(s)) return '—'; if(s<60) return `${s}s`; const m=Math.floor(s/60); const rem=s%60; return `${m}m ${rem}s`; }
+
+        function showError(err){ let message=''; switch(err.code){ case err.PERMISSION_DENIED: message='Please allow location access'; break; case err.POSITION_UNAVAILABLE: message='Location unavailable'; break; case err.TIMEOUT: message='Location request timed out'; break; } alert(message); stopTracking(); }
+
+        // Drive progress helpers (haversine and progress along route)
+        function haversineMeters(aLat,aLng,bLat,bLng){ const R=6371000; const toRad=Math.PI/180; const dLat=(bLat-aLat)*toRad; const dLon=(bLng-aLng)*toRad; const lat1=aLat*toRad, lat2=bLat*toRad; const x=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLon/2)*Math.sin(dLon/2); const c=2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x)); return R*c; }
+        function computeRouteTotals(waypoints){ let total=0; for(let i=0;i<waypoints.length-1;i++){ total+=haversineMeters(waypoints[i][0],waypoints[i][1],waypoints[i+1][0],waypoints[i+1][1]); } return total; }
+        function computeRouteProgress(lat,lng,waypoints){ if(!waypoints||waypoints.length<2) return {pct:0,nextIdx:0,meters:0}; const avgLat=waypoints.reduce((s,w)=>s+w[0],0)/waypoints.length; const meterPerDegLat = 111132.92 - 559.82*Math.cos(2*avgLat*Math.PI/180) + 1.175*Math.cos(4*avgLat*Math.PI/180); const meterPerDegLon = 111412.84*Math.cos(avgLat*Math.PI/180) - 93.5*Math.cos(3*avgLat*Math.PI/180); function toXY(pt){ return {x: pt[1]*meterPerDegLon, y: pt[0]*meterPerDegLat}; } const pXY=toXY([lat,lng]); let cum=0,bestCum=0,bestDist=Infinity,bestNextIdx=1; for(let i=0;i<waypoints.length-1;i++){ const a=toXY(waypoints[i]); const b=toXY(waypoints[i+1]); const vx=b.x-a.x, vy=b.y-a.y; const wx=pXY.x-a.x, wy=pXY.y-a.y; const segLen2=vx*vx+vy*vy; let t = segLen2===0?0:((wx*vx+wy*vy)/segLen2); if(t<0) t=0; if(t>1) t=1; const projx=a.x+t*vx, projy=a.y+t*vy; const dx=pXY.x-projx, dy=pXY.y-projy; const dist=Math.sqrt(dx*dx+dy*dy); const distAlong = cum + Math.sqrt((projx-a.x)*(projx-a.x)+(projy-a.y)*(projy-a.y)); if(dist<bestDist){ bestDist=dist; bestCum=distAlong; bestNextIdx=i+1; } cum += Math.sqrt(vx*vx+vy*vy); } const total=computeRouteTotals(waypoints); const pct = total>0? Math.max(0,Math.min(100, Math.round((bestCum/total)*100))) : 0; return {pct, nextIdx: bestNextIdx, meters: Math.round(bestCum), totalMeters: Math.round(total)}; }
+
+        function startDrive(){ if(!selectedRoute){ alert('Select a route to start driving'); return; } driving=true; document.getElementById('startDriveBtn').disabled=true; document.getElementById('stopDriveBtn').disabled=false; const route = allRoutes.find(r=>r.id===selectedRoute); routeTotalMeters = route? computeRouteTotals(route.waypoints) : 0; if(lastSentPos) updateDriveProgress(lastSentPos.lat, lastSentPos.lng); }
+        function stopDrive(){ driving=false; document.getElementById('startDriveBtn').disabled=false; document.getElementById('stopDriveBtn').disabled=true; document.getElementById('progressFill').style.width='0%'; document.getElementById('progressPercent').textContent='—'; document.getElementById('nextStopDisplay').textContent='—'; }
+        function updateDriveProgress(lat,lng){ if(!driving || !selectedRoute) return; const route = allRoutes.find(r=>r.id===selectedRoute); if(!route) return; const res = computeRouteProgress(lat,lng, route.waypoints); document.getElementById('progressFill').style.width = `${res.pct}%`; document.getElementById('progressPercent').textContent = `${res.pct}%`; const nextName = (route.stops && route.stops[res.nextIdx]) ? route.stops[res.nextIdx] : `Stop ${res.nextIdx}`; document.getElementById('nextStopDisplay').textContent = nextName; }
+
+        // initial load
+        loadRoutes();
+
     </script>
 </body>
 </html>

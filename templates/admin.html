@@ -3,15 +3,17 @@
 <head>
     <title>Bus Tracker - Admin</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         * { box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #07070a; color:#e6eef8; padding:24px; }
-        .panel { max-width:1000px; margin: 0 auto; background: #0d1117; border-radius:12px; padding:18px; border:1px solid rgba(255,255,255,0.03); box-shadow: 0 8px 30px rgba(2,6,23,0.7); }
+        .panel { max-width:1400px; margin: 0 auto; background: #0d1117; border-radius:12px; padding:18px; border:1px solid rgba(255,255,255,0.03); box-shadow: 0 8px 30px rgba(2,6,23,0.7); }
         h1 { margin:0 0 6px 0; font-size:20px }
         p.subtitle { margin:0 0 14px 0; color:#9aa4b2 }
-        .controls { display:flex; gap:10px; align-items:center; margin-bottom:12px }
-        input, select { padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.04); background:#07101a; color:#e6eef8 }
-        button { background:transparent; color:#e6eef8; border:1px solid rgba(255,255,255,0.04); padding:8px 12px; border-radius:8px; cursor:pointer }
+        .controls { display:flex; gap:10px; align-items:center; margin-bottom:12px; flex-wrap:wrap }
+        input, select, textarea { padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.04); background:#07101a; color:#e6eef8 }
+        button { background:transparent; color:#e6eef8; border:1px solid rgba(255,255,255,0.04); padding:8px 12px; border-radius:8px; cursor:pointer; transition:all 0.2s }
+        button:hover { background:rgba(255,255,255,0.05) }
         table { width:100%; border-collapse:collapse; margin-top:12px }
         thead th { text-align:left; padding:10px; font-size:13px; color:#9aa4b2; border-bottom:1px solid rgba(255,255,255,0.03) }
         tbody td { padding:10px; vertical-align:middle; border-bottom:1px dashed rgba(255,255,255,0.02) }
@@ -21,46 +23,543 @@
         .ok { color:#34d399; border-color: rgba(52,211,153,0.08) }
         .row-actions button { margin-right:8px }
         .empty { text-align:center; color:#8290a3; padding:20px }
-        .topbar { display:flex; justify-content:space-between; align-items:center; gap:12px }
+        .topbar { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:20px }
+        .tabs { display:flex; gap:8px; border-bottom:1px solid rgba(255,255,255,0.03); margin-bottom:18px }
+        .tab { padding:10px 16px; cursor:pointer; color:#9aa4b2; border-bottom:2px solid transparent; transition:all 0.2s }
+        .tab.active { color:#e6eef8; border-bottom-color:#34d399 }
+        .tab-content { display:none }
+        .tab-content.active { display:block }
+        .field-group { margin-bottom:12px }
+        .field-label { font-size:12px; color:#9aa4b2; margin-bottom:4px; display:block; font-weight:600 }
+        
+        /* Route Builder */
+        #routeMap { height:500px; border-radius:8px; margin-bottom:16px; border:2px solid rgba(102,126,234,0.3) }
+        .route-builder { display:grid; grid-template-columns:1.2fr 1fr; gap:20px; margin-bottom:20px }
+        @media (max-width:1000px) { .route-builder { grid-template-columns:1fr } }
+        
+        .route-panel { background:#07101a; padding:18px; border-radius:8px; border:1px solid rgba(255,255,255,0.04) }
+        .step-indicator { display:flex; gap:10px; margin-bottom:18px }
+        .step { padding:8px 12px; border-radius:6px; font-size:12px; text-align:center; flex:1; background:#0d1117; color:#9aa4b2; font-weight:500 }
+        .step.active { background:#667eea; color:#fff; box-shadow:0 0 12px rgba(102,126,234,0.4) }
+        .step.done { background:#34d399; color:#fff }
+        
+        .instruction-box { background:rgba(102,126,234,0.1); padding:12px; border-radius:6px; border:1px solid rgba(102,126,234,0.2); margin-bottom:14px; font-size:13px; line-height:1.5 }
+        .instruction-main { font-size:14px; font-weight:600; color:#667eea; margin-bottom:4px }
+        .instruction-sub { color:#9aa4b2; margin-top:2px }
+        
+        .stops-list { max-height:450px; overflow-y:auto; background:#0d1117; border-radius:6px; padding:10px }
+        .stop-item { padding:10px; background:#07101a; border-radius:6px; margin-bottom:8px; border-left:4px solid; display:flex; gap:8px; align-items:center; font-size:13px }
+        .stop-item.start { border-left-color:#4CAF50; background:#0d1117 }
+        .stop-item input { flex:1; background:#0f0f23; border:1px solid rgba(255,255,255,0.04); color:#e6eef8; padding:6px 8px; border-radius:4px }
+        .stop-num { min-width:28px; text-align:center; color:#9aa4b2; font-weight:bold; font-size:12px }
+        .stop-icon { font-size:16px }
+        
+        .button-group { display:flex; gap:8px; margin-top:14px }
+        .button-group button { flex:1 }
+        
+        .routes-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:12px; margin-top:12px }
+        .route-card { background:#07101a; padding:12px; border-radius:8px; border-left:4px solid }
+        .route-name { font-weight:600; margin-bottom:4px }
+        .route-info { font-size:12px; color:#9aa4b2; margin-bottom:8px }
+        .route-actions { display:flex; gap:6px }
+        .route-actions button { flex:1; font-size:12px; padding:6px }
+        
+        cursor-info { font-size:11px; color:#667eea; text-align:center; margin-top:8px; display:block }
     </style>
 </head>
 <body>
     <div class="panel">
         <div class="topbar">
             <div>
-                <h1>Admin — Bus Management</h1>
-                <p class="subtitle">View, add, edit, or remove bus locations. Changes update the live map.</p>
+                <div style="font-weight:700; font-size:14px; color:#e6eef8">{{ institute_name | default('INSTITUTE') }} TRANSPORT SYSTEM</div>
+                <h1>🛣️ Route Builder</h1>
+                <p class="subtitle">Create routes by clicking on the map - no coordinates needed!</p>
             </div>
             <div style="text-align:right">
                 <a href="/" style="color:#9aa4b2; text-decoration:none; margin-right:12px">Student View</a>
-                <a href="/driver" style="color:#9aa4b2; text-decoration:none">Driver View</a>
+                <a href="/driver" style="color:#9aa4b2; text-decoration:none; margin-right:12px">Driver View</a>
+                {% if admin_user %}
+                    <span style="color:#9aa4b2; margin-right:8px">{{ admin_user }}</span>
+                    <a href="/admin/logout" style="color:#ff9aa2; text-decoration:none">Logout</a>
+                {% else %}
+                    <a href="/admin/login" style="color:#9aa4b2; text-decoration:none">Admin Login</a>
+                {% endif %}
             </div>
         </div>
 
-        <div class="controls">
-            <input id="newBusNum" placeholder="Bus number (e.g. 21)" style="width:140px">
-            <input id="newLat" placeholder="Latitude" style="width:160px">
-            <input id="newLng" placeholder="Longitude" style="width:160px">
-            <button id="addBtn" class="ok">Add / Save</button>
-            <div style="flex:1"></div>
-            <button id="refreshBtn">Refresh</button>
+        <div class="tabs">
+            <div class="tab" data-tab="routes">🗺️ Create Route</div>
+            <div class="tab active" data-tab="buses">🚌 Manage Buses</div>
+            <div class="tab" data-tab="buildings">🏠 Buildings</div>
         </div>
 
-        <div id="listContainer">
-            <div class="empty">Loading buses...</div>
+        <!-- ROUTES TAB -->
+        <div id="routes" class="tab-content">
+            <div class="route-builder">
+                <!-- MAP SECTION -->
+                <div>
+                    <div class="field-label" style="margin-bottom:8px">📍 Click on map to add stops</div>
+                    <div id="routeMap"></div>
+                    <cursor-info id="cursorInfo">👆 Click on map | First click = Start Point | Next clicks = Stops</cursor-info>
+                </div>
+                
+                <!-- CONTROLS -->
+                <div>
+                    <div class="route-panel">
+                        <h3 style="margin:0 0 16px 0; font-size:15px">Route Details</h3>
+                        
+                        <!-- Step Indicator -->
+                        <div class="step-indicator">
+                            <div class="step active" id="step1">1. Start</div>
+                            <div class="step" id="step2">2. Stops</div>
+                            <div class="step" id="step3">3. Save</div>
+                        </div>
+
+                        <!-- Instructions -->
+                        <div class="instruction-box">
+                            <div class="instruction-main" id="mainInstruction">Step 1: Click on map to set START point</div>
+                            <div class="instruction-sub" id="subInstruction">First click anywhere on the map</div>
+                        </div>
+
+                        <!-- Route Name -->
+                        <div class="field-group">
+                            <label class="field-label">Route Name</label>
+                            <input id="routeName" placeholder="e.g. North Campus Loop" style="width:100%">
+                        </div>
+
+                        <!-- Color -->
+                        <div class="field-group">
+                            <label class="field-label">Route Color</label>
+                            <select id="routeColor" style="width:100%">
+                                <option value="#FF5722">🔴 Red-Orange</option>
+                                <option value="#2196F3">🔵 Blue</option>
+                                <option value="#4CAF50">🟢 Green</option>
+                                <option value="#FF9800">🟠 Orange</option>
+                                <option value="#9C27B0">🟣 Purple</option>
+                                <option value="#00BCD4">🔷 Cyan</option>
+                                <option value="#E91E63">💗 Pink</option>
+                                <option value="#FFEB3B">🟡 Yellow</option>
+                            </select>
+                        </div>
+
+                        <!-- Stops List -->
+                        <div class="field-group">
+                            <label class="field-label">Stops (<span id="stopCount">0</span>)</label>
+                            <div class="stops-list" id="stopsList"></div>
+                        </div>
+
+                        <!-- Buttons -->
+                        <div class="button-group">
+                            <button id="clearMapBtn" class="danger" style="background:rgba(255,123,138,0.05)">🗑️ Clear</button>
+                            <button id="saveRouteBtn" class="ok" style="background:rgba(52,211,153,0.1)">💾 Save Route</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- EXISTING ROUTES -->
+            <h3 style="margin-top:28px; margin-bottom:14px; font-size:16px">📚 Your Routes</h3>
+            <div class="routes-grid" id="routesList"></div>
+        </div>
+
+        <!-- BUSES TAB -->
+        <div id="buses" class="tab-content active">
+            <div class="controls">
+                <input id="newBusNum" placeholder="Bus number (e.g. 21)" style="width:140px">
+                <input id="newLat" placeholder="Latitude" style="width:160px">
+                <input id="newLng" placeholder="Longitude" style="width:160px">
+                <button id="addBtn" class="ok">Add Bus</button>
+                <div style="flex:1"></div>
+                <button id="refreshBtn">Refresh</button>
+            </div>
+            <div id="busList">
+                <div class="empty">Loading buses...</div>
+            </div>
+        </div>
+
+        <!-- BUILDINGS TAB -->
+        <div id="buildings" class="tab-content">
+            <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:20px">
+                <!-- MAP -->
+                <div>
+                    <div class="field-label" style="margin-bottom:8px">📍 Click to place building</div>
+                    <div id="buildingsMap" style="height:500px; border-radius:8px; margin-bottom:16px; border:2px solid rgba(102,126,234,0.3)"></div>
+                </div>
+
+                <!-- CONTROLS -->
+                <div>
+                    <!-- HOSTELS -->
+                    <div class="route-panel" style="margin-bottom:20px">
+                        <h3 style="margin:0 0 12px 0; font-size:14px">🏨 Add Hostel</h3>
+                        <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px">
+                            <input id="hostelName" placeholder="Name (e.g. Block A)" style="width:100%; font-size:12px; padding:6px 8px">
+                            <input id="hostelCapacity" placeholder="Capacity" style="width:100%; font-size:12px; padding:6px 8px" value="100">
+                            <button id="addHostelBtn" class="ok" style="background:rgba(52,211,153,0.1); font-size:12px; padding:6px">+ Place on Map</button>
+                        </div>
+                        <div class="field-label">Hostels (<span id="hostelCount">0</span>)</div>
+                        <div id="hostelsList" style="max-height:200px; overflow-y:auto; background:#0d1117; border-radius:6px; padding:8px">
+                            <div class="empty" style="font-size:12px; padding:10px">Click map to add</div>
+                        </div>
+                    </div>
+
+                    <!-- CLASSES -->
+                    <div class="route-panel">
+                        <h3 style="margin:0 0 12px 0; font-size:14px">📚 Add Class</h3>
+                        <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px">
+                            <input id="className" placeholder="Name (e.g. A-101)" style="width:100%; font-size:12px; padding:6px 8px">
+                            <input id="classDept" placeholder="Department" style="width:100%; font-size:12px; padding:6px 8px">
+                            <button id="addClassBtn" class="ok" style="background:rgba(52,211,153,0.1); font-size:12px; padding:6px">+ Place on Map</button>
+                        </div>
+                        <div class="field-label">Classes (<span id="classCount">0</span>)</div>
+                        <div id="classesList" style="max-height:200px; overflow-y:auto; background:#0d1117; border-radius:6px; padding:8px">
+                            <div class="empty" style="font-size:12px; padding:10px">Click map to add</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
+        let currentWaypoints = [];
+        let currentStops = [];
+        let editingRouteId = null;
+        let routeMap = null;
+        let routeMarkers = [];
+        let mapMode = 'start'; // 'start' or 'stops'
+        
+        let buildingsMap = null;
+        let buildingMarkers = {};
+        let pendingHostelName = null;
+        let pendingHostelCapacity = null;
+        let pendingClassName = null;
+        let pendingClassDept = null;
+
+        // Tab switching
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById(tab.getAttribute('data-tab')).classList.add('active');
+                if (tab.getAttribute('data-tab') === 'routes') {
+                    setTimeout(initRouteMap, 100);
+                    loadRoutes();
+                } else if (tab.getAttribute('data-tab') === 'buildings') {
+                    setTimeout(initBuildingsMap, 100);
+                    loadHostels();
+                    loadClasses();
+                }
+            });
+        });
+
+        // ==== ROUTE MAP ====
+        function initRouteMap() {
+            if (routeMap) return;
+            const bounds = [[20.339920625677212, 85.7964659296332], [20.37210882553945, 85.83388810783698]];
+            routeMap = L.map('routeMap', { maxBounds: bounds, minZoom: 14 }).setView([20.3549, 85.8161], 15);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; CARTO',
+                maxZoom: 19
+            }).addTo(routeMap);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png', {
+                attribution: '',
+                maxZoom: 19
+            }).addTo(routeMap);
+
+            routeMap.on('click', (e) => {
+                const lat = e.latlng.lat;
+                const lng = e.latlng.lng;
+                addWaypointFromMap(lat, lng);
+            });
+        }
+
+        function addWaypointFromMap(lat, lng) {
+            if (mapMode === 'start' && currentWaypoints.length === 0) {
+                // First point is START
+                currentWaypoints.push([lat, lng]);
+                currentStops.push('START');
+                mapMode = 'stops';
+                updateSteps();
+                updateInstructions();
+            } else if (mapMode === 'stops') {
+                // Additional points are STOPS
+                currentWaypoints.push([lat, lng]);
+                const stopNum = currentWaypoints.length;
+                currentStops.push(`Stop ${stopNum - 1}`);
+            }
+            renderMapWaypoints();
+            renderStopsList();
+        }
+
+        function updateSteps() {
+            document.getElementById('step1').classList.remove('active');
+            document.getElementById('step1').classList.add('done');
+            document.getElementById('step2').classList.add('active');
+        }
+
+        function updateInstructions() {
+            const instructions = {
+                start: {
+                    main: '📍 Step 1: Set START point',
+                    sub: 'Click ONE spot on the map - this is where the bus starts'
+                },
+                stops: {
+                    main: '🛑 Step 2: Add STOPS',
+                    sub: `Click more spots for each stop. You have ${currentWaypoints.length - 1} stops. Add more or Save.`
+                }
+            };
+            
+            const inst = instructions[mapMode];
+            document.getElementById('mainInstruction').textContent = inst.main;
+            document.getElementById('subInstruction').textContent = inst.sub;
+        }
+
+        function renderMapWaypoints() {
+            // Clear existing
+            routeMarkers.forEach(m => {
+                try { routeMap.removeLayer(m); } catch(e) {}
+            });
+            routeMarkers = [];
+
+            const color = document.getElementById('routeColor').value;
+
+            // Add markers
+            currentWaypoints.forEach((wp, idx) => {
+                const isStart = idx === 0;
+                const radius = isStart ? 12 : 8;
+                const fillColor = isStart ? '#4CAF50' : color;
+                
+                const marker = L.circleMarker([wp[0], wp[1]], {
+                    radius: radius,
+                    fillColor: fillColor,
+                    color: '#fff',
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.9
+                }).addTo(routeMap);
+                
+                const label = currentStops[idx] || (isStart ? 'START' : `Stop ${idx}`);
+                marker.bindPopup(`<b>${label}</b><br>${wp[0].toFixed(4)}, ${wp[1].toFixed(4)}`);
+                routeMarkers.push(marker);
+            });
+
+            // Draw polyline with road-based routing
+            if (currentWaypoints.length > 1) {
+                getOSRMRoute(currentWaypoints).then(routeCoords => {
+                    const line = L.polyline(routeCoords || currentWaypoints, {
+                        color: color,
+                        weight: 3,
+                        opacity: 0.7
+                    }).addTo(routeMap);
+                    routeMarkers.push(line);
+                });
+            }
+        }
+
+        async function getOSRMRoute(waypoints) {
+            try {
+                if (waypoints.length < 2) return waypoints;
+                
+                // Format: lon,lat;lon,lat...
+                const coords = waypoints.map(wp => `${wp[1]},${wp[0]}`).join(';');
+                const url = `https://router.project-osrm.org/route/v1/driving/${coords}?geometries=geojson`;
+                
+                const res = await fetch(url);
+                const data = await res.json();
+                
+                if (data.routes && data.routes[0]) {
+                    // Convert GeoJSON coords (lon,lat) to Leaflet format (lat,lon)
+                    return data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+                }
+                return waypoints;
+            } catch(e) {
+                console.error('OSRM error:', e);
+                return waypoints;
+            }
+        }
+
+        function renderStopsList() {
+            const list = document.getElementById('stopsList');
+            document.getElementById('stopCount').textContent = currentWaypoints.length;
+            
+            if (currentWaypoints.length === 0) {
+                list.innerHTML = '<div style="text-align:center; color:#666; padding:20px; font-size:12px">No stops yet - click map to start</div>';
+                return;
+            }
+            
+            list.innerHTML = '';
+            currentWaypoints.forEach((wp, idx) => {
+                const item = document.createElement('div');
+                const isStart = idx === 0;
+                item.className = `stop-item ${isStart ? 'start' : ''}`;
+                item.style.borderLeftColor = isStart ? '#4CAF50' : document.getElementById('routeColor').value;
+                
+                item.innerHTML = `
+                    <div class="stop-icon">${isStart ? '🟢' : '🔴'}</div>
+                    <input type="text" placeholder="${isStart ? 'START' : 'Stop name'}" value="${currentStops[idx]}" readonly style="cursor:pointer" title="Click to edit">
+                    <button class="danger" style="padding:4px 6px; font-size:11px" onclick="removeMapWaypoint(${idx})">✕</button>
+                `;
+                
+                const input = item.querySelector('input');
+                input.addEventListener('click', () => {
+                    input.removeAttribute('readonly');
+                    input.style.cursor = 'text';
+                    input.focus();
+                });
+                input.addEventListener('blur', () => {
+                    currentStops[idx] = input.value || (isStart ? 'START' : `Stop ${idx}`);
+                    input.setAttribute('readonly', '');
+                    input.style.cursor = 'pointer';
+                    renderMapWaypoints();
+                });
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') input.blur();
+                });
+                
+                list.appendChild(item);
+            });
+        }
+
+        window.removeMapWaypoint = (idx) => {
+            if (idx === 0 && currentWaypoints.length > 1) {
+                alert('Cannot remove START point');
+                return;
+            }
+            currentWaypoints.splice(idx, 1);
+            currentStops.splice(idx, 1);
+            if (currentWaypoints.length === 0) mapMode = 'start';
+            updateSteps();
+            updateInstructions();
+            renderMapWaypoints();
+            renderStopsList();
+        };
+
+        document.getElementById('clearMapBtn').addEventListener('click', () => {
+            if (currentWaypoints.length > 0 && !confirm('Clear all stops?')) return;
+            currentWaypoints = [];
+            currentStops = [];
+            mapMode = 'start';
+            document.getElementById('step1').classList.remove('done');
+            document.getElementById('step1').classList.add('active');
+            document.getElementById('step2').classList.remove('active');
+            renderMapWaypoints();
+            renderStopsList();
+            updateInstructions();
+        });
+
+        document.getElementById('routeColor').addEventListener('change', () => {
+            renderMapWaypoints();
+        });
+
+        document.getElementById('saveRouteBtn').addEventListener('click', async () => {
+            const name = document.getElementById('routeName').value.trim();
+            const color = document.getElementById('routeColor').value;
+            
+            if (!name) { alert('Enter route name'); return; }
+            if (currentWaypoints.length < 2) { alert('Add at least START + 1 STOP'); return; }
+            
+            const route = {
+                id: editingRouteId || `route_${Date.now()}`,
+                name: name,
+                waypoints: currentWaypoints,
+                stops: currentStops,
+                color: color
+            };
+            
+            const res = await fetch('/api/route', {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify(route)
+            });
+            
+            if (res.ok) {
+                currentWaypoints = [];
+                currentStops = [];
+                editingRouteId = null;
+                mapMode = 'start';
+                document.getElementById('routeName').value = '';
+                document.getElementById('step1').classList.remove('done');
+                document.getElementById('step1').classList.add('active');
+                document.getElementById('step2').classList.remove('active');
+                renderMapWaypoints();
+                renderStopsList();
+                updateInstructions();
+                await loadRoutes();
+            }
+        });
+
+        async function loadRoutes() {
+            const res = await fetch('/api/routes');
+            const routes = await res.json();
+            renderRoutes(routes);
+        }
+
+        function renderRoutes(routes) {
+            const container = document.getElementById('routesList');
+            if (routes.length === 0) {
+                container.innerHTML = '<div class="empty">No routes yet - create one!</div>';
+                return;
+            }
+            container.innerHTML = '';
+            routes.forEach(route => {
+                const card = document.createElement('div');
+                card.className = 'route-card';
+                card.style.borderLeftColor = route.color;
+                card.innerHTML = `
+                    <div class="route-name">${route.name}</div>
+                    <div class="route-info">
+                        <div>🛑 ${route.waypoints.length} stops</div>
+                        <div style="margin-top:4px; color:#667eea">${(route.stops || []).slice(0, 2).join(' → ')}</div>
+                    </div>
+                    <div class="route-actions">
+                        <button class="ok" style="background:rgba(102,126,234,0.1)" onclick="editRoute('${route.id}')">✏️ Edit</button>
+                        <button class="danger" style="background:rgba(255,123,138,0.05)" onclick="deleteRoute('${route.id}')">🗑️ Delete</button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        window.editRoute = async (routeId) => {
+            const res = await fetch('/api/routes');
+            const routes = await res.json();
+            const route = routes.find(r => r.id === routeId);
+            if (route) {
+                document.querySelector('[data-tab="routes"]').click();
+                setTimeout(() => {
+                    document.getElementById('routeName').value = route.name;
+                    document.getElementById('routeColor').value = route.color;
+                    currentWaypoints = JSON.parse(JSON.stringify(route.waypoints));
+                    currentStops = JSON.parse(JSON.stringify(route.stops || []));
+                    editingRouteId = routeId;
+                    mapMode = 'stops';
+                    updateSteps();
+                    updateInstructions();
+                    renderMapWaypoints();
+                    renderStopsList();
+                    window.scrollTo(0, 0);
+                }, 200);
+            }
+        };
+
+        window.deleteRoute = async (routeId) => {
+            if (!confirm('Delete this route?')) return;
+            await fetch(`/api/route/${routeId}`, { method: 'DELETE' });
+            await loadRoutes();
+        };
+
+        // ==== BUSES ====
         async function loadBuses() {
             const res = await fetch('/api/buses');
             const buses = await res.json();
-            renderList(buses);
+            renderBuses(buses);
         }
 
-        function renderList(buses) {
+        function renderBuses(buses) {
             const keys = Object.keys(buses).sort((a,b) => parseInt(a)-parseInt(b));
-            const container = document.getElementById('listContainer');
+            const container = document.getElementById('busList');
             if (keys.length === 0) {
                 container.innerHTML = '<div class="empty">No active buses</div>';
                 return;
@@ -79,12 +578,11 @@
             html += '</tbody></table>';
             container.innerHTML = html;
 
-            // attach listeners
-            container.querySelectorAll('.save').forEach(btn => btn.addEventListener('click', onSave));
-            container.querySelectorAll('.remove').forEach(btn => btn.addEventListener('click', onRemove));
+            container.querySelectorAll('.save').forEach(btn => btn.addEventListener('click', onSaveBus));
+            container.querySelectorAll('.remove').forEach(btn => btn.addEventListener('click', onRemoveBus));
         }
 
-        async function onSave(e) {
+        async function onSaveBus(e) {
             const row = e.target.closest('tr');
             const busNum = row.getAttribute('data-bus');
             const lat = parseFloat(row.querySelector('.lat').value);
@@ -98,10 +596,10 @@
             await loadBuses();
         }
 
-        async function onRemove(e) {
+        async function onRemoveBus(e) {
             const row = e.target.closest('tr');
             const busNum = row.getAttribute('data-bus');
-            if (!confirm(`Remove Bus ${busNum} from active list?`)) return;
+            if (!confirm(`Remove Bus ${busNum}?`)) return;
             await fetch(`/api/bus/${busNum}`, { method: 'DELETE' });
             await loadBuses();
         }
@@ -111,16 +609,213 @@
             const num = document.getElementById('newBusNum').value.trim();
             const lat = parseFloat(document.getElementById('newLat').value);
             const lng = parseFloat(document.getElementById('newLng').value);
-            if (!num || isNaN(lat) || isNaN(lng)) { alert('Provide bus number and valid coords'); return; }
+            if (!num || isNaN(lat) || isNaN(lng)) { alert('Provide bus number and coords'); return; }
             await fetch(`/api/bus/${num}`, {
                 method: 'POST', headers: {'Content-Type':'application/json'},
                 body: JSON.stringify({ lat: lat, lng: lng, lastUpdate: new Date().toISOString() })
             });
-            document.getElementById('newBusNum').value=''; document.getElementById('newLat').value=''; document.getElementById('newLng').value='';
+            document.getElementById('newBusNum').value='';
+            document.getElementById('newLat').value='';
+            document.getElementById('newLng').value='';
             await loadBuses();
         });
 
         loadBuses();
+
+        // ==== BUILDINGS MAP ====
+        function initBuildingsMap() {
+            if (buildingsMap) return;
+            const bounds = [[20.339920625677212, 85.7964659296332], [20.37210882553945, 85.83388810783698]];
+            buildingsMap = L.map('buildingsMap', { maxBounds: bounds, minZoom: 14 }).setView([20.3549, 85.8161], 15);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; CARTO',
+                maxZoom: 19
+            }).addTo(buildingsMap);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png', {
+                attribution: '',
+                maxZoom: 19
+            }).addTo(buildingsMap);
+
+            buildingsMap.on('click', (e) => {
+                const lat = e.latlng.lat;
+                const lng = e.latlng.lng;
+                
+                if (pendingHostelName) {
+                    addHostelToMap(lat, lng);
+                } else if (pendingClassName) {
+                    addClassToMap(lat, lng);
+                }
+            });
+            
+            renderBuildingMarkers();
+        }
+
+        async function addHostelToMap(lat, lng) {
+            const name = pendingHostelName;
+            const capacity = pendingHostelCapacity || 100;
+            
+            const res = await fetch('/api/hostel', {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({ name, lat, lng, capacity: parseInt(capacity) })
+            });
+            
+            if (res.ok) {
+                document.getElementById('hostelName').value = '';
+                document.getElementById('hostelCapacity').value = '100';
+                pendingHostelName = null;
+                pendingHostelCapacity = null;
+                document.getElementById('addHostelBtn').textContent = '+ Place on Map';
+                document.getElementById('addHostelBtn').style.background = 'rgba(52,211,153,0.1)';
+                await loadHostels();
+            }
+        }
+
+        async function addClassToMap(lat, lng) {
+            const name = pendingClassName;
+            const department = pendingClassDept || 'Unknown';
+            
+            const res = await fetch('/api/class', {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({ name, lat, lng, department })
+            });
+            
+            if (res.ok) {
+                document.getElementById('className').value = '';
+                document.getElementById('classDept').value = '';
+                pendingClassName = null;
+                pendingClassDept = null;
+                document.getElementById('addClassBtn').textContent = '+ Place on Map';
+                document.getElementById('addClassBtn').style.background = 'rgba(52,211,153,0.1)';
+                await loadClasses();
+            }
+        }
+
+        async function loadHostels() {
+            try {
+                const res = await fetch('/api/hostels');
+                const hostels = await res.json();
+                document.getElementById('hostelCount').textContent = hostels.length;
+                renderHostelsList(hostels);
+            } catch(e) { console.error(e); }
+        }
+
+        async function loadClasses() {
+            try {
+                const res = await fetch('/api/classes');
+                const classes = await res.json();
+                document.getElementById('classCount').textContent = classes.length;
+                renderClassesList(classes);
+            } catch(e) { console.error(e); }
+        }
+
+        function renderHostelsList(hostels) {
+            const container = document.getElementById('hostelsList');
+            if (hostels.length === 0) {
+                container.innerHTML = '<div class="empty" style="font-size:12px; padding:10px">No hostels yet</div>';
+                return;
+            }
+            
+            container.innerHTML = hostels.map(h => `
+                <div style="padding:8px; background:#07101a; border-radius:4px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center; font-size:12px">
+                    <div>
+                        <div style="font-weight:600">${h.name}</div>
+                        <div style="color:#9aa4b2; font-size:11px">${h.capacity} capacity</div>
+                    </div>
+                    <button onclick="deleteHostel('${h.id}')" style="background:#ff5722; color:white; border:none; padding:4px 8px; border-radius:3px; cursor:pointer; font-size:11px">✕</button>
+                </div>
+            `).join('');
+        }
+
+        function renderClassesList(classes) {
+            const container = document.getElementById('classesList');
+            if (classes.length === 0) {
+                container.innerHTML = '<div class="empty" style="font-size:12px; padding:10px">No classes yet</div>';
+                return;
+            }
+            
+            container.innerHTML = classes.map(c => `
+                <div style="padding:8px; background:#07101a; border-radius:4px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center; font-size:12px">
+                    <div>
+                        <div style="font-weight:600">${c.name}</div>
+                        <div style="color:#9aa4b2; font-size:11px">${c.department}</div>
+                    </div>
+                    <button onclick="deleteClass('${c.id}')" style="background:#ff5722; color:white; border:none; padding:4px 8px; border-radius:3px; cursor:pointer; font-size:11px">✕</button>
+                </div>
+            `).join('');
+        }
+
+        function renderBuildingMarkers() {
+            if (!buildingsMap) return;
+            
+            Object.values(buildingMarkers).forEach(m => {
+                try { buildingsMap.removeLayer(m); } catch(e) {}
+            });
+            buildingMarkers = {};
+            
+            fetch('/api/hostels').then(r => r.json()).then(hostels => {
+                hostels.forEach(h => {
+                    const marker = L.circleMarker([h.lat, h.lng], {
+                        radius: 6,
+                        fillColor: '#9C27B0',
+                        color: 'rgba(255,255,255,0.85)',
+                        weight: 1,
+                        opacity: 1,
+                        fillOpacity: 0.85
+                    }).bindPopup(`<b>${h.name}</b><br/>Capacity: ${h.capacity}`).addTo(buildingsMap);
+                    buildingMarkers[h.id] = marker;
+                });
+            });
+            
+            fetch('/api/classes').then(r => r.json()).then(classes => {
+                classes.forEach(c => {
+                    const marker = L.circleMarker([c.lat, c.lng], {
+                        radius: 6,
+                        fillColor: '#2196F3',
+                        color: 'rgba(255,255,255,0.85)',
+                        weight: 1,
+                        opacity: 1,
+                        fillOpacity: 0.85
+                    }).bindPopup(`<b>${c.name}</b><br/>${c.department}`).addTo(buildingsMap);
+                    buildingMarkers[c.id] = marker;
+                });
+            });
+        }
+
+        async function deleteHostel(id) {
+            if (!confirm('Delete this hostel?')) return;
+            await fetch(`/api/hostel/${id}`, { method: 'DELETE' });
+            await loadHostels();
+            renderBuildingMarkers();
+        }
+
+        async function deleteClass(id) {
+            if (!confirm('Delete this class?')) return;
+            await fetch(`/api/class/${id}`, { method: 'DELETE' });
+            await loadClasses();
+            renderBuildingMarkers();
+        }
+
+        document.getElementById('addHostelBtn').addEventListener('click', () => {
+            const name = document.getElementById('hostelName').value.trim();
+            if (!name) { alert('Enter hostel name'); return; }
+            pendingHostelName = name;
+            pendingHostelCapacity = document.getElementById('hostelCapacity').value;
+            document.getElementById('addHostelBtn').textContent = '📍 Click on map...';
+            document.getElementById('addHostelBtn').style.background = 'rgba(102,126,234,0.2)';
+            setTimeout(initBuildingsMap, 100);
+        });
+
+        document.getElementById('addClassBtn').addEventListener('click', () => {
+            const name = document.getElementById('className').value.trim();
+            if (!name) { alert('Enter class name'); return; }
+            pendingClassName = name;
+            pendingClassDept = document.getElementById('classDept').value;
+            document.getElementById('addClassBtn').textContent = '📍 Click on map...';
+            document.getElementById('addClassBtn').style.background = 'rgba(102,126,234,0.2)';
+            setTimeout(initBuildingsMap, 100);
+        });
     </script>
 </body>
 </html>
