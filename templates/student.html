@@ -20,6 +20,15 @@
         }
         .header h1 { font-size: 20px; color: #e6eef8; margin-bottom: 4px; }
         .header p { color: #9aa4b2; font-size: 13px; margin-top: 2px }
+        /* Unified icon styling */
+        .icon { display:inline-block; font-size:16px; line-height:1; vertical-align:middle; opacity:0.9; margin-right:6px }
+        /* Map tiny markers (fixed pixel size) */
+        .tiny-marker { width:8px; height:8px; border-radius:50%; display:inline-block; border:1px solid rgba(255,255,255,0.6); box-shadow:0 0 0 1px rgba(0,0,0,0.25); transition: transform 120ms ease; transform-origin:center }
+        .tiny-marker:hover { transform: scale(1.25); }
+        .tiny-hostel { background:#9C27B0 }
+        .tiny-class { background:#2196F3 }
+        .marker-wrapper { width:10px; height:10px }
+        .leaflet-div-icon { background: transparent !important; border: none !important; }
 
         .main-container { display:flex; gap:18px; max-width:1200px; margin: 12px auto; padding: 0 12px; }
         .sidebar { flex:1; min-width:260px; max-width:380px; }
@@ -62,7 +71,7 @@
 </head>
 <body>
     <div class="header">
-        <h1>🚍 {{ institute_name | default('INSTITUTE') }} TRANSPORT SYSTEM</h1>
+        <h1><span class="icon">🚍</span>{{ institute_name | default('INSTITUTE') }} TRANSPORT SYSTEM</h1>
         <p>Real-time bus locations across all campuses</p>
     </div>
 
@@ -70,7 +79,7 @@
         <div class="sidebar">
             <div class="card">
                 <h3>
-                    <span>📊</span>
+                    <span class="icon">📊</span>
                     Live Statistics
                 </h3>
                 <div class="stats-grid">
@@ -87,7 +96,7 @@
 
             <div class="card">
                 <h3>
-                    <span>🎯</span>
+                    <span class="icon">🎯</span>
                     Track Bus
                 </h3>
                 <div style="display:flex;gap:10px;align-items:center;">
@@ -275,23 +284,10 @@
         }
 
         function createLocationIcon(type) {
-            const iconHtml = type === 'hostel' 
-                ? '🏠'
-                : type === 'class'
-                ? '📚'
-                : '📍';
-            const bgColor = type === 'hostel'
-                ? '#9C27B0'
-                : type === 'class'
-                ? '#2196F3'
-                : '#FF5722';
-
-            return L.divIcon({
-                    html: `<div style="background:${bgColor};color:white;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;border:2px solid rgba(255,255,255,0.9);box-shadow:none">${iconHtml === '🏠' || iconHtml === '📚' ? '' : ''}</div>`,
-                    iconSize: [28, 28],
-                    iconAnchor: [14, 14],
-                    popupAnchor: [0, -14]
-            });
+            const html = type === 'hostel'
+                ? '<span class="tiny-marker tiny-hostel"></span>'
+                : '<span class="tiny-marker tiny-class"></span>';
+            return L.divIcon({ className: 'marker-wrapper', html, iconSize: [10,10], iconAnchor: [5,5], popupAnchor: [0, -8] });
         }
 
         let trackedBus = null;
@@ -396,15 +392,8 @@
                             // Add stop markers with tooltips
                             route.waypoints.forEach((wp, idx) => {
                                 const stopName = (route.stops && route.stops[idx]) || `Stop ${idx + 1}`;
-                                const marker = L.circleMarker([wp[0], wp[1]], {
-                                    radius: 6,
-                                    fillColor: route.color,
-                                    color: '#fff',
-                                    weight: 1,
-                                    opacity: 0.6,
-                                    fillOpacity: 0.5,
-                                    className: `route-stop-${route.id}`
-                                }).addTo(map);
+                                const icon = L.divIcon({ className: 'marker-wrapper', html: `<span class="tiny-marker" style="background:${route.color}"></span>`, iconSize:[10,10], iconAnchor:[5,5] });
+                                const marker = L.marker([wp[0], wp[1]], { icon }).addTo(map);
                                 
                                 marker.bindTooltip(stopName, {
                                     permanent: false,
@@ -723,6 +712,9 @@
                                 setTrackedBus(busNum);
                                 if (followEnabled) map.setView(position, 17);
                             });
+                            // Pause follow while hovering the bus marker
+                            busMarkers[busNum].on('mouseover', () => { followEnabled = false; });
+                            busMarkers[busNum].on('mouseout', () => { followEnabled = document.getElementById('followCheckbox').checked; });
                         }
 
                         // apply fading and follow when updating

@@ -3,19 +3,9 @@ import json
 import os
 from werkzeug.security import generate_password_hash, check_password_hash
 import base64
-from fido2.utils import websafe_encode, websafe_decode
-from fido2.webauthn import AttestedCredentialData
-
-try:
-    from fido2.server import Fido2Server
-    from fido2.webauthn import PublicKeyCredentialRpEntity
-    FIDO2_AVAILABLE = True
-except Exception:
-    FIDO2_AVAILABLE = False
 
 app = Flask(__name__)
 app.config['WTF_CSRF_ENABLED'] = False
-
 app.secret_key = os.environ.get('FLASK_SECRET', 'dev-secret-change-this')
 
 BUSES_FILE = 'buses_location.json'
@@ -23,19 +13,15 @@ LOCATIONS_FILE = 'locations.json'
 CREDENTIALS_FILE = 'credentials.json'
 
 # Ensure required files exist
-
 if not os.path.exists(BUSES_FILE):
     with open(BUSES_FILE, 'w') as f:
         json.dump({}, f)
-
 if not os.path.exists(LOCATIONS_FILE):
     with open(LOCATIONS_FILE, 'w') as f:
         json.dump({"hostels": [], "classes": [], "routes": []}, f)
-
 if not os.path.exists(CREDENTIALS_FILE):
     with open(CREDENTIALS_FILE, 'w') as f:
         json.dump({}, f)
-
 
 def load_credentials():
     try:
@@ -44,19 +30,29 @@ def load_credentials():
     except Exception:
         return {}
 
+# ...existing code...
+
+@app.route('/driver')
+def driver_view():
+    creds = load_credentials()
+    institute = creds.get('institute_name', 'INSTITUTE')
+    return render_template('driver.html', institute_name=institute)
+def login_required(fn):
+    from functools import wraps
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        if 'admin' not in session:
+            return redirect(url_for('admin_login'))
+        return fn(*args, **kwargs)
+    return wrapper
+
 
 def save_credentials(data: dict):
     with open(CREDENTIALS_FILE, 'w') as f:
         json.dump(data, f, indent=2)
 
 
-if FIDO2_AVAILABLE:
-    rp = PublicKeyCredentialRpEntity(
-        id="localhost",
-        name="Campus Transport"
-    )
 
-    fido2_server = Fido2Server(rp)
 
 
 @app.route('/')
@@ -64,25 +60,6 @@ def student_view():
     creds = load_credentials()
     institute = creds.get('institute_name', 'INSTITUTE')
     return render_template('student.html', institute_name=institute)
-
-@app.route('/driver')
-def driver_view():
-    creds = load_credentials()
-    institute = creds.get('institute_name', 'INSTITUTE')
-    return render_template('driver.html', institute_name=institute)
-
-
-
-def login_required(fn):
-    from functools import wraps
-
-    @wraps(fn)
-    def wrapper(*args, **kwargs):
-        if 'admin' not in session:
-            return redirect(url_for('admin_login'))
-        return fn(*args, **kwargs)
-
-    return wrapper
 
 
 @app.route('/admin')
@@ -93,49 +70,75 @@ def admin_view():
     user = session.get('admin')
     return render_template('admin.html', institute_name=institute, admin_user=user)
 
+@app.route('/admin/users')
+@login_required
+def admin_users():
+    creds = load_credentials()
+    users = []
+    # Admin user
+    admin_username = creds.get('username')
+    admin_password = creds.get('password_hash')
+    if admin_username:
+        users.append({
+            'type': 'Admin',
+            'username': admin_username,
+            'password': '************' if admin_password else ''
+        })
+    # Student users (example: if you have a students list in credentials.json)
+    for student in creds.get('students', []):
+        users.append({
+            'type': 'Student',
+            'username': student.get('username', ''),
+            'password': '************' if student.get('password_hash') else ''
+        })
+    return jsonify({'users': users})
+
 
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
     creds = load_credentials()
     if request.method == 'GET':
-        return render_template('admin_login.html', credentials_exist=bool(creds), fido2_available=FIDO2_AVAILABLE, institute_name=creds.get('institute_name', 'INSTITUTE'))
+        return render_template('admin_login.html', credentials_exist=bool(creds), institute_name=creds.get('institute_name', 'INSTITUTE'))
 
-    # POST: handle login or initial registration
     data = request.form
+    action = data.get('action')
     institute = data.get('institute_name', '').strip()
     username = data.get('username', '').strip()
     password = data.get('password', '').strip()
-    pin = data.get('pin', '').strip()
+    error_text = None
 
-    # If no credentials yet, treat as registration
-    if not creds:
-        if not username:
-            return "Provide username", 400
-        creds['institute_name'] = institute or 'INSTITUTE'
-        creds['username'] = username
-        if password:
-            creds['password_hash'] = generate_password_hash(password)
-        if pin:
-            creds['pin_hash'] = generate_password_hash(pin)
-        creds['webauthn'] = creds.get('webauthn', {})
-        save_credentials(creds)
-        session['admin'] = username
-        return redirect(url_for('admin_view'))
+    if action == 'signup':
+        signup_pin = data.get('signup_pin', '').strip()
+        if creds:
+            error_text = "Admin account already exists."
+        elif not username:
+            error_text = "Provide username."
+        elif signup_pin != '456123':
+            error_text = "Invalid signup pin."
+        else:
+            creds['institute_name'] = institute or 'INSTITUTE'
+            creds['username'] = username
+            if password:
+                creds['password_hash'] = generate_password_hash(password)
+            creds['pin_hash'] = generate_password_hash('456123')
+            save_credentials(creds)
+            session['admin'] = username
+            return redirect(url_for('admin_view'))
+        return render_template('admin_login.html', credentials_exist=bool(creds), institute_name=institute, error_text=error_text)
 
-    # Otherwise login flow
-    if username != creds.get('username'):
-        return "Invalid username", 403
+    elif action == 'login':
+        if not creds:
+            error_text = "No admin account exists. Please signup first."
+        elif username != creds.get('username'):
+            error_text = "Invalid username."
+        elif password and creds.get('password_hash') and check_password_hash(creds['password_hash'], password):
+            session['admin'] = username
+            return redirect(url_for('admin_view'))
+        else:
+            error_text = "Invalid password."
+        return render_template('admin_login.html', credentials_exist=bool(creds), institute_name=institute, error_text=error_text)
 
-    # check password then pin
-    if password and creds.get('password_hash') and check_password_hash(creds['password_hash'], password):
-        session['admin'] = username
-        return redirect(url_for('admin_view'))
-    if pin and creds.get('pin_hash') and check_password_hash(creds['pin_hash'], pin):
-        session['admin'] = username
-        return redirect(url_for('admin_view'))
-
-    # For WebAuthn, browser will call specific endpoints; here we just show error
-    return "Invalid credentials", 403
+    return render_template('admin_login.html', credentials_exist=bool(creds), institute_name=institute, error_text="Invalid action.")
 
 
 @app.route('/admin/logout')
@@ -144,140 +147,17 @@ def admin_logout():
     return redirect(url_for('admin_login'))
 
 
-@app.route('/webauthn/register_options', methods=['POST'])
-def webauthn_register_options():
-    if not FIDO2_AVAILABLE:
-        return jsonify({'error': 'FIDO2 not available on server. Install fido2 and configure RP.'}), 501
-
-    creds = load_credentials()
-    username = creds.get('username')
-    if not username:
-        return jsonify({'error': 'No admin user configured yet'}), 400
-
-    # Build user object (id should be bytes)
-    user_id = username.encode('utf-8')
-    user = {'id': user_id, 'name': username, 'displayName': username}
-
-    # Existing credential descriptors to exclude
-    existing = []
-    for c in creds.get('webauthn', {}).values():
-        try:
-            existing.append({'id': websafe_decode(c['id']), 'type': 'public-key'})
-        except Exception:
-            continue
-
-    options, state = fido2_server.register_begin(user, existing)
-
-    # Store state in session for completion step
-    session['webauthn_state'] = state
-
-    def encode(obj):
-        if isinstance(obj, bytes):
-            return websafe_encode(obj).decode('utf-8')
-        if isinstance(obj, dict):
-            return {k: encode(v) for k, v in obj.items()}
-        if isinstance(obj, list):
-            return [encode(v) for v in obj]
-        return obj
-
-    return jsonify(encode(options))
 
 
-@app.route('/webauthn/register_result', methods=['POST'])
-def webauthn_register_result():
-    if not FIDO2_AVAILABLE:
-        return jsonify({'error': 'FIDO2 not available on server.'}), 501
-
-    data = request.json
-    if 'webauthn_state' not in session:
-        return jsonify({'error': 'No registration in progress'}), 400
-
-    state = session.pop('webauthn_state')
-
-    client_data = base64.urlsafe_b64decode(data['clientDataJSON'] + '==')
-    att_obj = base64.urlsafe_b64decode(data['attestationObject'] + '==')
-
-    auth_data = fido2_server.register_complete(state, client_data, att_obj)
-
-    # auth_data is AttestedCredentialData
-    cred = auth_data.credential_data
-    cred_id_b64 = websafe_encode(cred.credential_id).decode('utf-8')
-
-    creds = load_credentials()
-    web = creds.get('webauthn', {})
-    web[cred_id_b64] = {
-        'id': cred_id_b64,
-        'public_key': base64.b64encode(cred.public_key).decode('utf-8'),
-        'sign_count': auth_data.sign_count
-    }
-    creds['webauthn'] = web
-    save_credentials(creds)
-
-    return jsonify({'status': 'ok', 'credentialId': cred_id_b64})
 
 
-@app.route('/webauthn/authenticate_options', methods=['POST'])
-def webauthn_authenticate_options():
-    if not FIDO2_AVAILABLE:
-        return jsonify({'error': 'FIDO2 not available on server.'}), 501
-
-    creds = load_credentials()
-    registered = []
-    for c in creds.get('webauthn', {}).values():
-        try:
-            # We can pass credential descriptors (id and type) to the server
-            registered.append({'id': websafe_decode(c['id']), 'type': 'public-key'})
-        except Exception:
-            continue
-
-    options, state = fido2_server.authenticate_begin(registered)
-    session['webauthn_state'] = state
-
-    def encode(obj):
-        if isinstance(obj, bytes):
-            return websafe_encode(obj).decode('utf-8')
-        if isinstance(obj, dict):
-            return {k: encode(v) for k, v in obj.items()}
-        if isinstance(obj, list):
-            return [encode(v) for v in obj]
-        return obj
-
-    return jsonify(encode(options))
 
 
-@app.route('/webauthn/authenticate_result', methods=['POST'])
-def webauthn_authenticate_result():
-    if not FIDO2_AVAILABLE:
-        return jsonify({'error': 'FIDO2 not available on server.'}), 501
 
-    data = request.json
-    if 'webauthn_state' not in session:
-        return jsonify({'error': 'No authentication in progress'}), 400
-    state = session.pop('webauthn_state')
 
-    # clientDataJSON and authenticatorData and signature are base64url
-    client_data = base64.urlsafe_b64decode(data['clientDataJSON'] + '==')
-    auth_data = base64.urlsafe_b64decode(data['authenticatorData'] + '==')
-    signature = base64.urlsafe_b64decode(data['signature'] + '==')
-    credential_id = websafe_decode(data['id'])
 
-    creds = load_credentials()
-    # Find stored credential by id
-    stored = creds.get('webauthn', {}).get(websafe_encode(credential_id).decode('utf-8'))
-    if not stored:
-        return jsonify({'error': 'Unknown credential'}), 404
 
-    # Build a dict expected by FIDO2 verify function
-    # fido2_server.authenticate_complete expects registered credential objects; to keep this simple
-    # we'll pass minimal info and rely on the library to verify signature
-    try:
-        fido2_server.authenticate_complete(state, [], client_data, auth_data, signature)
-    except Exception as e:
-        return jsonify({'error': 'Assertion verification failed', 'detail': str(e)}), 400
-
-    # On success, log the admin in
-    session['admin'] = creds.get('username')
-    return jsonify({'status': 'ok'})
+    
 
 @app.route('/api/buses', methods=['GET'])
 def get_all_buses():

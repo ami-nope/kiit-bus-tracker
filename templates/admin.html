@@ -53,6 +53,22 @@
         .stop-item input { flex:1; background:#0f0f23; border:1px solid rgba(255,255,255,0.04); color:#e6eef8; padding:6px 8px; border-radius:4px }
         .stop-num { min-width:28px; text-align:center; color:#9aa4b2; font-weight:bold; font-size:12px }
         .stop-icon { font-size:16px }
+        /* Unified icon styling */
+        .icon { display:inline-block; font-size:14px; line-height:1; vertical-align:middle; opacity:0.9; margin-right:6px }
+        .tab .icon { font-size:16px; opacity:0.85 }
+        .field-label .icon { font-size:14px }
+        .route-panel h3 .icon { font-size:15px }
+        .stop-icon { font-size:13px }
+        /* Map tiny markers (fixed pixel size, crisp) */
+        .tiny-marker { width:8px; height:8px; border-radius:50%; display:inline-block; border:1px solid rgba(255,255,255,0.6); box-shadow:0 0 0 1px rgba(0,0,0,0.25); transition: transform 120ms ease; transform-origin:center }
+        .tiny-marker:hover { transform: scale(1.25); }
+        .tiny-start { width:10px; height:10px; background:#4CAF50 }
+        .tiny-hostel { background:#9C27B0 }
+        .tiny-class { background:#2196F3 }
+        .tiny-stop { background:#667eea }
+        .marker-wrapper { width:10px; height:10px }
+        /* Remove default white background from DivIcons */
+        .leaflet-div-icon { background: transparent !important; border: none !important; }
         
         .button-group { display:flex; gap:8px; margin-top:14px }
         .button-group button { flex:1 }
@@ -78,6 +94,7 @@
             <div style="text-align:right">
                 <a href="/" style="color:#9aa4b2; text-decoration:none; margin-right:12px">Student View</a>
                 <a href="/driver" style="color:#9aa4b2; text-decoration:none; margin-right:12px">Driver View</a>
+                <button onclick="showUsersSection()" style="background:#34d399;color:#042017;margin-right:12px;padding:8px 16px;border-radius:8px;border:none;cursor:pointer">Users</button>
                 {% if admin_user %}
                     <span style="color:#9aa4b2; margin-right:8px">{{ admin_user }}</span>
                     <a href="/admin/logout" style="color:#ff9aa2; text-decoration:none">Logout</a>
@@ -88,10 +105,31 @@
         </div>
 
         <div class="tabs">
-            <div class="tab" data-tab="routes">🗺️ Create Route</div>
-            <div class="tab active" data-tab="buses">🚌 Manage Buses</div>
-            <div class="tab" data-tab="buildings">🏠 Buildings</div>
+            <div class="tab" data-tab="routes"><span class="icon">🗺️</span> Create Route</div>
+            <div class="tab active" data-tab="buses"><span class="icon">🚌</span> Manage Buses</div>
+            <div class="tab" data-tab="buildings"><span class="icon">🏠</span> Buildings</div>
         </div>
+        <div id="usersSection" style="display:none;background:#07101a;padding:18px;border-radius:8px;margin-bottom:18px">
+            <h2 style="color:#34d399">All Users</h2>
+            <div id="usersTable"></div>
+            <button onclick="hideUsersSection()" style="margin-top:12px;background:#ff7b8a;color:#fff;padding:8px 16px;border-radius:8px;border:none;cursor:pointer">Close</button>
+        </div>
+        <script>
+        function showUsersSection() {
+            fetch('/admin/users').then(r=>r.json()).then(data=>{
+                let html = '<table style="width:100%;margin-top:12px"><thead><tr><th>Type</th><th>Username</th><th>Password</th></tr></thead><tbody>';
+                for(let user of data.users){
+                    html += `<tr><td>${user.type}</td><td>${user.username}</td><td>${user.password}</td></tr>`;
+                }
+                html += '</tbody></table>';
+                document.getElementById('usersTable').innerHTML = html;
+                document.getElementById('usersSection').style.display = 'block';
+            });
+        }
+        function hideUsersSection(){
+            document.getElementById('usersSection').style.display = 'none';
+        }
+        </script>
 
         <!-- ROUTES TAB -->
         <div id="routes" class="tab-content">
@@ -182,7 +220,7 @@
             <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:20px">
                 <!-- MAP -->
                 <div>
-                    <div class="field-label" style="margin-bottom:8px">📍 Click to place building</div>
+                    <div class="field-label" style="margin-bottom:8px"><span class="icon">📍</span> Click to place building</div>
                     <div id="buildingsMap" style="height:500px; border-radius:8px; margin-bottom:16px; border:2px solid rgba(102,126,234,0.3)"></div>
                 </div>
 
@@ -190,7 +228,7 @@
                 <div>
                     <!-- HOSTELS -->
                     <div class="route-panel" style="margin-bottom:20px">
-                        <h3 style="margin:0 0 12px 0; font-size:14px">🏨 Add Hostel</h3>
+                        <h3 style="margin:0 0 12px 0; font-size:14px"><span class="icon">🏨</span> Add Hostel</h3>
                         <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px">
                             <input id="hostelName" placeholder="Name (e.g. Block A)" style="width:100%; font-size:12px; padding:6px 8px">
                             <input id="hostelCapacity" placeholder="Capacity" style="width:100%; font-size:12px; padding:6px 8px" value="100">
@@ -204,7 +242,7 @@
 
                     <!-- CLASSES -->
                     <div class="route-panel">
-                        <h3 style="margin:0 0 12px 0; font-size:14px">📚 Add Class</h3>
+                        <h3 style="margin:0 0 12px 0; font-size:14px"><span class="icon">📚</span> Add Class</h3>
                         <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:12px">
                             <input id="className" placeholder="Name (e.g. A-101)" style="width:100%; font-size:12px; padding:6px 8px">
                             <input id="classDept" placeholder="Department" style="width:100%; font-size:12px; padding:6px 8px">
@@ -325,21 +363,15 @@
 
             const color = document.getElementById('routeColor').value;
 
-            // Add markers
+            // Add markers (fixed-size DivIcons)
             currentWaypoints.forEach((wp, idx) => {
                 const isStart = idx === 0;
-                const radius = isStart ? 12 : 8;
-                const fillColor = isStart ? '#4CAF50' : color;
-                
-                const marker = L.circleMarker([wp[0], wp[1]], {
-                    radius: radius,
-                    fillColor: fillColor,
-                    color: '#fff',
-                    weight: 2,
-                    opacity: 1,
-                    fillOpacity: 0.9
-                }).addTo(routeMap);
-                
+                const bg = isStart ? '#4CAF50' : color;
+                const html = isStart
+                    ? '<span class="tiny-marker tiny-start"></span>'
+                    : `<span class="tiny-marker" style="background:${bg}"></span>`;
+                const icon = L.divIcon({ className: 'marker-wrapper', html: html, iconSize: [10,10], iconAnchor: [5,5] });
+                const marker = L.marker([wp[0], wp[1]], { icon }).addTo(routeMap);
                 const label = currentStops[idx] || (isStart ? 'START' : `Stop ${idx}`);
                 marker.bindPopup(`<b>${label}</b><br>${wp[0].toFixed(4)}, ${wp[1].toFixed(4)}`);
                 routeMarkers.push(marker);
@@ -350,7 +382,7 @@
                 getOSRMRoute(currentWaypoints).then(routeCoords => {
                     const line = L.polyline(routeCoords || currentWaypoints, {
                         color: color,
-                        weight: 3,
+                        weight: 2,
                         opacity: 0.7
                     }).addTo(routeMap);
                     routeMarkers.push(line);
@@ -756,28 +788,16 @@
             
             fetch('/api/hostels').then(r => r.json()).then(hostels => {
                 hostels.forEach(h => {
-                    const marker = L.circleMarker([h.lat, h.lng], {
-                        radius: 6,
-                        fillColor: '#9C27B0',
-                        color: 'rgba(255,255,255,0.85)',
-                        weight: 1,
-                        opacity: 1,
-                        fillOpacity: 0.85
-                    }).bindPopup(`<b>${h.name}</b><br/>Capacity: ${h.capacity}`).addTo(buildingsMap);
+                    const icon = L.divIcon({ className: 'marker-wrapper', html: '<span class="tiny-marker tiny-hostel"></span>', iconSize:[10,10], iconAnchor:[5,5] });
+                    const marker = L.marker([h.lat, h.lng], { icon }).bindPopup(`<b>${h.name}</b><br/>Capacity: ${h.capacity}`).addTo(buildingsMap);
                     buildingMarkers[h.id] = marker;
                 });
             });
             
             fetch('/api/classes').then(r => r.json()).then(classes => {
                 classes.forEach(c => {
-                    const marker = L.circleMarker([c.lat, c.lng], {
-                        radius: 6,
-                        fillColor: '#2196F3',
-                        color: 'rgba(255,255,255,0.85)',
-                        weight: 1,
-                        opacity: 1,
-                        fillOpacity: 0.85
-                    }).bindPopup(`<b>${c.name}</b><br/>${c.department}`).addTo(buildingsMap);
+                    const icon = L.divIcon({ className: 'marker-wrapper', html: '<span class="tiny-marker tiny-class"></span>', iconSize:[10,10], iconAnchor:[5,5] });
+                    const marker = L.marker([c.lat, c.lng], { icon }).bindPopup(`<b>${c.name}</b><br/>${c.department}`).addTo(buildingsMap);
                     buildingMarkers[c.id] = marker;
                 });
             });

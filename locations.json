@@ -2,13 +2,35 @@
   "hostels": [
     {
       "id": "hostel_1",
-      "name": "yyvyvy",
-      "lat": 20.35510696746385,
-      "lng": 85.81937774610368,
+      "name": "kp13",
+      "lat": 20.35347239219889,
+      "lng": 85.81934942929522,
       "capacity": null
+    },
+    {
+      "id": "hostel_2",
+      "name": "bjkk",
+      "lat": 20.35545735128497,
+      "lng": 85.81943531015835,
+      "capacity": 100
+    },
+    {
+      "id": "hostel_3",
+      "name": "mkb",
+      "lat": 20.356013939728943,
+      "lng": 85.819321464322,
+      "capacity": 100
     }
   ],
-  "classes": [],
+  "classes": [
+    {
+      "id": "class_1",
+      "name": "knkkb",
+      "lat": 20.354880642679177,
+      "lng": 85.81859797174285,
+      "department": "Unknown"
+    }
+  ],
   "routes": [
     {
       "id": "route_1770557136564",

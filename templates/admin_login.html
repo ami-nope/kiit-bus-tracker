@@ -17,15 +17,19 @@
 </head>
 <body>
     <div class="box">
-        <h1>{{ institute_name | default('INSTITUTE') }} — Admin</h1>
+        <h1>{{ institute_name | default('Institute') }} — Admin</h1>
         <p class="muted">Sign in using your admin username and password.</p>
 
         {% if not credentials_exist %}
         <div class="note">No admin account detected. Fill in details to create the initial admin account.</div>
         {% endif %}
 
+
+        {% if error_text %}
+        <div style="color:#ff5a5a; margin-bottom:10px; font-size:14px;">{{ error_text }}</div>
+        {% endif %}
         <form method="POST" action="/admin/login">
-            <label>Institute Name</label>
+            <label>Campus Transport System-Admin Login</label>
             <input name="institute_name" placeholder="E.g. Your Institute" value="{{ institute_name | default('') }}">
 
             <label>Admin Username</label>
@@ -34,11 +38,25 @@
             <label>Password</label>
             <input name="password" type="password" placeholder="Enter password" required>
 
-            <button type="submit">Sign In / Register</button>
+            <div id="signup-fields" style="display: none;">
+                <label>6-digit Signup Pin</label>
+                <input name="signup_pin" type="password" maxlength="6" placeholder="Enter 6-digit pin">
+            </div>
+
+            <button type="submit" name="action" value="login">Login</button>
+            <button type="button" onclick="showSignupFields();">Signup</button>
+            <button type="submit" name="action" value="signup" id="createBtn" style="display:none;">Create Account</button>
         </form>
+        <script>
+        function showSignupFields() {
+            document.getElementById('signup-fields').style.display = 'block';
+            var btn = document.getElementById('createBtn');
+            if (btn) btn.style.display = 'inline-block';
+        }
+        </script>
 
         <div class="note" style="margin-top:12px">
-            Simple password authentication enabled.
+            
         </div>
     </div>
 </body>
