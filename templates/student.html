@@ -511,41 +511,59 @@
             busLastStopIdx[busNum] = bestIdx;
         }
         function getRouteById(id) { return allRoutes.find(r => r.id === id); }
-        function getNextStopForRoute(route, position, busNum) {
-            if (!route || !route.waypoints || route.waypoints.length === 0) return { name: null, index: 0 };
+        function getStopsForBus(route, position, busNum) {
+            if (!route || !route.waypoints || route.waypoints.length === 0) return { last: null, next: null };
             // Find nearest stop
             let bestIdx = 0, bestD = Infinity;
             route.waypoints.forEach((wp, i) => {
                 const d = calcDistance(position[0], position[1], wp[0], wp[1]);
                 if (d < bestD) { bestD = d; bestIdx = i; }
             });
-            // Use tracked direction to determine next stop
             const dir = busNum ? busDirection[busNum] : null;
-            let nextIdx;
+            const getName = (idx) => (route.stops && route.stops[idx]) ? route.stops[idx] : `Stop ${idx + 1}`;
+            let lastIdx, nextIdx;
             if (dir === 'up') {
                 // Moving toward index 0
+                lastIdx = Math.min(route.waypoints.length - 1, bestIdx + 1);
                 nextIdx = Math.max(0, bestIdx - 1);
-                // If already at first stop, wrap or stay
-                if (bestIdx === 0) nextIdx = 0;
+                if (bestIdx === 0) { lastIdx = 1; nextIdx = 0; }
+                if (bestIdx === route.waypoints.length - 1) { lastIdx = bestIdx; }
             } else {
-                // Default: moving toward last stop ('down' or unknown)
+                // Moving toward last stop ('down' or unknown)
+                lastIdx = Math.max(0, bestIdx - 1);
                 nextIdx = Math.min(route.waypoints.length - 1, bestIdx + 1);
-                if (bestIdx === route.waypoints.length - 1) nextIdx = route.waypoints.length - 1;
+                if (bestIdx === 0) { lastIdx = 0; }
+                if (bestIdx === route.waypoints.length - 1) { lastIdx = bestIdx - 1; nextIdx = bestIdx; }
             }
-            // If bus is AT the nearest stop, the next stop is the one in the direction of travel
+            // If bus is AT the nearest stop, last=current stop, next=the one ahead in direction
             if (bestD <= AT_STOP_THRESHOLD) {
+                lastIdx = bestIdx;
                 if (dir === 'up') { nextIdx = Math.max(0, bestIdx - 1); }
                 else { nextIdx = Math.min(route.waypoints.length - 1, bestIdx + 1); }
+                // If at terminal, next is same as current
+                if (nextIdx === bestIdx) nextIdx = bestIdx;
             }
-            const nextName = (route.stops && route.stops[nextIdx]) ? route.stops[nextIdx] : `Stop ${nextIdx + 1}`;
-            return { name: nextName, index: nextIdx };
+            return {
+                last: getName(lastIdx),
+                next: (nextIdx !== lastIdx) ? getName(nextIdx) : null
+            };
         }
         function buildBusPopup(busNum, busData) {
-            const routeId = busRouteMap[busNum]; const route = getRouteById(routeId); const position = [busData.lat, busData.lng]; const status = determineStatus(busNum, position, busData.lastUpdate); const speed = computeSpeed(busNum, position, busData.lastUpdate); const nextStop = route ? getNextStopForRoute(route, position, busNum).name : null; const routeName = route ? route.name : '—'; const last = busData.lastUpdate ? new Date(busData.lastUpdate).toLocaleTimeString() : '—';
+            const routeId = busRouteMap[busNum]; const route = getRouteById(routeId); const position = [busData.lat, busData.lng]; const status = determineStatus(busNum, position, busData.lastUpdate); const speed = computeSpeed(busNum, position, busData.lastUpdate); const routeName = route ? route.name : '—'; const last = busData.lastUpdate ? new Date(busData.lastUpdate).toLocaleTimeString() : '—';
             const statusColor = status==='Moving'?'#34d399':status==='At Stop'?'#5AC8FA':status==='Idle'?'#fbbf24':'#fb7185';
             const atStopName = busCurrentStop[busNum];
             const speedDisplay = (speed !== null && speed !== undefined) ? speed + ' km/h' : '—';
-            let html = `<div style="min-width:220px;background:#0f1220;color:#e6eef8;border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px"><div style="font-weight:600;margin-bottom:6px">Transport ${busNum}</div><div style="font-size:13px;color:#9aa4b2">Route: <span style="color:#dbeafe">${routeName}</span></div><div style="font-size:13px;color:#9aa4b2">Status: <span style="color:${statusColor}">${status}${atStopName ? ' — ' + atStopName : ''}</span></div><div style="font-size:13px;color:#9aa4b2">Last update: <span style="color:#dbeafe">${last}</span></div><div style="font-size:13px;color:#9aa4b2">Speed: <span style="color:#dbeafe">${speedDisplay}</span></div><div style="font-size:13px;color:#9aa4b2">Next stop: <span style="color:#dbeafe">${nextStop || '—'}</span></div></div>`;
+            const stops = route ? getStopsForBus(route, position, busNum) : { last: null, next: null };
+            const statusText = status === 'At Stop' && atStopName ? `At Stop: ${atStopName}` : status;
+            let html = `<div style="min-width:220px;background:#0f1220;color:#e6eef8;border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px">`;
+            html += `<div style="font-weight:600;margin-bottom:6px">Transport ${busNum}</div>`;
+            html += `<div style="font-size:13px;color:#9aa4b2">Route: <span style="color:#dbeafe">${routeName}</span></div>`;
+            html += `<div style="font-size:13px;color:#9aa4b2">Status: <span style="color:${statusColor}">${statusText}</span></div>`;
+            html += `<div style="font-size:13px;color:#9aa4b2">Speed: <span style="color:#dbeafe">${speedDisplay}</span></div>`;
+            html += `<div style="font-size:13px;color:#9aa4b2">Last stop: <span style="color:#dbeafe">${stops.last || '—'}</span></div>`;
+            html += `<div style="font-size:13px;color:#9aa4b2">Next stop: <span style="color:#dbeafe">${stops.next || '—'}</span></div>`;
+            html += `<div style="font-size:11px;color:#667;margin-top:4px">Updated: ${last}</div>`;
+            html += `</div>`;
             return html;
         }
 
@@ -877,15 +895,17 @@
                 const statusColor = status==='Moving'?'#34d399':status==='At Stop'?'#5AC8FA':status==='Idle'?'#fbbf24':'#fb7185';
                 const atStopName = busCurrentStop[busNum];
                 const route = getRouteById(rid);
-                const nextStop = route ? getNextStopForRoute(route, rawPos, busNum).name : null;
-                let statusHtml = `<div class="bus-status" style="color:${statusColor}"><div class="pulse" style="background:${statusColor}"></div>${status}</div>`;
-                let stopRow = '';
-                if (atStopName) {
-                    stopRow = `<div style="font-size:11px;color:#5AC8FA;padding:2px 0 0 36px;font-weight:500">AT: ${atStopName}</div>`;
-                } else if (nextStop) {
-                    stopRow = `<div style="font-size:11px;color:#9aa4b2;padding:2px 0 0 36px">Next: ${nextStop}</div>`;
+                const stops = route ? getStopsForBus(route, rawPos, busNum) : { last: null, next: null };
+                const statusText = status === 'At Stop' && atStopName ? `At Stop: ${atStopName}` : status;
+                let statusHtml = `<div class="bus-status" style="color:${statusColor}"><div class="pulse" style="background:${statusColor}"></div>${statusText}</div>`;
+                let detailRows = '';
+                if (stops.last) {
+                    detailRows += `<div style="font-size:11px;color:#9aa4b2;padding:1px 0 0 36px">Last: ${stops.last}</div>`;
                 }
-                item.innerHTML = `<div class="bus-info"><div class="bus-dot" style="background-color: ${color}; transform:${onSelectedRoute ? 'scale(1.08)' : 'scale(1)'}">${busNum}</div><div class="bus-name">Transport ${busNum}</div></div>${statusHtml}${stopRow}`;
+                if (stops.next) {
+                    detailRows += `<div style="font-size:11px;color:#5AC8FA;padding:1px 0 0 36px;font-weight:500">Next: ${stops.next}</div>`;
+                }
+                item.innerHTML = `<div class="bus-info"><div class="bus-dot" style="background-color: ${color}; transform:${onSelectedRoute ? 'scale(1.08)' : 'scale(1)'}">${busNum}</div><div class="bus-name">Transport ${busNum}</div></div>${statusHtml}${detailRows}`;
                 container.appendChild(item);
             });
         }
