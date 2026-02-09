@@ -1,5 +1,7 @@
 import gevent.monkey
+# Patch must happen before importing other modules
 gevent.monkey.patch_all()
+import gevent
 
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, Response, stream_with_context
 from flask_cors import CORS
@@ -111,9 +113,22 @@ def safe_save_json(path: str, data):
             with open(tmp_path, 'w') as f:
                 json.dump(data, f, indent=2)
                 f.flush()
-                os.fsync(f.fileno())
-            # Atomic replace (on POSIX/Linux which Railway uses)
-            os.replace(tmp_path, path)
+                # fsync is extremely slow on cloud block storage; relying on OS flush is safer for responsiveness
+                # blocking fsync was causing worker timeouts
+                # if os.name != 'nt':
+                #    os.fsync(f.fileno())
+            
+            # Atomic replace taking Windows file locking into account
+            # Linux allows replacing open files; Windows raises PermissionError (OSError)
+            retries = 10 if os.name == 'nt' else 1
+            for i in range(retries):
+                try:
+                    os.replace(tmp_path, path)
+                    break
+                except OSError:
+                    if i == retries - 1:
+                        raise 
+                    time.sleep(0.02) # yield to reader
         except Exception:
             # Fallback if something fails
             if os.path.exists(tmp_path):
@@ -121,6 +136,42 @@ def safe_save_json(path: str, data):
                     os.remove(tmp_path)
                 except:
                     pass
+
+
+try:
+    with open(BUSES_FILE, 'r') as _f:
+        _buses_cache = json.load(_f)
+except Exception:
+    _buses_cache = {}
+
+_buses_lock = threading.Lock()
+
+def _sync_worker():
+    last_snapshot = None
+    while True:
+        gevent.sleep(2) # Sync every 2 seconds
+        try:
+            # Snapshot for saving
+            with _buses_lock:
+                current_snapshot = json.dumps(_buses_cache, sort_keys=True)
+            
+            # Only save if data changed to avoid disk I/O
+            if current_snapshot != last_snapshot:
+                # We need to save the dict, not the string, as safe_save_json dumps it
+                # Optimization: To avoid double dump, we could refactor safe_save_json, but this is fine
+                data_to_save = json.loads(current_snapshot)
+                
+                # Offload blocking file I/O to threadpool so main loop (greenlets) doesn't freeze
+                gevent.get_hub().threadpool.apply(safe_save_json, args=(BUSES_FILE, data_to_save))
+                
+                last_snapshot = current_snapshot
+        except Exception:
+            pass
+
+# Start background sync thread (daemon dies when app dies)
+# Only if we are in the main execution context to avoid reloader spawning twice (though daemon is fine)
+threading.Thread(target=_sync_worker, daemon=True).start()
+
 
 # === SSE subscribers ===
 _subscribers_lock = threading.Lock()
@@ -426,14 +477,16 @@ def admin_logout():
 
 @app.route('/api/buses', methods=['GET'])
 def get_all_buses():
-    buses = safe_load_json(BUSES_FILE, {})
-    return jsonify(buses)
+    return jsonify(_buses_cache)
 
 # Removed duplicate /simulator route to avoid handler override
 
 
 @app.route('/api/buses/clear', methods=['POST'])
 def clear_all_buses():
+    global _buses_cache
+    with _buses_lock:
+        _buses_cache = {}
     # Clear all bus entries by resetting the JSON file
     safe_save_json(BUSES_FILE, {})
     # Broadcast clear event
@@ -513,37 +566,40 @@ def update_bus_location(bus_number):
         return jsonify({'error': 'Provide numeric lat and lng'}), 400
     last_update = raw.get('lastUpdate') or time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
 
-    buses = safe_load_json(BUSES_FILE, {})
-    # Preserve existing route assignment when updating location
-    existing = buses.get(str(bus_number), {})
-    route_id = raw.get('routeId', existing.get('routeId'))
+    # Update in-memory cache directly
+    bus_id = str(bus_number)
+    with _buses_lock:
+        existing = _buses_cache.get(bus_id, {})
+        route_id = raw.get('routeId', existing.get('routeId'))
 
-    buses[str(bus_number)] = {
-        'lat': lat,
-        'lng': lng,
-        'lastUpdate': last_update,
-        'routeId': route_id
-    }
+        _buses_cache[bus_id] = {
+            'lat': lat,
+            'lng': lng,
+            'lastUpdate': last_update,
+            'routeId': route_id
+        }
+        # Copy for broadcast
+        current_data = _buses_cache[bus_id]
+
+    # No synchronous disk write here - handled by background worker
     
-    safe_save_json(BUSES_FILE, buses)
     # Broadcast bus update
     try:
-        broadcast({ 'type': 'bus_update', 'bus': str(bus_number), 'data': buses.get(str(bus_number), {}) })
+        broadcast({ 'type': 'bus_update', 'bus': bus_id, 'data': current_data })
     except Exception:
         pass
     return jsonify({'status': 'success', 'bus': bus_number})
 
 @app.route('/api/bus/<int:bus_number>', methods=['DELETE'])
 def stop_bus(bus_number):
-    buses = safe_load_json(BUSES_FILE, {})
+    bus_id = str(bus_number)
+    with _buses_lock:
+        if bus_id in _buses_cache:
+            del _buses_cache[bus_id]
     
-    if str(bus_number) in buses:
-        del buses[str(bus_number)]
-    
-    safe_save_json(BUSES_FILE, buses)
     # Broadcast bus stop
     try:
-        broadcast({ 'type': 'bus_stop', 'bus': str(bus_number) })
+        broadcast({ 'type': 'bus_stop', 'bus': bus_id })
     except Exception:
         pass
     return jsonify({'status': 'success'})
@@ -610,34 +666,32 @@ def delete_class(class_id):
 def set_bus_route(bus_number):
     data = request.get_json(silent=True) or {}
     route_id = data.get('routeId')
+    bus_id = str(bus_number)
     
-    buses = safe_load_json(BUSES_FILE, {})
+    with _buses_lock:
+        if bus_id in _buses_cache:
+            _buses_cache[bus_id]['routeId'] = route_id
+        else:
+            _buses_cache[bus_id] = {
+                'lat': 0,
+                'lng': 0,
+                'lastUpdate': '',
+                'routeId': route_id
+            }
     
-    if str(bus_number) in buses:
-        buses[str(bus_number)]['routeId'] = route_id
-    else:
-        buses[str(bus_number)] = {
-            'lat': 0,
-            'lng': 0,
-            'lastUpdate': '',
-            'routeId': route_id
-        }
-    
-    safe_save_json(BUSES_FILE, buses)
     # Broadcast route assignment
     try:
-        broadcast({ 'type': 'route_set', 'bus': str(bus_number), 'routeId': route_id })
+        broadcast({ 'type': 'route_set', 'bus': bus_id, 'routeId': route_id })
     except Exception:
         pass
     return jsonify({'status': 'success'})
 
 @app.route('/api/bus-routes', methods=['GET'])
 def get_bus_routes():
-    buses = safe_load_json(BUSES_FILE, {})
-    
     result = {}
-    for bus_num, bus_info in buses.items():
-        result[bus_num] = bus_info.get('routeId', None)
+    with _buses_lock:
+        for bus_num, bus_info in _buses_cache.items():
+            result[bus_num] = bus_info.get('routeId', None)
     
     return jsonify(result)
 
@@ -645,14 +699,13 @@ def get_bus_routes():
 @app.route('/healthz')
 def healthz():
     try:
-        buses = safe_load_json(BUSES_FILE, {})
         locs = safe_load_json(LOCATIONS_FILE, {"hostels": [], "classes": [], "routes": []})
-        ok = isinstance(buses, dict) and isinstance(locs, dict)
+        ok = isinstance(_buses_cache, dict) and isinstance(locs, dict)
         return jsonify({
             'status': 'ok' if ok else 'degraded',
             'uptime_sec': int(time.time() - APP_START_TS),
             'sse_clients': len(_subscribers),
-            'buses_count': len(buses),
+            'buses_count': len(_buses_cache),
             'routes_count': len(locs.get('routes', [])),
         }), 200 if ok else 503
     except Exception:
@@ -660,13 +713,12 @@ def healthz():
 
 @app.route('/status')
 def status():
-    buses = safe_load_json(BUSES_FILE, {})
     locs = safe_load_json(LOCATIONS_FILE, {"hostels": [], "classes": [], "routes": []})
     return jsonify({
         'uptime_sec': int(time.time() - APP_START_TS),
         'requests_total': REQUESTS_TOTAL,
         'sse_clients': len(_subscribers),
-        'buses_count': len(buses),
+        'buses_count': len(_buses_cache),
         'routes_count': len(locs.get('routes', [])),
         'on_render': ON_RENDER,
         'heartbeat_sec': max(5, int(os.environ.get('SSE_HEARTBEAT_SEC', '20'))),
