@@ -74,27 +74,7 @@
         .pulse { width:6px; height:6px; border-radius:50%; display:inline-block; margin-right:6px; background:#34d399; box-shadow:0 0 0 rgba(52,211,153,0.4); animation: pulse 2s infinite }
         @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(52,211,153,0.4) } 70% { box-shadow: 0 0 0 6px rgba(52,211,153,0) } 100% { box-shadow: 0 0 0 0 rgba(52,211,153,0) } }
 
-        /* Bus icon animations */
-        .bus-icon { transition: transform 0.3s ease; }
-        .bus-icon-wrapper { position:relative; display:flex; align-items:center; justify-content:center; }
-        .bus-pulse-ring {
-            position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
-            width:100%; height:100%; border-radius:50%;
-            animation: busPulse 2s ease-out infinite;
-            pointer-events:none;
-        }
-        @keyframes busPulse {
-            0%   { box-shadow: 0 0 0 0 var(--ring-color, rgba(52,211,153,0.5)); opacity:1; }
-            70%  { box-shadow: 0 0 0 14px var(--ring-color, rgba(52,211,153,0)); opacity:0; }
-            100% { box-shadow: 0 0 0 0 var(--ring-color, rgba(52,211,153,0)); opacity:0; }
-        }
-        .bus-icon-tracked .bus-pulse-ring { animation-duration: 1.4s; }
-        .bus-glow {
-            position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
-            width:140%; height:140%; border-radius:50%;
-            background: radial-gradient(circle, var(--glow-color, rgba(52,211,153,0.25)) 0%, transparent 70%);
-            pointer-events:none; opacity:0.7;
-        }
+        .bus-icon { transition: transform 0.15s ease; }
 
         @media (max-width: 968px) {
             .main-container { flex-direction:column; padding:12px }
@@ -225,44 +205,41 @@
         let prevRouteSelState = {};
         let followEnabled = true;
 
-        // Trail state per bus
-        const busTrails = {};      // busNum -> { polyline, points:[[lat,lng],...] }
-        const TRAIL_MAX_POINTS = 60;
-        const TRAIL_MIN_DIST = 3;  // meters — don't add point if bus barely moved
+        // --- Route snapping: snap bus position to nearest point on its route polyline if within SNAP_DIST_M ---
+        const SNAP_DIST_M = 10; // meters — snap threshold
+        // Cache decoded route coords: routeId -> [[lat,lng], ...]
+        const routeCoordsCache = {};
 
-        function updateBusTrail(busNum, lat, lng, color) {
-            if (!busTrails[busNum]) {
-                const polyline = L.polyline([], {
-                    color: color,
-                    weight: 3,
-                    opacity: 0.45,
-                    lineCap: 'round',
-                    lineJoin: 'round',
-                    dashArray: '6,4',
-                    className: 'bus-trail'
-                }).addTo(map);
-                busTrails[busNum] = { polyline, points: [] };
-            }
-            const trail = busTrails[busNum];
-            const pts = trail.points;
-            // Only add if moved enough
-            if (pts.length > 0) {
-                const last = pts[pts.length - 1];
-                const d = calcDistance(last[0], last[1], lat, lng);
-                if (d < TRAIL_MIN_DIST) return;
-            }
-            pts.push([lat, lng]);
-            if (pts.length > TRAIL_MAX_POINTS) pts.shift();
-            trail.polyline.setLatLngs(pts);
-            // Fade gradient effect via opacity stepping
-            trail.polyline.setStyle({ opacity: 0.4 + (trackedBus === busNum ? 0.2 : 0) });
+        function cacheRouteCoords(routeId, latlngs) {
+            routeCoordsCache[routeId] = latlngs;
         }
 
-        function removeBusTrail(busNum) {
-            if (busTrails[busNum]) {
-                try { map.removeLayer(busTrails[busNum].polyline); } catch(e) {}
-                delete busTrails[busNum];
+        // Find closest point on a polyline segment AB to point P
+        function closestPointOnSegment(px, py, ax, ay, bx, by) {
+            const dx = bx - ax, dy = by - ay;
+            const lenSq = dx * dx + dy * dy;
+            if (lenSq === 0) return [ax, ay];
+            let t = ((px - ax) * dx + (py - ay) * dy) / lenSq;
+            t = Math.max(0, Math.min(1, t));
+            return [ax + t * dx, ay + t * dy];
+        }
+
+        function snapToRoute(lat, lng, busNum) {
+            // Determine which route this bus is on
+            const rid = busRouteMap[busNum];
+            if (!rid) return [lat, lng];
+            const coords = routeCoordsCache[rid];
+            if (!coords || coords.length < 2) return [lat, lng];
+
+            let bestDist = Infinity;
+            let bestPt = [lat, lng];
+            for (let i = 0; i < coords.length - 1; i++) {
+                const pt = closestPointOnSegment(lat, lng, coords[i][0], coords[i][1], coords[i+1][0], coords[i+1][1]);
+                const d = calcDistance(lat, lng, pt[0], pt[1]);
+                if (d < bestDist) { bestDist = d; bestPt = pt; }
             }
+            // Only snap if within threshold
+            return bestDist <= SNAP_DIST_M ? bestPt : [lat, lng];
         }
 
         // Tween state for smooth marker movement
@@ -321,84 +298,34 @@
         function calcBearing(from, to) { const rad = Math.atan2(to[1] - from[1], to[0] - from[0]); return (rad * 180 / Math.PI + 90) % 360; }
 
         // Zoom-responsive icon sizing
-        let currentIconSize = 32;
+        let currentIconSize = 22;
         function getIconSizeForZoom(z) {
-            if (z >= 18) return 40;
-            if (z >= 17) return 36;
-            if (z >= 16) return 32;
-            if (z >= 15) return 28;
-            return 24;
+            if (z >= 18) return 28;
+            if (z >= 17) return 26;
+            if (z >= 16) return 22;
+            if (z >= 15) return 20;
+            return 18;
         }
 
         function createIcon(busNum, color, size, rotation = 0, glow = false) {
             size = size || currentIconSize;
-            const w = size;
-            const h = Math.round(size * 1.3);
-            const half = Math.round(w / 2);
-            const fontSize = Math.max(9, Math.round(size * 0.36));
-            const isTracked = glow;
-
-            // Top-down bus shape SVG
-            const bw = Math.round(w * 0.7);  // bus body width
-            const bh = Math.round(h * 0.72); // bus body height
-            const bx = Math.round((w - bw) / 2);
-            const by = Math.round(h * 0.08);
-            const br = Math.round(bw * 0.22); // corner radius
-            const wheelW = Math.round(bw * 0.18);
-            const wheelH = Math.round(bh * 0.15);
-            const windH = Math.round(bh * 0.18);
-
-            // Lighter shade for windshield
-            const lightColor = color + 'AA';
-
-            const svg = `
-            <svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="transform:rotate(${rotation}deg);transition:transform 0.4s ease;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5))">
-              <!-- Wheels -->
-              <rect x="${bx - wheelW + 2}" y="${by + Math.round(bh * 0.15)}" width="${wheelW}" height="${wheelH}" rx="2" fill="#333"/>
-              <rect x="${bx + bw - 2}" y="${by + Math.round(bh * 0.15)}" width="${wheelW}" height="${wheelH}" rx="2" fill="#333"/>
-              <rect x="${bx - wheelW + 2}" y="${by + Math.round(bh * 0.65)}" width="${wheelW}" height="${wheelH}" rx="2" fill="#333"/>
-              <rect x="${bx + bw - 2}" y="${by + Math.round(bh * 0.65)}" width="${wheelW}" height="${wheelH}" rx="2" fill="#333"/>
-              <!-- Body -->
-              <rect x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="${br}" ry="${br}" fill="${color}" stroke="rgba(255,255,255,0.6)" stroke-width="1.2"/>
-              <!-- Windshield (front) -->
-              <rect x="${bx + Math.round(bw * 0.12)}" y="${by + 2}" width="${Math.round(bw * 0.76)}" height="${windH}" rx="${Math.round(br * 0.6)}" fill="${lightColor}" stroke="rgba(255,255,255,0.3)" stroke-width="0.5"/>
-              <!-- Rear window -->
-              <rect x="${bx + Math.round(bw * 0.18)}" y="${by + bh - windH - 1}" width="${Math.round(bw * 0.64)}" height="${Math.round(windH * 0.7)}" rx="2" fill="${lightColor}" opacity="0.6"/>
-              <!-- Bus number -->
-              <text x="${half}" y="${by + Math.round(bh * 0.52)}" text-anchor="middle" dominant-baseline="central"
-                fill="#fff" font-family="Segoe UI,Arial,sans-serif" font-weight="700" font-size="${fontSize}" letter-spacing="0.5">${busNum}</text>
-              <!-- Headlights -->
-              <circle cx="${bx + Math.round(bw * 0.22)}" cy="${by + 2}" r="${Math.max(2, Math.round(bw * 0.07))}" fill="#fffbe6" opacity="0.9"/>
-              <circle cx="${bx + Math.round(bw * 0.78)}" cy="${by + 2}" r="${Math.max(2, Math.round(bw * 0.07))}" fill="#fffbe6" opacity="0.9"/>
+            const half = Math.round(size / 2);
+            const stroke = Math.max(1, Math.round(size * 0.08));
+            const headR = Math.round(size * 0.34);
+            const headCY = Math.round(size * 0.42);
+            const tipY = size - 1;
+            const fontSize = Math.max(8, Math.round(size * 0.40));
+            const textY = headCY;
+            const glowFill = glow ? `${color}33` : 'none';
+            const path = `M ${half} ${tipY} L ${Math.round(half - headR * 0.58)} ${Math.round(headCY + headR * 0.32)} A ${headR} ${headR} 0 1 1 ${Math.round(half + headR * 0.58)} ${Math.round(headCY + headR * 0.32)} L ${half} ${tipY} Z`;
+            const pad = 2;
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="-${pad} -${pad} ${size+pad*2} ${size+pad*2}" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,0.45))">
+              <path d="${path}" fill="${glowFill}"/>
+              <path d="${path}" fill="${color}" stroke="rgba(255,255,255,0.8)" stroke-width="${stroke}"/>
+              <text x="${half}" y="${textY}" text-anchor="middle" dominant-baseline="central"
+                fill="#fff" font-family="Segoe UI,Arial" font-weight="700" font-size="${fontSize}">${busNum}</text>
             </svg>`;
-
-            // Wrap with pulse ring + glow for tracked / selected buses
-            const ringAlpha = isTracked ? '0.5' : '0.3';
-            const rgbMatch = hexToRgb(color);
-            const ringColor = `rgba(${rgbMatch},${ringAlpha})`;
-            const glowColor = `rgba(${rgbMatch},0.2)`;
-
-            const html = `<div class="bus-icon-wrapper ${isTracked ? 'bus-icon-tracked' : ''}" style="width:${w}px;height:${h}px;--ring-color:${ringColor};--glow-color:${glowColor}">
-              ${isTracked ? '<div class="bus-glow"></div>' : ''}
-              <div class="bus-pulse-ring"></div>
-              ${svg}
-            </div>`;
-
-            return L.divIcon({
-                className: 'bus-icon',
-                html: html,
-                iconSize: [w, h],
-                iconAnchor: [half, Math.round(h / 2)]
-            });
-        }
-
-        function hexToRgb(hex) {
-            hex = hex.replace('#', '');
-            if (hex.length === 3) hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
-            const r = parseInt(hex.substring(0, 2), 16);
-            const g = parseInt(hex.substring(2, 4), 16);
-            const b = parseInt(hex.substring(4, 6), 16);
-            return `${r},${g},${b}`;
+            return L.divIcon({ className: 'bus-icon', html: svg, iconSize: [size, size], iconAnchor: [half, tipY] });
         }
 
         function createLocationIcon(type) { const html = type === 'hostel' ? '<span class="tiny-marker tiny-hostel"></span>' : '<span class="tiny-marker tiny-class"></span>'; return L.divIcon({ className: 'marker-wrapper', html, iconSize: [10,10], iconAnchor: [5,5], popupAnchor: [0, -8] }); }
@@ -448,8 +375,8 @@
         function loadRoutes() {
             fetch('/api/routes').then(r => r.json()).then(routes => {
                 Object.values(routePolylines).forEach(p => map.removeLayer(p)); routePolylines = {}; allRoutes = routes;
-                routes.forEach(route => { getOSRMRoute(route.waypoints).then(routeCoords => { const coords = routeCoords || route.waypoints; const polyline = L.polyline(coords, { color: route.color, weight: 4, opacity: 0.8, dashArray: '5, 5' }).addTo(map); polyline.bindPopup(`<b>${route.name}</b>`); polyline.on('click', () => selectRoute(route.id)); route.waypoints.forEach((wp, idx) => { const stopName = (route.stops && route.stops[idx]) || `Stop ${idx + 1}`; const icon = L.divIcon({ className: 'marker-wrapper', html: `<span class=\"tiny-marker\" style=\"background:${route.color}\"></span>`, iconSize:[10,10], iconAnchor:[5,5] }); const marker = L.marker([wp[0], wp[1]], { icon }).addTo(map); marker.bindTooltip(stopName, { direction: 'top', offset: [0, -8] }); marker.on('click', () => selectRoute(route.id)); routePolylines[`${route.id}-stop-${idx}`] = marker; }); routePolylines[route.id] = polyline; if (!visibleLayers.routes) map.removeLayer(polyline); }).catch(()=>{ // Fallback: draw original waypoints
-                    const coords = route.waypoints; const polyline = L.polyline(coords, { color: route.color, weight: 4, opacity: 0.8, dashArray: '5, 5' }).addTo(map); polyline.bindPopup(`<b>${route.name}</b>`); polyline.on('click', () => selectRoute(route.id)); route.waypoints.forEach((wp, idx) => { const stopName = (route.stops && route.stops[idx]) || `Stop ${idx + 1}`; const icon = L.divIcon({ className: 'marker-wrapper', html: `<span class=\"tiny-marker\" style=\"background:${route.color}\"></span>`, iconSize:[10,10], iconAnchor:[5,5] }); const marker = L.marker([wp[0], wp[1]], { icon }).addTo(map); marker.bindTooltip(stopName, { direction: 'top', offset: [0, -8] }); marker.on('click', () => selectRoute(route.id)); routePolylines[`${route.id}-stop-${idx}`] = marker; }); routePolylines[route.id] = polyline; if (!visibleLayers.routes) map.removeLayer(polyline); }); }); renderRoutesList(routes); }).catch(e => console.error('Error loading routes:', e));
+                routes.forEach(route => { getOSRMRoute(route.waypoints).then(routeCoords => { const coords = routeCoords || route.waypoints; cacheRouteCoords(route.id, coords); const polyline = L.polyline(coords, { color: route.color, weight: 4, opacity: 0.8, dashArray: '5, 5' }).addTo(map); polyline.bindPopup(`<b>${route.name}</b>`); polyline.on('click', () => selectRoute(route.id)); route.waypoints.forEach((wp, idx) => { const stopName = (route.stops && route.stops[idx]) || `Stop ${idx + 1}`; const icon = L.divIcon({ className: 'marker-wrapper', html: `<span class=\"tiny-marker\" style=\"background:${route.color}\"></span>`, iconSize:[10,10], iconAnchor:[5,5] }); const marker = L.marker([wp[0], wp[1]], { icon }).addTo(map); marker.bindTooltip(stopName, { direction: 'top', offset: [0, -8] }); marker.on('click', () => selectRoute(route.id)); routePolylines[`${route.id}-stop-${idx}`] = marker; }); routePolylines[route.id] = polyline; if (!visibleLayers.routes) map.removeLayer(polyline); }).catch(()=>{ // Fallback: draw original waypoints
+                    const coords = route.waypoints; cacheRouteCoords(route.id, coords); const polyline = L.polyline(coords, { color: route.color, weight: 4, opacity: 0.8, dashArray: '5, 5' }).addTo(map); polyline.bindPopup(`<b>${route.name}</b>`); polyline.on('click', () => selectRoute(route.id)); route.waypoints.forEach((wp, idx) => { const stopName = (route.stops && route.stops[idx]) || `Stop ${idx + 1}`; const icon = L.divIcon({ className: 'marker-wrapper', html: `<span class=\"tiny-marker\" style=\"background:${route.color}\"></span>`, iconSize:[10,10], iconAnchor:[5,5] }); const marker = L.marker([wp[0], wp[1]], { icon }).addTo(map); marker.bindTooltip(stopName, { direction: 'top', offset: [0, -8] }); marker.on('click', () => selectRoute(route.id)); routePolylines[`${route.id}-stop-${idx}`] = marker; }); routePolylines[route.id] = polyline; if (!visibleLayers.routes) map.removeLayer(polyline); }); }); renderRoutesList(routes); }).catch(e => console.error('Error loading routes:', e));
         }
 
         // OSRM helpers with timeout + graceful fallback
@@ -666,15 +593,15 @@
                 });
                 const activeCountEl = document.getElementById('activeBusCount'); if (activeCountEl) activeCountEl.textContent = freshBusNumbers.length;
                 const activeCountOverlay = document.getElementById('activeCountOverlay'); if (activeCountOverlay) activeCountOverlay.textContent = freshBusNumbers.length;
-                // Remove markers and trails for buses missing or stale
+                // Remove markers for buses missing or stale
                 const existingBuses = Object.keys(busMarkers);
-                existingBuses.forEach(busNum => { if (!freshBusNumbers.includes(busNum)) { map.removeLayer(busMarkers[busNum]); delete busMarkers[busNum]; removeBusTrail(busNum); } });
+                existingBuses.forEach(busNum => { if (!freshBusNumbers.includes(busNum)) { map.removeLayer(busMarkers[busNum]); delete busMarkers[busNum]; } });
                 freshBusNumbers.forEach(busNum => {
-                    const bus = buses[busNum]; const position = [bus.lat, bus.lng]; const color = colors[(parseInt(busNum) - 1) % colors.length];
+                    const bus = buses[busNum]; const rawPos = [bus.lat, bus.lng]; const color = colors[(parseInt(busNum) - 1) % colors.length];
+                    // Snap to route if close enough
+                    const position = snapToRoute(rawPos[0], rawPos[1], busNum);
                     let rotation = 0; if (prevBusPositions[busNum]) { rotation = calcBearing(prevBusPositions[busNum], position); }
                     const isTracked = trackedBus && busNum === trackedBus;
-                    // Update trail
-                    updateBusTrail(busNum, bus.lat, bus.lng, color);
                     prevBusPositions[busNum] = position; if (bus.lastUpdate) prevBusTimes[busNum] = parseIsoTime(bus.lastUpdate);
                     if (busMarkers[busNum]) {
                         queueBusTween(busNum, position);
@@ -755,11 +682,9 @@
                                 busMarkers[busNum] = L.marker([b.lat,b.lng], { icon, title: `Transport ${busNum}` }).addTo(map);
                                 busMarkers[busNum].bindPopup(() => buildBusPopup(busNum, b));
                             } else {
-                                queueBusTween(busNum, [b.lat,b.lng]);
+                                const snapped = snapToRoute(b.lat, b.lng, busNum);
+                                queueBusTween(busNum, snapped);
                             }
-                            // Update trail via SSE
-                            const sseColor = colors[(parseInt(busNum) - 1) % colors.length];
-                            updateBusTrail(busNum, b.lat, b.lng, sseColor);
                             const now = new Date().toLocaleTimeString();
                             const luSidebar = document.getElementById('lastUpdate'); if (luSidebar) luSidebar.textContent = now;
                             const luOverlay = document.getElementById('lastUpdateOverlay'); if (luOverlay) luOverlay.textContent = now;
@@ -768,11 +693,9 @@
                             const busNum = String(msg.bus);
                             delete latestBuses[busNum];
                             const m = busMarkers[busNum]; if(m){ try{ map.removeLayer(m); }catch(e){} delete busMarkers[busNum]; }
-                            removeBusTrail(busNum);
                         } else if(msg.type === 'buses_clear'){
                             latestBuses = {};
                             Object.values(busMarkers).forEach(m=>{ try{ map.removeLayer(m); }catch(e){} }); busMarkers = {};
-                            Object.keys(busTrails).forEach(removeBusTrail);
                         }
                     }catch(e){ /* ignore */ }
                 };
