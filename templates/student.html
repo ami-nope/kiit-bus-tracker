@@ -4,6 +4,10 @@
     <title>Transport Tracker - Student View</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="preconnect" href="https://a.basemaps.cartocdn.com" crossorigin/>
+    <link rel="preconnect" href="https://b.basemaps.cartocdn.com" crossorigin/>
+    <link rel="preconnect" href="https://c.basemaps.cartocdn.com" crossorigin/>
+    <link rel="preconnect" href="https://d.basemaps.cartocdn.com" crossorigin/>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #07070a; color: #e6eef8; min-height: 100vh; background-image:
@@ -361,6 +365,17 @@
                     lng = tw.from[1] + (tw.to[1]-tw.from[1]) * k;
                 }
                 try{ marker.setLatLng([lat,lng]); any = any || (t<1); }catch(e){}
+                // Follow tracked bus: pan when it nears viewport edge
+                if (trackedBus && busNum === trackedBus && followEnabled && map) {
+                    try {
+                        const px = map.latLngToContainerPoint([lat, lng]);
+                        const sz = map.getSize();
+                        const margin = 80;
+                        if (px.x < margin || px.x > sz.x - margin || px.y < margin || px.y > sz.y - margin) {
+                            map.panTo([lat, lng], { animate: true, duration: 0.3 });
+                        }
+                    } catch(e) {}
+                }
                 if(t>=1){ delete busTweens[busNum]; }
             });
             if(any) requestAnimationFrame(animateBusTweens);
@@ -719,9 +734,9 @@
 
         function initMap() {
             const bounds = [[20.339920625677212, 85.7964659296332], [20.37210882553945, 85.83388810783698]];
-            map = L.map('map', { zoomControl: true, maxBounds: bounds, minZoom: 14 }).setView([20.3549, 85.8161], 15);
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', { attribution: '&copy; CARTO', maxZoom: 19 }).addTo(map);
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png', { attribution: '', maxZoom: 19 }).addTo(map);
+            map = L.map('map', { zoomControl: true, maxBounds: bounds, minZoom: 14, preferCanvas: true }).setView([20.3549, 85.8161], 15);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', { attribution: '&copy; CARTO', maxZoom: 19, updateWhenIdle: false, updateWhenZooming: false, keepBuffer: 6 }).addTo(map);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png', { attribution: '', maxZoom: 19, updateWhenIdle: false, updateWhenZooming: false, keepBuffer: 6 }).addTo(map);
 
             // Responsive icon sizing on zoom
             currentIconSize = getIconSizeForZoom(map.getZoom());
