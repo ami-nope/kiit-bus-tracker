@@ -81,33 +81,46 @@ def _lock_for(path: str):
     # Fallback single lock for unknown
     return threading.Lock()
 
-# Safe JSON helpers to tolerate file corruption and concurrent access
+# Safe JSON helpers that handle concurrency via atomic replacement (on Linux/POSIX)
+# This allows us to REMOVE read locks entirely, which is the main bottleneck.
+# safe_save_json writes to a temp file and atomically renames it.
+# safe_load_json reads the file without a lock (it will get either old or new version, but not partial).
+
 def safe_load_json(path: str, default):
-    lock = _lock_for(path)
-    with lock:
+    # No lock needed for atomic reads on updated files
+    try:
+        with open(path, 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return default
+    except Exception:
+        # If file is truly corrupted (rare with atomic writes), try to reset
         try:
-            with open(path, 'r') as f:
-                return json.load(f)
+            with open(path, 'w') as f:
+                json.dump(default, f)
         except Exception:
-            # Reset corrupted file
-            try:
-                with open(path, 'w') as f:
-                    json.dump(default, f)
-            except Exception:
-                pass
-            return default
+            pass
+        return default
 
 def safe_save_json(path: str, data):
+    # Lock only ensures one writer at a time, doesn't block readers
     lock = _lock_for(path)
     with lock:
-        with open(path, 'w') as f:
-            json.dump(data, f, indent=2)
-            try:
+        tmp_path = path + ".tmp"
+        try:
+            with open(tmp_path, 'w') as f:
+                json.dump(data, f, indent=2)
                 f.flush()
                 os.fsync(f.fileno())
-            except Exception:
-                # Not all environments support fsync
-                pass
+            # Atomic replace (on POSIX/Linux which Railway uses)
+            os.replace(tmp_path, path)
+        except Exception:
+            # Fallback if something fails
+            if os.path.exists(tmp_path):
+                try:
+                    os.remove(tmp_path)
+                except:
+                    pass
 
 # === SSE subscribers ===
 _subscribers_lock = threading.Lock()
