@@ -19,6 +19,11 @@ app = Flask(__name__)
 app.config['WTF_CSRF_ENABLED'] = False
 app.secret_key = os.environ.get('FLASK_SECRET', 'dev-secret-change-this')
 
+# Health check for load balancers (fast & no locks)
+@app.route('/health')
+def health_check():
+    return 'OK', 200
+
 # Enable CORS for API routes (frontends on different origins)
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
