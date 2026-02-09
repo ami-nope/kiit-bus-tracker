@@ -489,6 +489,21 @@
         }
         function calcBearing(from, to) { return -Math.atan2(to[0] - from[0], to[1] - from[1]) * (180 / Math.PI); }
 
+        // Get route-locked bearing: only 2 directions (forward/backward along route segment)
+        function getRouteBearing(busNum) {
+            const rid = busRouteMap[busNum];
+            if (!rid) return prevBusRotation[busNum] || 0;
+            const coords = routeCoordsCache[rid];
+            const snapInfo = busSnapInfo[busNum];
+            if (!coords || !snapInfo || snapInfo.segIdx < 0 || snapInfo.segIdx >= coords.length - 1) return prevBusRotation[busNum] || 0;
+            const i = snapInfo.segIdx;
+            // Bearing of this route segment (forward direction = 'down')
+            const fwd = calcBearing(coords[i], coords[i + 1]);
+            // If bus is going 'up' (toward index 0), flip 180°
+            const dir = busDirection[busNum];
+            return dir === 'up' ? (fwd + 180) % 360 : ((fwd % 360) + 360) % 360;
+        }
+
         // Zoom-responsive icon sizing
         let currentIconSize = 22;
         function getIconSizeForZoom(z) {
@@ -958,12 +973,11 @@ ${glow ? `<path d="${shape}" fill="none" stroke="${color}" stroke-width="6" opac
                     const snapResult = snapToRoute(rawPos[0], rawPos[1], busNum);
                     const position = snapResult.pos;
                     busSnapInfo[busNum] = { segIdx: snapResult.segIdx };
-                    let rotation = prevBusRotation[busNum] || 0;
-                    if (prevBusPositions[busNum]) { const _d = calcDistance(prevBusPositions[busNum][0], prevBusPositions[busNum][1], position[0], position[1]); if (_d > 3) rotation = calcBearing(prevBusPositions[busNum], position); }
                     const isTracked = trackedBus && busNum === trackedBus;
                     const status = determineStatus(busNum, rawPos, bus.lastUpdate);
                     const isOffline = status === 'Offline';
                     updateBusDirection(busNum, rawPos);
+                    const rotation = getRouteBearing(busNum);
                     prevRawPositions[busNum] = rawPos;
                     prevBusPositions[busNum] = position; if (bus.lastUpdate) prevBusTimes[busNum] = parseIsoTime(bus.lastUpdate);
                     if (busMarkers[busNum]) {
@@ -1070,18 +1084,16 @@ ${glow ? `<path d="${shape}" fill="none" stroke="${color}" stroke-width="6" opac
                                 busMarkers[busNum].on('click', () => { setTrackedBus(busNum); if (followEnabled) map.setView([b.lat,b.lng], 17); busMarkers[busNum].openPopup(); });
                                 busMarkers[busNum].on('mouseover', () => { followEnabled = false; }); busMarkers[busNum].on('mouseout', () => { followEnabled = true; });
                             } else {
-                                // Update arrow rotation for directional icon
-                                const _mLat = busMarkers[busNum].getLatLng().lat, _mLng = busMarkers[busNum].getLatLng().lng;
-                                const _mDist = calcDistance(_mLat, _mLng, b.lat, b.lng);
-                                if (_mDist > 3) {
-                                    const _newRot = calcBearing([_mLat, _mLng], [b.lat, b.lng]);
-                                    if (prevBusRotation[busNum] === undefined || Math.abs(_newRot - (prevBusRotation[busNum]||0)) > 5) {
-                                        const _c = colors[(parseInt(busNum) - 1) % colors.length];
-                                        const _rid = busRouteMap[busNum]; const _onR = selectedRouteId && String(_rid) === String(selectedRouteId);
-                                        const _tr = trackedBus && busNum === trackedBus;
-                                        busMarkers[busNum].setIcon(createIcon(busNum, _c, currentIconSize, _newRot, _tr || _onR));
-                                        prevBusRotation[busNum] = _newRot;
-                                    }
+                                // Snap to route and get route-locked bearing
+                                const _snap = snapToRoute(b.lat, b.lng, busNum);
+                                busSnapInfo[busNum] = { segIdx: _snap.segIdx };
+                                const _newRot = getRouteBearing(busNum);
+                                if (prevBusRotation[busNum] === undefined || Math.abs(_newRot - (prevBusRotation[busNum]||0)) > 5) {
+                                    const _c = colors[(parseInt(busNum) - 1) % colors.length];
+                                    const _rid = busRouteMap[busNum]; const _onR = selectedRouteId && String(_rid) === String(selectedRouteId);
+                                    const _tr = trackedBus && busNum === trackedBus;
+                                    busMarkers[busNum].setIcon(createIcon(busNum, _c, currentIconSize, _newRot, _tr || _onR));
+                                    prevBusRotation[busNum] = _newRot;
                                 }
                                 queueBusTween(busNum, [b.lat, b.lng]);
                             }
