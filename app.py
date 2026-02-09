@@ -161,6 +161,11 @@ def start_background_worker():
     if _worker_initialized:
         return
     _worker_initialized = True
+    
+    # Ensure cache is loaded in main thread before spawning worker
+    # This prevents race conditions where routes access _buses_cache before worker loads it
+    get_buses_cache()
+    
     threading.Thread(target=_sync_worker, daemon=True).start()
 
 def _sync_worker():
