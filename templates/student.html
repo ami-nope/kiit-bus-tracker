@@ -269,7 +269,7 @@
         let busDirection = {};  // busNum -> 'up' | 'down' (direction along route stops)
         let busLastStopIdx = {}; // busNum -> last nearest stop index
         let busCurrentStop = {}; // busNum -> stop name if at a stop, null otherwise
-        const AT_STOP_THRESHOLD = 50; // meters - consider bus "at stop" within this distance
+        const AT_STOP_THRESHOLD = 80; // meters - consider bus "at stop" within this distance (accounts for GPS lag)
 
         // --- Route snapping: snap bus position to nearest point on its route polyline if within SNAP_DIST_M ---
         const SNAP_DIST_M = 30; // meters — snap threshold
