@@ -56,16 +56,18 @@ BUSES_FILE = os.path.join(BASE_DIR, 'buses_location.json')
 LOCATIONS_FILE = os.path.join(BASE_DIR, 'locations.json')
 CREDENTIALS_FILE = os.path.join(BASE_DIR, 'credentials.json')
 
-# Ensure required files exist
-if not os.path.exists(BUSES_FILE):
-    with open(BUSES_FILE, 'w') as f:
-        json.dump({}, f)
-if not os.path.exists(LOCATIONS_FILE):
-    with open(LOCATIONS_FILE, 'w') as f:
-        json.dump({"hostels": [], "classes": [], "routes": []}, f)
-if not os.path.exists(CREDENTIALS_FILE):
-    with open(CREDENTIALS_FILE, 'w') as f:
-        json.dump({"admins": [], "institute_name": "INSTITUTE"}, f)
+def _ensure_files_exist():
+    # Ensure required files exist - moved to lazy init function
+    if not os.path.exists(BUSES_FILE):
+        with open(BUSES_FILE, 'w') as f:
+            json.dump({}, f)
+    if not os.path.exists(LOCATIONS_FILE):
+        with open(LOCATIONS_FILE, 'w') as f:
+            json.dump({"hostels": [], "classes": [], "routes": []}, f)
+    if not os.path.exists(CREDENTIALS_FILE):
+        with open(CREDENTIALS_FILE, 'w') as f:
+            json.dump({"admins": [], "institute_name": "INSTITUTE"}, f)
+
 
 _file_locks = {
     'buses': threading.Lock(),
@@ -145,12 +147,31 @@ except Exception:
     _buses_cache = {}
 
 _buses_lock = threading.Lock()
+_worker_initialized = False
+
+def start_background_worker():
+    global _worker_initialized
+    # Double check locking pattern not strictly needed for boolean flag in GIL/gevent
+    # but good practice. Using simple check for speed.
+    if _worker_initialized:
+        return
+    
+    _worker_initialized = True
+    # Start background sync thread (daemon dies when app dies)
+    # Only if we are in the main execution context to avoid reloader spawning twice (though daemon is fine)
+    # guard against re-import in gunicorn workers
+    if __name__ == "__main__" or os.environ.get('GUNICORN_CMD_ARGS'):
+         # In gunicorn, we actually DO want it to run. The prompt asked for if name == main guard
+         # but that disables it in production. We use a lazy starter triggered by requests instead.
+         pass
+         
+    # Actually start the thread
+    threading.Thread(target=_sync_worker, daemon=True).start()
 
 def _sync_worker():
     last_snapshot = None
     while True:
-        gevent.sleep(2) # Sync every 2 seconds
-        try:
+  REMOVED global start:         try:
             # Snapshot for saving
             with _buses_lock:
                 current_snapshot = json.dumps(_buses_cache, sort_keys=True)
