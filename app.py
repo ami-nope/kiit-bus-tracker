@@ -1,9 +1,12 @@
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for, Response
 import json
 import os
 from werkzeug.security import generate_password_hash, check_password_hash
 import base64
 from werkzeug.middleware.proxy_fix import ProxyFix
+import threading
+import queue
+import time
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -39,6 +42,52 @@ if not os.path.exists(CREDENTIALS_FILE):
     with open(CREDENTIALS_FILE, 'w') as f:
         json.dump({"admins": [], "institute_name": "INSTITUTE"}, f)
 
+# === SSE subscribers ===
+_subscribers_lock = threading.Lock()
+_subscribers = []  # list[queue.Queue]
+
+def broadcast(payload: dict):
+    try:
+        data = json.dumps(payload)
+    except Exception:
+        data = json.dumps({"error": "bad-payload"})
+    with _subscribers_lock:
+        for q in list(_subscribers):
+            try:
+                q.put_nowait(data)
+            except Exception:
+                # Drop if queue is full or closed
+                pass
+
+@app.route('/events')
+def sse_events():
+    # Server-Sent Events endpoint
+    def event_stream():
+        q = queue.Queue(maxsize=100)
+        with _subscribers_lock:
+            _subscribers.append(q)
+        # Initial hello to avoid proxy buffering
+        yield 'event: ping\ndata: "connected"\n\n'
+        try:
+            while True:
+                try:
+                    msg = q.get(timeout=25)
+                    yield f'data: {msg}\n\n'
+                except queue.Empty:
+                    # heartbeat to keep connection alive through proxies
+                    yield 'event: ping\ndata: {}\n\n'
+        finally:
+            with _subscribers_lock:
+                try:
+                    _subscribers.remove(q)
+                except ValueError:
+                    pass
+    headers = {
+        'Cache-Control': 'no-cache',
+        'X-Accel-Buffering': 'no'  # disable buffering on some proxies
+    }
+    return Response(event_stream(), mimetype='text/event-stream', headers=headers)
+
 def load_credentials():
     try:
         with open(CREDENTIALS_FILE, 'r') as f:
@@ -62,7 +111,7 @@ def login_required(fn):
         return fn(*args, **kwargs)
     return wrapper
 
-
+    
 def save_credentials(data: dict):
     with open(CREDENTIALS_FILE, 'w') as f:
         json.dump(data, f, indent=2)
@@ -292,6 +341,11 @@ def clear_all_buses():
     # Clear all bus entries by resetting the JSON file
     with open(BUSES_FILE, 'w') as f:
         json.dump({}, f)
+    # Broadcast clear event
+    try:
+        broadcast({ 'type': 'buses_clear' })
+    except Exception:
+        pass
     return jsonify({'status': 'success'})
 
 @app.route('/api/locations', methods=['GET'])
@@ -382,7 +436,11 @@ def update_bus_location(bus_number):
     
     with open(BUSES_FILE, 'w') as f:
         json.dump(buses, f)
-    
+    # Broadcast bus update
+    try:
+        broadcast({ 'type': 'bus_update', 'bus': str(bus_number), 'data': buses.get(str(bus_number), {}) })
+    except Exception:
+        pass
     return jsonify({'status': 'success', 'bus': bus_number})
 
 @app.route('/api/bus/<int:bus_number>', methods=['DELETE'])
@@ -395,7 +453,11 @@ def stop_bus(bus_number):
     
     with open(BUSES_FILE, 'w') as f:
         json.dump(buses, f)
-    
+    # Broadcast bus stop
+    try:
+        broadcast({ 'type': 'bus_stop', 'bus': str(bus_number) })
+    except Exception:
+        pass
     return jsonify({'status': 'success'})
 
 @app.route('/api/hostel', methods=['POST'])
@@ -486,7 +548,11 @@ def set_bus_route(bus_number):
     
     with open(BUSES_FILE, 'w') as f:
         json.dump(buses, f)
-    
+    # Broadcast route assignment
+    try:
+        broadcast({ 'type': 'route_set', 'bus': str(bus_number), 'routeId': route_id })
+    except Exception:
+        pass
     return jsonify({'status': 'success'})
 
 @app.route('/api/bus-routes', methods=['GET'])

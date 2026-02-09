@@ -728,22 +728,52 @@
                 container.innerHTML = '<div class="empty">No active transports</div>';
                 return;
             }
-            let html = '<table><thead><tr><th>Transport</th><th>Latitude</th><th>Longitude</th><th>Last Update</th><th></th></tr></thead><tbody>';
-            keys.forEach(k => {
+            // Build table once if not present, else update rows incrementally
+            let table = container.querySelector('table');
+            if(!table){
+                container.innerHTML = '<table><thead><tr><th>Transport</th><th>Latitude</th><th>Longitude</th><th>Last Update</th><th></th></tr></thead><tbody></tbody></table>';
+                table = container.querySelector('table');
+            }
+            const tbody = table.querySelector('tbody');
+            const existingRows = new Set(Array.from(tbody.querySelectorAll('tr')).map(r=>r.getAttribute('data-bus')));
+            // Add or update rows
+            keys.forEach(k=>{
                 const b = buses[k];
-                html += `<tr data-bus="${k}">`;
-                html += `<td><strong>Transport ${k}</strong></td>`;
-                html += `<td><input class="lat" value="${b.lat}" style="width:140px"></td>`;
-                html += `<td><input class="lng" value="${b.lng}" style="width:140px"></td>`;
-                html += `<td class="small muted">${b.lastUpdate || ''}</td>`;
-                html += `<td class="row-actions"><button class="save ok">Save</button><button class="remove danger">Remove</button></td>`;
-                html += `</tr>`;
+                let row = tbody.querySelector(`tr[data-bus="${k}"]`);
+                if(!row){
+                    row = document.createElement('tr');
+                    row.setAttribute('data-bus', k);
+                    row.innerHTML = `
+                        <td><strong>Transport ${k}</strong></td>
+                        <td><input class="lat" value="${b.lat}" style="width:140px"></td>
+                        <td><input class="lng" value="${b.lng}" style="width:140px"></td>
+                        <td class="small muted">${b.lastUpdate || ''}</td>
+                        <td class="row-actions"><button class="save ok">Save</button><button class="remove danger">Remove</button></td>
+                    `;
+                    tbody.appendChild(row);
+                    row.querySelector('.save').addEventListener('click', onSaveBus);
+                    row.querySelector('.remove').addEventListener('click', onRemoveBus);
+                } else {
+                    // Skip update if user is editing inputs in this row
+                    const activeEl = document.activeElement;
+                    if(!(activeEl && row.contains(activeEl))){
+                        const latInput = row.querySelector('.lat');
+                        const lngInput = row.querySelector('.lng');
+                        const lastCell = row.querySelector('.small.muted');
+                        if(latInput && String(latInput.value) !== String(b.lat)) latInput.value = b.lat;
+                        if(lngInput && String(lngInput.value) !== String(b.lng)) lngInput.value = b.lng;
+                        if(lastCell && lastCell.textContent !== (b.lastUpdate||'')) lastCell.textContent = b.lastUpdate || '';
+                    }
+                }
+                existingRows.delete(k);
             });
-            html += '</tbody></table>';
-            container.innerHTML = html;
-
-            container.querySelectorAll('.save').forEach(btn => btn.addEventListener('click', onSaveBus));
-            container.querySelectorAll('.remove').forEach(btn => btn.addEventListener('click', onRemoveBus));
+            // Remove rows for buses no longer present
+            existingRows.forEach(k=>{
+                const row = tbody.querySelector(`tr[data-bus="${k}"]`);
+                if(row){ try{ row.remove(); }catch(e){} }
+            });
+            // Empty state
+            if(tbody.children.length===0){ container.innerHTML = '<div class="empty">No active transports</div>'; }
         }
 
         async function onSaveBus(e) {
@@ -801,7 +831,13 @@
                 if(isBusesRefreshing) return;
                 const activeEl = document.activeElement;
                 if(activeEl && busListEl && busListEl.contains(activeEl) && (activeEl.tagName==='INPUT' || activeEl.tagName==='BUTTON')) return;
-                try{ isBusesRefreshing = true; await loadBuses(); } finally { isBusesRefreshing = false; }
+                try{
+                    isBusesRefreshing = true;
+                    // Soft refresh via incremental update
+                    const res = await fetch('/api/buses');
+                    const buses = await res.json();
+                    renderBuses(buses);
+                } finally { isBusesRefreshing = false; }
             }, 3000);
         }
         function stopBusesAutoRefresh(){
@@ -811,6 +847,26 @@
         // Initial load and start auto refresh (buses tab is active by default)
         loadBuses();
         startBusesAutoRefresh();
+
+        // Live updates via SSE
+        try{
+            const es = new EventSource('/events');
+            es.onmessage = (ev)=>{
+                try{
+                    const msg = JSON.parse(ev.data);
+                    if(msg.type === 'bus_update'){
+                        const k = msg.bus; const b = msg.data||{};
+                        const table = document.getElementById('busList').querySelector('table');
+                        if(table){ renderBuses({ [k]: b }); }
+                    } else if(msg.type === 'bus_stop'){
+                        const row = document.querySelector(`#busList tr[data-bus="${msg.bus}"]`);
+                        if(row) row.remove();
+                    } else if(msg.type === 'buses_clear'){
+                        document.getElementById('busList').innerHTML = '<div class="empty">No active transports</div>';
+                    }
+                }catch(e){ /* ignore */ }
+            };
+        }catch(e){ /* SSE not available, fallback to polling only */ }
 
         // ==== BUILDINGS MAP ====
         function initBuildingsMap() {

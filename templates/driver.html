@@ -301,6 +301,8 @@
             }
             // Highlight only the chosen route and follow driver
             if(selectedRoute) highlightRoute(selectedRoute);
+            // Auto-enable driving progress when a route is chosen
+            driving = true;
         });
 
         // Start tracking
@@ -359,15 +361,32 @@
             .catch(e=>console.error('send error',e));
         }
 
+        // Smooth marker tween
+        let tweenStart = 0, tweenDuration = 3000; let tweenFrom = null, tweenTo = null; function easeInOut(t){ return t<0.5 ? 2*t*t : -1+(4-2*t)*t; }
+        function animateMarker(){
+            if(!driverMarker || !tweenFrom || !tweenTo) return;
+            const now = Date.now(); const elapsed = now - tweenStart; const t = Math.min(1, elapsed / tweenDuration); const k = easeInOut(t);
+            const lat = tweenFrom[0] + (tweenTo[0]-tweenFrom[0]) * k;
+            const lng = tweenFrom[1] + (tweenTo[1]-tweenFrom[1]) * k;
+            try{ driverMarker.setLatLng([lat,lng]); }catch(e){}
+            // soft follow: only pan near edges
+            try{
+                const pix = driverMap.latLngToContainerPoint([lat,lng]); const w = driverMap.getSize().x, h = driverMap.getSize().y; const m = 24;
+                if(pix.x<m || pix.x>w-m || pix.y<m || pix.y>h-m){ driverMap.panTo([lat,lng], { animate:true }); }
+            }catch(e){}
+            if(t<1){ requestAnimationFrame(animateMarker); }
+        }
         function updateDriverPosition(lat,lng){
             if(!driverMap) initDriverMap();
-            const latlng = [lat,lng];
-            if(!driverMarker){ driverMarker = L.circleMarker(latlng, { radius:7, color:'#34d399', fillColor:'#34d399', fillOpacity:1 }).addTo(driverMap); driverMap.setView(latlng, driverMap.getZoom()); }
-            else { driverMarker.setLatLng(latlng); }
-            // draw selected route line (if any)
-            if(selectedRoute){ const route = allRoutes.find(r=>r.id===selectedRoute); if(route && route.waypoints){ const coords = route.waypoints.map(w=>[w[0],w[1]]); if(driverRouteLine){ driverRouteLine.setLatLngs(coords); } else { driverRouteLine = L.polyline(coords, { color: route.color||'#2196F3', weight:4, opacity:0.9 }).addTo(driverMap); } }
-                // when a route is selected, follow the driver
-                try{ driverMap.panTo(latlng); }catch(e){}
+            let target = [lat,lng];
+            // snap to route (approximate projection) if selected
+            if(selectedRoute){ const route = allRoutes.find(r=>r.id===selectedRoute); if(route && route.waypoints){ const res = computeRouteProgress(lat,lng, route.waypoints); if(res && isFinite(res.projLat) && isFinite(res.projLng)){ target = [res.projLat, res.projLng]; }
+                const coords = route.waypoints.map(w=>[w[0],w[1]]); if(driverRouteLine){ driverRouteLine.setLatLngs(coords); } else { driverRouteLine = L.polyline(coords, { color: route.color||'#2196F3', weight:4, opacity:0.9 }).addTo(driverMap); }
+            } }
+            if(!driverMarker){ driverMarker = L.circleMarker(target, { radius:7, color:'#34d399', fillColor:'#34d399', fillOpacity:1 }).addTo(driverMap); driverMap.setView(target, driverMap.getZoom()); tweenFrom = target; tweenTo = target; tweenStart = Date.now(); }
+            else {
+                tweenFrom = driverMarker.getLatLng() ? [driverMarker.getLatLng().lat, driverMarker.getLatLng().lng] : target;
+                tweenTo = target; tweenStart = Date.now(); requestAnimationFrame(animateMarker);
             }
         }
 
@@ -375,11 +394,13 @@
             const etaEl = document.getElementById('etaDisplay'); etaEl.textContent='—';
             if(!selectedRoute) return;
             const route = allRoutes.find(r=>r.id===selectedRoute); if(!route||!route.waypoints||!route.waypoints.length) return;
-            let best=null,bestD=Infinity,bestIdx=0; for(let i=0;i<route.waypoints.length;i++){ const wp=route.waypoints[i]; const d=Math.hypot(lat-wp[0],lng-wp[1]); if(d<bestD){bestD=d;best=wp;bestIdx=i;} }
-            const target = best; if(!target) return;
+            // Direction-aware next stop: use progress along route
+            const prog = computeRouteProgress(lat,lng, route.waypoints);
+            const nextIdx = Math.min(route.waypoints.length-1, Math.max(1, prog.nextIdx));
+            const target = route.waypoints[nextIdx]; if(!target) return;
             const url = `https://router.project-osrm.org/route/v1/driving/${lng},${lat};${target[1]},${target[0]}?overview=false`;
             try{ const res = await fetch(url); if(!res.ok) throw new Error('OSRM'); const j = await res.json(); if(j && j.routes && j.routes.length){ const secs = Math.round(j.routes[0].duration); document.getElementById('etaDisplay').textContent = formatSeconds(secs); return; } }catch(e){ console.warn('OSRM fail',e); }
-            const meters = Math.sqrt(Math.pow(lat-target[0],2)+Math.pow(lng-target[1],2)) * 111000; const estSecs = Math.round(meters/10); etaEl.textContent = formatSeconds(estSecs);
+            const meters = Math.sqrt(Math.pow(lat-target[0],2)+Math.pow(lng-target[1],2)) * 111000; const estSecs = Math.round(meters/ (12*1000/3600) ); etaEl.textContent = formatSeconds(estSecs);
         }
 
         function formatSeconds(s){ if(!isFinite(s)) return '—'; if(s<60) return `${s}s`; const m=Math.floor(s/60); const rem=s%60; return `${m}m ${rem}s`; }
@@ -410,11 +431,11 @@
         // Drive progress helpers (haversine and progress along route)
         function haversineMeters(aLat,aLng,bLat,bLng){ const R=6371000; const toRad=Math.PI/180; const dLat=(bLat-aLat)*toRad; const dLon=(bLng-aLng)*toRad; const lat1=aLat*toRad, lat2=bLat*toRad; const x=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLon/2)*Math.sin(dLon/2); const c=2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x)); return R*c; }
         function computeRouteTotals(waypoints){ let total=0; for(let i=0;i<waypoints.length-1;i++){ total+=haversineMeters(waypoints[i][0],waypoints[i][1],waypoints[i+1][0],waypoints[i+1][1]); } return total; }
-        function computeRouteProgress(lat,lng,waypoints){ if(!waypoints||waypoints.length<2) return {pct:0,nextIdx:0,meters:0}; const avgLat=waypoints.reduce((s,w)=>s+w[0],0)/waypoints.length; const meterPerDegLat = 111132.92 - 559.82*Math.cos(2*avgLat*Math.PI/180) + 1.175*Math.cos(4*avgLat*Math.PI/180); const meterPerDegLon = 111412.84*Math.cos(avgLat*Math.PI/180) - 93.5*Math.cos(3*avgLat*Math.PI/180); function toXY(pt){ return {x: pt[1]*meterPerDegLon, y: pt[0]*meterPerDegLat}; } const pXY=toXY([lat,lng]); let cum=0,bestCum=0,bestDist=Infinity,bestNextIdx=1; for(let i=0;i<waypoints.length-1;i++){ const a=toXY(waypoints[i]); const b=toXY(waypoints[i+1]); const vx=b.x-a.x, vy=b.y-a.y; const wx=pXY.x-a.x, wy=pXY.y-a.y; const segLen2=vx*vx+vy*vy; let t = segLen2===0?0:((wx*vx+wy*vy)/segLen2); if(t<0) t=0; if(t>1) t=1; const projx=a.x+t*vx, projy=a.y+t*vy; const dx=pXY.x-projx, dy=pXY.y-projy; const dist=Math.sqrt(dx*dx+dy*dy); const distAlong = cum + Math.sqrt((projx-a.x)*(projx-a.x)+(projy-a.y)*(projy-a.y)); if(dist<bestDist){ bestDist=dist; bestCum=distAlong; bestNextIdx=i+1; } cum += Math.sqrt(vx*vx+vy*vy); } const total=computeRouteTotals(waypoints); const pct = total>0? Math.max(0,Math.min(100, Math.round((bestCum/total)*100))) : 0; return {pct, nextIdx: bestNextIdx, meters: Math.round(bestCum), totalMeters: Math.round(total)}; }
+        function computeRouteProgress(lat,lng,waypoints){ if(!waypoints||waypoints.length<2) return {pct:0,nextIdx:0,meters:0,projLat:lat,projLng:lng}; const avgLat=waypoints.reduce((s,w)=>s+w[0],0)/waypoints.length; const meterPerDegLat = 111132.92 - 559.82*Math.cos(2*avgLat*Math.PI/180) + 1.175*Math.cos(4*avgLat*Math.PI/180); const meterPerDegLon = 111412.84*Math.cos(avgLat*Math.PI/180) - 93.5*Math.cos(3*avgLat*Math.PI/180); function toXY(pt){ return {x: pt[1]*meterPerDegLon, y: pt[0]*meterPerDegLat}; } const pXY=toXY([lat,lng]); let cum=0,bestCum=0,bestDist=Infinity,bestNextIdx=1,bestProj={x:pXY.x,y:pXY.y}; for(let i=0;i<waypoints.length-1;i++){ const a=toXY(waypoints[i]); const b=toXY(waypoints[i+1]); const vx=b.x-a.x, vy=b.y-a.y; const wx=pXY.x-a.x, wy=pXY.y-a.y; const segLen2=vx*vx+vy*vy; let t = segLen2===0?0:((wx*vx+wy*vy)/segLen2); if(t<0) t=0; if(t>1) t=1; const projx=a.x+t*vx, projy=a.y+t*vy; const dx=pXY.x-projx, dy=pXY.y-projy; const dist=Math.sqrt(dx*dx+dy*dy); const distAlong = cum + Math.sqrt((projx-a.x)*(projx-a.x)+(projy-a.y)*(projy-a.y)); if(dist<bestDist){ bestDist=dist; bestCum=distAlong; bestNextIdx=i+1; bestProj={x:projx,y:projy}; } cum += Math.sqrt(vx*vx+vy*vy); } const total=computeRouteTotals(waypoints); const pct = total>0? Math.max(0,Math.min(100, Math.round((bestCum/total)*100))) : 0; const projLat = bestProj.y / meterPerDegLat; const projLng = bestProj.x / meterPerDegLon; return {pct, nextIdx: bestNextIdx, meters: Math.round(bestCum), totalMeters: Math.round(total), projLat, projLng}; }
 
         function startDrive(){ if(!selectedRoute){ alert('Select a route to start driving'); return; } driving=true; document.getElementById('startDriveBtn').disabled=true; document.getElementById('stopDriveBtn').disabled=false; const route = allRoutes.find(r=>r.id===selectedRoute); routeTotalMeters = route? computeRouteTotals(route.waypoints) : 0; if(lastSentPos) updateDriveProgress(lastSentPos.lat, lastSentPos.lng); }
         function stopDrive(){ driving=false; document.getElementById('startDriveBtn').disabled=false; document.getElementById('stopDriveBtn').disabled=true; document.getElementById('progressFill').style.width='0%'; document.getElementById('progressPercent').textContent='—'; document.getElementById('nextStopDisplay').textContent='—'; }
-        function updateDriveProgress(lat,lng){ if(!driving || !selectedRoute) return; const route = allRoutes.find(r=>r.id===selectedRoute); if(!route) return; const res = computeRouteProgress(lat,lng, route.waypoints); document.getElementById('progressFill').style.width = `${res.pct}%`; document.getElementById('progressPercent').textContent = `${res.pct}%`; const nextName = (route.stops && route.stops[res.nextIdx]) ? route.stops[res.nextIdx] : `Stop ${res.nextIdx}`; document.getElementById('nextStopDisplay').textContent = nextName; }
+        function updateDriveProgress(lat,lng){ if(!selectedRoute) return; const route = allRoutes.find(r=>r.id===selectedRoute); if(!route) return; const res = computeRouteProgress(lat,lng, route.waypoints); document.getElementById('progressFill').style.width = `${res.pct}%`; document.getElementById('progressPercent').textContent = `${res.pct}%`; const nextName = (route.stops && route.stops[res.nextIdx]) ? route.stops[res.nextIdx] : `Stop ${res.nextIdx}`; document.getElementById('nextStopDisplay').textContent = nextName; }
 
         // initial load
         loadRoutes();

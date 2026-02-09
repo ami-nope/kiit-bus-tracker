@@ -197,6 +197,32 @@
         let prevRouteSelState = {};
         let followEnabled = true;
 
+        // Tween state for smooth marker movement
+        const busTweens = {}; // busNum -> { from:[lat,lng], to:[lat,lng], start:number, dur:number }
+        const TWEEN_MS = 3000;
+        function easeInOut(t){ return t<0.5 ? 2*t*t : -1+(4-2*t)*t; }
+        function queueBusTween(busNum, toPos){
+            try{
+                const marker = busMarkers[busNum];
+                const fromPos = marker ? [marker.getLatLng().lat, marker.getLatLng().lng] : toPos;
+                busTweens[busNum] = { from: fromPos, to: toPos, start: Date.now(), dur: TWEEN_MS };
+                requestAnimationFrame(animateBusTweens);
+            }catch(e){ /* ignore */ }
+        }
+        function animateBusTweens(){
+            let any = false;
+            Object.entries(busTweens).forEach(([busNum, tw])=>{
+                const marker = busMarkers[busNum]; if(!marker) return;
+                const t = Math.min(1, (Date.now() - tw.start) / tw.dur);
+                const k = easeInOut(t);
+                const lat = tw.from[0] + (tw.to[0]-tw.from[0]) * k;
+                const lng = tw.from[1] + (tw.to[1]-tw.from[1]) * k;
+                try{ marker.setLatLng([lat,lng]); any = any || (t<1); }catch(e){}
+                if(t>=1){ delete busTweens[busNum]; }
+            });
+            if(any) requestAnimationFrame(animateBusTweens);
+        }
+
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition((pos) => {
                 userLocation = [pos.coords.latitude, pos.coords.longitude];
@@ -477,6 +503,7 @@
             L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png', { attribution: '', maxZoom: 19 }).addTo(map);
             if(userLocation){ updateUserMarker(userLocation); }
             updateBuses(); setInterval(updateBuses, 3000);
+            initSSE();
             loadHostels(); loadClasses(); loadRoutes(); loadBusRoutes();
             loadMetrics();
             document.getElementById('hostelsToggle').addEventListener('change', (e) => { updateLayerVisibility('hostels', e.target.checked); });
@@ -503,7 +530,7 @@
                     const isTracked = trackedBus && busNum === trackedBus;
                     prevBusPositions[busNum] = position; if (bus.lastUpdate) prevBusTimes[busNum] = parseIsoTime(bus.lastUpdate);
                     if (busMarkers[busNum]) {
-                        busMarkers[busNum].setLatLng(position);
+                        queueBusTween(busNum, position);
                         const rid = (bus && bus.routeId != null) ? bus.routeId : busRouteMap[busNum];
                         const onSelectedRoute = selectedRouteId && String(rid) === String(selectedRouteId);
                         const rotationChanged = (prevBusRotation[busNum] === undefined) || (Math.abs(rotation - prevBusRotation[busNum]) > 5);
@@ -552,6 +579,42 @@
                 item.innerHTML = `<div class="bus-info"><div class="bus-dot" style="background-color: ${color}; transform:${onSelectedRoute ? 'scale(1.08)' : 'scale(1)'}">${busNum}</div><div class="bus-name">Transport ${busNum}</div></div><div class="bus-status"><div class="pulse"></div>${status}</div>`;
                 container.appendChild(item);
             });
+        }
+
+        // Live updates via SSE for smooth animation
+        function initSSE(){
+            try{
+                const es = new EventSource('/events');
+                es.onmessage = (ev)=>{
+                    try{
+                        const msg = JSON.parse(ev.data);
+                        if(msg.type === 'bus_update'){
+                            const busNum = String(msg.bus);
+                            const b = msg.data||{};
+                            if(typeof b.lat !== 'number' || typeof b.lng !== 'number') return;
+                            // update route mapping if provided
+                            if(b.routeId != null) busRouteMap[busNum] = b.routeId;
+                            if(!busMarkers[busNum]){
+                                const color = colors[(parseInt(busNum) - 1) % colors.length];
+                                const icon = createIcon(busNum, color, 24, 0, false);
+                                busMarkers[busNum] = L.marker([b.lat,b.lng], { icon, title: `Transport ${busNum}` }).addTo(map);
+                                busMarkers[busNum].bindPopup(() => buildBusPopup(busNum, b));
+                            } else {
+                                queueBusTween(busNum, [b.lat,b.lng]);
+                            }
+                            const now = new Date().toLocaleTimeString();
+                            const luSidebar = document.getElementById('lastUpdate'); if (luSidebar) luSidebar.textContent = now;
+                            const luOverlay = document.getElementById('lastUpdateOverlay'); if (luOverlay) luOverlay.textContent = now;
+                            computeAndShowStudentETA();
+                        } else if(msg.type === 'bus_stop'){
+                            const busNum = String(msg.bus);
+                            const m = busMarkers[busNum]; if(m){ try{ map.removeLayer(m); }catch(e){} delete busMarkers[busNum]; }
+                        } else if(msg.type === 'buses_clear'){
+                            Object.values(busMarkers).forEach(m=>{ try{ map.removeLayer(m); }catch(e){} }); busMarkers = {};
+                        }
+                    }catch(e){ /* ignore */ }
+                };
+            }catch(e){ /* SSE not available, keep polling */ }
         }
 
         async function locateMe() {
