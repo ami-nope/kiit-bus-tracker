@@ -123,8 +123,13 @@
 </head>
 <body>
     <div class="container">
-        <h1>🚌 {{ institute_name | default('INSTITUTE') }} Driver Companion</h1>
-        <p class="subtitle">Campus Shuttle Tracking</p>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div>
+                <h1>🚌 {{ institute_name | default('INSTITUTE') }} Driver Companion</h1>
+                <p class="subtitle">Campus Shuttle Tracking</p>
+            </div>
+            <a href="/admin/login" target="_blank" rel="noopener noreferrer" style="color:#666;font-size:11px;text-decoration:none;margin-top:4px">Admin</a>
+        </div>
 
         <div class="bus-selector">
             <label for="busNumber">Select Your Transport Number:</label>
