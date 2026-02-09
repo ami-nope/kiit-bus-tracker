@@ -227,41 +227,129 @@
         function snapToRoute(lat, lng, busNum) {
             // Determine which route this bus is on
             const rid = busRouteMap[busNum];
-            if (!rid) return [lat, lng];
+            if (!rid) return { pos: [lat, lng], segIdx: -1 };
             const coords = routeCoordsCache[rid];
-            if (!coords || coords.length < 2) return [lat, lng];
+            if (!coords || coords.length < 2) return { pos: [lat, lng], segIdx: -1 };
 
             let bestDist = Infinity;
             let bestPt = [lat, lng];
+            let bestSeg = -1;
             for (let i = 0; i < coords.length - 1; i++) {
                 const pt = closestPointOnSegment(lat, lng, coords[i][0], coords[i][1], coords[i+1][0], coords[i+1][1]);
                 const d = calcDistance(lat, lng, pt[0], pt[1]);
-                if (d < bestDist) { bestDist = d; bestPt = pt; }
+                if (d < bestDist) { bestDist = d; bestPt = pt; bestSeg = i; }
             }
             // Only snap if within threshold
-            return bestDist <= SNAP_DIST_M ? bestPt : [lat, lng];
+            if (bestDist <= SNAP_DIST_M) return { pos: bestPt, segIdx: bestSeg };
+            return { pos: [lat, lng], segIdx: -1 };
         }
 
-        // Tween state for smooth marker movement
-        const busTweens = {}; // busNum -> { from:[lat,lng], to:[lat,lng], start:number, dur:number }
+        // Extract sub-path along route between two snapped points
+        function getRouteSubPath(rid, fromPos, fromSeg, toPos, toSeg) {
+            const coords = routeCoordsCache[rid];
+            if (!coords || fromSeg < 0 || toSeg < 0) return null;
+
+            const path = [];
+            // Determine direction (forward or backward along route)
+            const forward = toSeg >= fromSeg;
+            if (forward) {
+                path.push(fromPos);
+                for (let i = fromSeg + 1; i <= toSeg; i++) {
+                    path.push(coords[i]);
+                }
+                path.push(toPos);
+            } else {
+                path.push(fromPos);
+                for (let i = fromSeg; i >= toSeg + 1; i--) {
+                    path.push(coords[i]);
+                }
+                path.push(toPos);
+            }
+            // Skip if path is too long (bus probably jumped routes) — max ~80 segments
+            if (path.length > 80) return null;
+            return path;
+        }
+
+        // Compute cumulative distances along a path for proportional interpolation
+        function computePathDistances(path) {
+            const dists = [0];
+            for (let i = 1; i < path.length; i++) {
+                dists.push(dists[i-1] + calcDistance(path[i-1][0], path[i-1][1], path[i][0], path[i][1]));
+            }
+            return dists;
+        }
+
+        // Interpolate position along a multi-point path at fraction t (0..1)
+        function interpAlongPath(path, dists, t) {
+            if (path.length < 2) return path[0];
+            const totalLen = dists[dists.length - 1];
+            if (totalLen === 0) return path[0];
+            const targetDist = t * totalLen;
+            for (let i = 1; i < dists.length; i++) {
+                if (dists[i] >= targetDist) {
+                    const segLen = dists[i] - dists[i-1];
+                    const segT = segLen > 0 ? (targetDist - dists[i-1]) / segLen : 0;
+                    return [
+                        path[i-1][0] + (path[i][0] - path[i-1][0]) * segT,
+                        path[i-1][1] + (path[i][1] - path[i-1][1]) * segT
+                    ];
+                }
+            }
+            return path[path.length - 1];
+        }
+
+        // Tween state for smooth marker movement along route paths
+        const busTweens = {}; // busNum -> { path, dists, start, dur } or { from, to, start, dur }
+        const busSnapInfo = {}; // busNum -> { segIdx } — last known segment index
         const TWEEN_MS = 800;
         function easeInOut(t){ return t<0.5 ? 2*t*t : -1+(4-2*t)*t; }
+
         function queueBusTween(busNum, toPos){
             try{
                 const marker = busMarkers[busNum];
                 const fromPos = marker ? [marker.getLatLng().lat, marker.getLatLng().lng] : toPos;
-                busTweens[busNum] = { from: fromPos, to: toPos, start: Date.now(), dur: TWEEN_MS };
+                const rid = busRouteMap[busNum];
+                const fromSeg = busSnapInfo[busNum] ? busSnapInfo[busNum].segIdx : -1;
+
+                // Try to get snap info for the destination
+                const snapResult = snapToRoute(toPos[0], toPos[1], busNum);
+                const snappedTo = snapResult.pos;
+                const toSeg = snapResult.segIdx;
+                busSnapInfo[busNum] = { segIdx: toSeg };
+
+                // Try to build a route sub-path for curved animation
+                let routePath = null;
+                if (rid && fromSeg >= 0 && toSeg >= 0) {
+                    routePath = getRouteSubPath(rid, fromPos, fromSeg, snappedTo, toSeg);
+                }
+
+                if (routePath && routePath.length >= 2) {
+                    const dists = computePathDistances(routePath);
+                    busTweens[busNum] = { path: routePath, dists: dists, start: Date.now(), dur: TWEEN_MS };
+                } else {
+                    // Fallback: straight-line tween
+                    busTweens[busNum] = { from: fromPos, to: snappedTo, start: Date.now(), dur: TWEEN_MS };
+                }
                 requestAnimationFrame(animateBusTweens);
             }catch(e){ /* ignore */ }
         }
+
         function animateBusTweens(){
             let any = false;
             Object.entries(busTweens).forEach(([busNum, tw])=>{
                 const marker = busMarkers[busNum]; if(!marker) return;
                 const t = Math.min(1, (Date.now() - tw.start) / tw.dur);
                 const k = easeInOut(t);
-                const lat = tw.from[0] + (tw.to[0]-tw.from[0]) * k;
-                const lng = tw.from[1] + (tw.to[1]-tw.from[1]) * k;
+                let lat, lng;
+                if (tw.path) {
+                    // Animate along route path
+                    const pos = interpAlongPath(tw.path, tw.dists, k);
+                    lat = pos[0]; lng = pos[1];
+                } else {
+                    // Straight-line fallback
+                    lat = tw.from[0] + (tw.to[0]-tw.from[0]) * k;
+                    lng = tw.from[1] + (tw.to[1]-tw.from[1]) * k;
+                }
                 try{ marker.setLatLng([lat,lng]); any = any || (t<1); }catch(e){}
                 if(t>=1){ delete busTweens[busNum]; }
             });
@@ -600,12 +688,14 @@
                 freshBusNumbers.forEach(busNum => {
                     const bus = buses[busNum]; const rawPos = [bus.lat, bus.lng]; const color = colors[(parseInt(busNum) - 1) % colors.length];
                     // Snap to route if close enough
-                    const position = snapToRoute(rawPos[0], rawPos[1], busNum);
+                    const snapResult = snapToRoute(rawPos[0], rawPos[1], busNum);
+                    const position = snapResult.pos;
+                    busSnapInfo[busNum] = { segIdx: snapResult.segIdx };
                     let rotation = 0; if (prevBusPositions[busNum]) { rotation = calcBearing(prevBusPositions[busNum], position); }
                     const isTracked = trackedBus && busNum === trackedBus;
                     prevBusPositions[busNum] = position; if (bus.lastUpdate) prevBusTimes[busNum] = parseIsoTime(bus.lastUpdate);
                     if (busMarkers[busNum]) {
-                        queueBusTween(busNum, position);
+                        queueBusTween(busNum, rawPos);
                         const rid = (bus && bus.routeId != null) ? bus.routeId : busRouteMap[busNum];
                         const onSelectedRoute = selectedRouteId && String(rid) === String(selectedRouteId);
                         const rotationChanged = (prevBusRotation[busNum] === undefined) || (Math.abs(rotation - prevBusRotation[busNum]) > 5);
@@ -683,8 +773,7 @@
                                 busMarkers[busNum] = L.marker([b.lat,b.lng], { icon, title: `Transport ${busNum}` }).addTo(map);
                                 busMarkers[busNum].bindPopup(() => buildBusPopup(busNum, b));
                             } else {
-                                const snapped = snapToRoute(b.lat, b.lng, busNum);
-                                queueBusTween(busNum, snapped);
+                                queueBusTween(busNum, [b.lat, b.lng]);
                             }
                             const now = new Date().toLocaleTimeString();
                             const luSidebar = document.getElementById('lastUpdate'); if (luSidebar) luSidebar.textContent = now;
