@@ -536,14 +536,14 @@
             return dir === 'up' ? (fwd + 180) % 360 : ((fwd % 360) + 360) % 360;
         }
 
-        // Zoom-responsive icon sizing
-        let currentIconSize = 22;
+        // Zoom-responsive icon sizing (~55% of original)
+        let currentIconSize = 12;
         function getIconSizeForZoom(z) {
-            if (z >= 18) return 28;
-            if (z >= 17) return 26;
-            if (z >= 16) return 22;
-            if (z >= 15) return 20;
-            return 18;
+            if (z >= 18) return 16;
+            if (z >= 17) return 14;
+            if (z >= 16) return 12;
+            if (z >= 15) return 11;
+            return 10;
         }
 
         const _iconSvgCache = {};

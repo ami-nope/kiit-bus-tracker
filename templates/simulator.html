@@ -47,6 +47,19 @@ body { margin:0; background:#0f0f23; color:#e6eef8; font-family:'Segoe UI',sans-
 #startBtn:disabled { opacity:0.35; cursor:not-allowed; }
 #startBtn.running { background:rgba(251,113,133,0.15); color:#fb7185; }
 #startBtn.running:hover { background:rgba(251,113,133,0.25); }
+.aligner-toggle {
+  display:flex; align-items:center; gap:8px; margin-top:10px;
+  padding:8px 10px; border-radius:8px;
+  background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06);
+}
+.aligner-toggle input[type=checkbox] { accent-color:#667eea; width:16px; height:16px; cursor:pointer; }
+.aligner-toggle label { font-size:12px; color:#9aa4b2; cursor:pointer; flex:1; }
+.aligner-toggle .aligner-badge {
+  font-size:10px; padding:2px 6px; border-radius:4px;
+  background:rgba(102,126,234,0.15); color:#667eea; font-weight:600;
+}
+.aligner-toggle.active { border-color:rgba(102,126,234,0.4); background:rgba(102,126,234,0.08); }
+.aligner-toggle.active .aligner-badge { background:rgba(102,126,234,0.25); }
 </style>
 </head>
 <body>
@@ -72,7 +85,14 @@ body { margin:0; background:#0f0f23; color:#e6eef8; font-family:'Segoe UI',sans-
 
   <div class="keys-hint">
     <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> to drive<br>
-    <kbd>Shift</kbd> to boost &nbsp; <kbd>Space</kbd> to brake
+    <kbd>Shift</kbd> to boost &nbsp; <kbd>Space</kbd> to brake<br>
+    <span style="color:#667eea">Aligner:</span> <kbd>W</kbd> follow track · <kbd>S</kbd>/<kbd>Space</kbd> stop
+  </div>
+
+  <div class="aligner-toggle" id="alignerToggle">
+    <input type="checkbox" id="alignerCheck"/>
+    <label for="alignerCheck">🛤️ Aligner — lock to route track</label>
+    <span class="aligner-badge">OFF</span>
   </div>
 
   <div id="syncStatus"><span class="status-dot" style="background:#667"></span>Waiting to start...</div>
@@ -91,6 +111,57 @@ let simRunning = false;
 
 // Physics
 const BOOST = 2.5;           // shift multiplier
+
+// --- Aligner state ---
+let alignerEnabled = false;
+let alignerRouteCoords = null; // [[lat,lng], ...] from OSRM
+let alignerSegIdx = 0;         // current segment index on route
+let alignerT = 0;              // fractional progress along current segment (0..1)
+let alignerMoving = false;     // true while W is held
+
+// Aligner UI
+const alignerCheck = document.getElementById('alignerCheck');
+const alignerToggleEl = document.getElementById('alignerToggle');
+const alignerBadge = alignerToggleEl.querySelector('.aligner-badge');
+
+alignerCheck.addEventListener('change', () => {
+  alignerEnabled = alignerCheck.checked;
+  alignerToggleEl.classList.toggle('active', alignerEnabled);
+  alignerBadge.textContent = alignerEnabled ? 'ON' : 'OFF';
+  if (alignerEnabled && alignerRouteCoords && alignerRouteCoords.length >= 2) {
+    snapToNearestRoutePoint();
+  }
+});
+
+function calcDist(lat1, lng1, lat2, lng2) {
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const x = dLng * Math.cos((lat1 + lat2) * 0.5 * Math.PI / 180);
+  return 6371000 * Math.sqrt(dLat * dLat + x * x);
+}
+
+function snapToNearestRoutePoint() {
+  if (!alignerRouteCoords || alignerRouteCoords.length < 2) return;
+  let bestDist = Infinity, bestSeg = 0, bestT = 0;
+  for (let i = 0; i < alignerRouteCoords.length - 1; i++) {
+    const a = alignerRouteCoords[i], b = alignerRouteCoords[i + 1];
+    // Project point onto segment
+    const dx = b[0] - a[0], dy = b[1] - a[1];
+    const lenSq = dx * dx + dy * dy;
+    let t = lenSq > 0 ? ((lat - a[0]) * dx + (lng - a[1]) * dy) / lenSq : 0;
+    t = Math.max(0, Math.min(1, t));
+    const px = a[0] + t * dx, py = a[1] + t * dy;
+    const d = calcDist(lat, lng, px, py);
+    if (d < bestDist) { bestDist = d; bestSeg = i; bestT = t; }
+  }
+  alignerSegIdx = bestSeg;
+  alignerT = bestT;
+  // Actually move marker to snapped position
+  const a = alignerRouteCoords[bestSeg], b = alignerRouteCoords[bestSeg + 1];
+  lat = a[0] + bestT * (b[0] - a[0]);
+  lng = a[1] + bestT * (b[1] - a[1]);
+  marker.setLatLng([lat, lng]);
+}
 
 // --- Map ---
 const map = L.map("map").setView([lat, lng], 16);
@@ -130,11 +201,13 @@ function clearRouteDisplay() {
 
 async function showRouteOnMap(routeId) {
   clearRouteDisplay();
+  alignerRouteCoords = null;
   if (!routeId) return;
   const route = allRoutesData.find(r => String(r.id) === String(routeId));
   if (!route || !route.waypoints || route.waypoints.length < 2) return;
 
   const coords = await osrmRoute(route.waypoints);
+  alignerRouteCoords = coords; // cache for aligner
   routePolyline = L.polyline(coords, {
     color: route.color || '#667eea', weight: 4, opacity: 0.7, dashArray: '8,6'
   }).addTo(map);
@@ -194,7 +267,11 @@ async function initRouteSelect() {
     });
     sel.onchange = () => {
       currentRouteId = sel.value || null;
-      showRouteOnMap(currentRouteId);
+      showRouteOnMap(currentRouteId).then(() => {
+        if (alignerEnabled && alignerRouteCoords && alignerRouteCoords.length >= 2) {
+          snapToNearestRoutePoint();
+        }
+      });
       updateStartBtn();
       if (currentRouteId && bus && simRunning) {
         fetch(`/api/bus/${bus}/route`, {
@@ -256,24 +333,76 @@ function animate(now) {
   const boost = keys["shift"] ? BOOST : 1;
   const speedDegPerSec = (targetKmh / 3.6) / 111320; // convert km/h to degrees/sec
 
-  let dx = 0, dy = 0;
-  if (keys["w"]) dy = 1;
-  if (keys["s"]) dy = -1;
-  if (keys["d"]) dx = 1;
-  if (keys["a"]) dx = -1;
+  if (alignerEnabled && alignerRouteCoords && alignerRouteCoords.length >= 2) {
+    // --- ALIGNER MODE: move along route track ---
+    // W = forward, S = stop (brake). A/D ignored.
+    alignerMoving = !!keys["w"];
+    if (keys[" "]) alignerMoving = false; // space brake
 
-  // Normalize diagonal movement
-  const mag = Math.sqrt(dx * dx + dy * dy) || 1;
-  dx /= mag; dy /= mag;
+    if (alignerMoving) {
+      // Distance to travel this frame in degrees
+      let remaining = speedDegPerSec * boost * dt;
 
-  isMoving = (dx !== 0 || dy !== 0);
-  if (isMoving) {
-    lat += dy * speedDegPerSec * boost * dt;
-    lng += dx * speedDegPerSec * boost * dt;
-    marker.setLatLng([lat, lng]);
-    trailPoints.push([lat, lng]);
-    if (trailPoints.length > MAX_TRAIL) trailPoints.shift();
-    trail.setLatLngs(trailPoints);
+      while (remaining > 0 && alignerSegIdx < alignerRouteCoords.length - 1) {
+        const a = alignerRouteCoords[alignerSegIdx];
+        const b = alignerRouteCoords[alignerSegIdx + 1];
+        const segDx = b[0] - a[0], segDy = b[1] - a[1];
+        const segLen = Math.sqrt(segDx * segDx + segDy * segDy);
+        if (segLen === 0) { alignerSegIdx++; alignerT = 0; continue; }
+
+        const remainingInSeg = (1 - alignerT) * segLen;
+        if (remaining >= remainingInSeg) {
+          // Move to end of this segment, advance to next
+          remaining -= remainingInSeg;
+          alignerSegIdx++;
+          alignerT = 0;
+        } else {
+          // Move within this segment
+          alignerT += remaining / segLen;
+          remaining = 0;
+        }
+      }
+
+      // Clamp at end of route
+      if (alignerSegIdx >= alignerRouteCoords.length - 1) {
+        alignerSegIdx = alignerRouteCoords.length - 2;
+        alignerT = 1;
+      }
+
+      // Compute actual position
+      const a = alignerRouteCoords[alignerSegIdx];
+      const b = alignerRouteCoords[alignerSegIdx + 1];
+      lat = a[0] + alignerT * (b[0] - a[0]);
+      lng = a[1] + alignerT * (b[1] - a[1]);
+      marker.setLatLng([lat, lng]);
+
+      trailPoints.push([lat, lng]);
+      if (trailPoints.length > MAX_TRAIL) trailPoints.shift();
+      trail.setLatLngs(trailPoints);
+    }
+
+    isMoving = alignerMoving;
+  } else {
+    // --- NORMAL MODE: WASD free movement ---
+    let dx = 0, dy = 0;
+    if (keys["w"]) dy = 1;
+    if (keys["s"]) dy = -1;
+    if (keys["d"]) dx = 1;
+    if (keys["a"]) dx = -1;
+
+    // Normalize diagonal movement
+    const mag = Math.sqrt(dx * dx + dy * dy) || 1;
+    dx /= mag; dy /= mag;
+
+    isMoving = (dx !== 0 || dy !== 0);
+    if (isMoving) {
+      lat += dy * speedDegPerSec * boost * dt;
+      lng += dx * speedDegPerSec * boost * dt;
+      marker.setLatLng([lat, lng]);
+      trailPoints.push([lat, lng]);
+      if (trailPoints.length > MAX_TRAIL) trailPoints.shift();
+      trail.setLatLngs(trailPoints);
+    }
   }
 
   // Soft camera follow — pan only when near edge
