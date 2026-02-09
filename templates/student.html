@@ -423,12 +423,13 @@
         }
 
         // ETA smoothing to avoid flicker
-        let studentEtaSmooth = null; let studentEtaLastTs = 0; const STUD_ETA_ALPHA = 0.35; const STUD_ETA_UPDATE_MS = 1500; const STUD_ETA_MIN_STEP = 3;
+        let studentEtaSmooth = null; let studentEtaLastTs = 0; const STUD_ETA_ALPHA = 0.35; const STUD_ETA_UPDATE_MS = 2500; const STUD_ETA_MIN_STEP = 3; let studentEtaLastHtml = null;
         function smoothStudentEta(secs){ if(!isFinite(secs)) return secs; if(studentEtaSmooth==null){ studentEtaSmooth = secs; return secs; } const sm = STUD_ETA_ALPHA*secs + (1-STUD_ETA_ALPHA)*studentEtaSmooth; if(Math.abs(sm-studentEtaSmooth) < STUD_ETA_MIN_STEP){ studentEtaSmooth = studentEtaSmooth + Math.sign(sm-studentEtaSmooth) * STUD_ETA_MIN_STEP; } else { studentEtaSmooth = sm; } return Math.max(0, Math.round(studentEtaSmooth)); }
-        function maybeUpdateStudentEta(html){ const now = Date.now(); if(now - studentEtaLastTs >= STUD_ETA_UPDATE_MS){ const etaEl = document.getElementById('etaValue'); const etaOverlay = document.getElementById('etaOverlay'); if(etaEl) etaEl.innerHTML = html; if(etaOverlay) etaOverlay.innerHTML = html; studentEtaLastTs = now; } }
+        function formatHHMM(totalSeconds){ const mins = Math.max(0, Math.round(totalSeconds/60)); const h = Math.floor(mins/60); const m = mins % 60; return h>0 ? `${h}:${String(m).padStart(2,'0')}` : `${m}m`; }
+        function maybeUpdateStudentEta(html){ const now = Date.now(); if(now - studentEtaLastTs >= STUD_ETA_UPDATE_MS && html !== studentEtaLastHtml){ const etaEl = document.getElementById('etaValue'); const etaOverlay = document.getElementById('etaOverlay'); if(etaEl) etaEl.innerHTML = html; if(etaOverlay) etaOverlay.innerHTML = html; studentEtaLastHtml = html; studentEtaLastTs = now; } }
 
         async function computeAndShowStudentETA(){
-            const etaEl = document.getElementById('etaValue'); const etaOverlay = document.getElementById('etaOverlay'); if(etaEl) etaEl.textContent='--'; if(etaOverlay) etaOverlay.textContent='--';
+            const etaEl = document.getElementById('etaValue'); const etaOverlay = document.getElementById('etaOverlay');
             const busesData = await fetch('/api/buses').then(r=>r.json()).catch(()=>({}));
             const nowMs = Date.now();
             const freshEntries = Object.entries(busesData).filter(([num,b])=>{ const t = b && b.lastUpdate ? parseIsoTime(b.lastUpdate) : null; return t && (nowMs - t) <= OFFLINE_MS; });
@@ -460,37 +461,21 @@
                 if(!chosenBus){ return; }
             }
 
-            // Compute speed and ETA, with avg speed fallback and At Stop indication
+            // Compute speed and ETA with min-change smoothing and HH:MM display
             const speedKmh = computeSpeed(chosenBusNum, [chosenBus.lat, chosenBus.lng], chosenBus.lastUpdate);
             const distMeters = calcDistance(chosenBus.lat, chosenBus.lng, nearestStop[0], nearestStop[1]);
             const atStopThreshold = 15; // meters
             const avgSpeed = 25; // km/h
-            let displayText = '--';
-            let speedFrag = '';
-            let speedTitle = '';
 
-            if (distMeters <= atStopThreshold) {
-                // At stop: show only 'At Stop' (no assumed speed)
-                displayText = 'At Stop';
-                speedFrag = '';
-                speedTitle = '';
-            } else if (speedKmh && speedKmh > 0.1) {
-                const seconds = Math.ceil(((distMeters/1000) / speedKmh) * 3600);
-                const smoothed = smoothStudentEta(seconds);
-                displayText = formatMinSec(smoothed);
-                speedFrag = ` • ${speedKmh} km/h`;
-                speedTitle = '';
-            } else {
-                // Fallback to average speed when bus speed is unavailable
-                const seconds = Math.ceil(((distMeters/1000) / avgSpeed) * 3600);
-                const smoothed = smoothStudentEta(seconds);
-                displayText = formatMinSec(smoothed);
-                // Show 'At Stop' to the side of ETA when speed is 0/unavailable
-                speedFrag = ' • At Stop';
-                speedTitle = '(approximate)';
-            }
-            const overlayHtml = speedTitle ? `<span title="${speedTitle}">${displayText}</span>${speedFrag}` : `${displayText}${speedFrag}`;
-            maybeUpdateStudentEta(overlayHtml);
+            if (distMeters <= atStopThreshold) { maybeUpdateStudentEta('At Stop'); return; }
+
+            let seconds;
+            if (speedKmh && speedKmh > 0.1) { seconds = Math.ceil(((distMeters/1000) / speedKmh) * 3600); }
+            else { seconds = Math.ceil(((distMeters/1000) / avgSpeed) * 3600); }
+
+            const smoothed = smoothStudentEta(seconds);
+            const rounded = Math.round(smoothed/60)*60; // minute resolution
+            maybeUpdateStudentEta(formatHHMM(rounded));
         }
 
         function estimateRouteDistance(waypoints) { let total = 0; for (let i = 0; i < waypoints.length - 1; i++) { total += calcDistance(waypoints[i][0], waypoints[i][1], waypoints[i+1][0], waypoints[i+1][1]); } return total / 1000; }

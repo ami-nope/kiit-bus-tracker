@@ -396,14 +396,15 @@
         }
 
         // ETA smoothing to avoid flicker
-        let etaSmoothSecs = null; let etaLastTs = 0; const ETA_ALPHA = 0.35; const ETA_UPDATE_MS = 1500; const ETA_MIN_STEP = 3;
+        let etaSmoothSecs = null; let etaLastTs = 0; const ETA_ALPHA = 0.35; const ETA_UPDATE_MS = 2500; const ETA_MIN_STEP = 3; let etaLastText = null;
         function smoothEta(secs){ if(!isFinite(secs)) return secs; if(etaSmoothSecs==null) { etaSmoothSecs = secs; return secs; } const sm = ETA_ALPHA*secs + (1-ETA_ALPHA)*etaSmoothSecs; // clamp minimal change
             if(Math.abs(sm-etaSmoothSecs) < ETA_MIN_STEP) { etaSmoothSecs = etaSmoothSecs + Math.sign(sm-etaSmoothSecs) * ETA_MIN_STEP; } else { etaSmoothSecs = sm; }
             return Math.max(0, Math.round(etaSmoothSecs)); }
-        function maybeUpdateEtaDisplay(text){ const now = Date.now(); if(now - etaLastTs >= ETA_UPDATE_MS){ const el = document.getElementById('etaDisplay'); if(el) el.textContent = text; etaLastTs = now; } }
+        function formatHHMM(totalSeconds){ const mins = Math.max(0, Math.round(totalSeconds/60)); const h = Math.floor(mins/60); const m = mins % 60; return h>0 ? `${h}:${String(m).padStart(2,'0')}` : `${m}m`; }
+        function maybeUpdateEtaDisplay(text){ const now = Date.now(); if(now - etaLastTs >= ETA_UPDATE_MS && text !== etaLastText){ const el = document.getElementById('etaDisplay'); if(el) el.textContent = text; etaLastText = text; etaLastTs = now; } }
 
         async function computeAndShowETA(lat,lng){
-            const etaEl = document.getElementById('etaDisplay'); etaEl.textContent='—';
+            const etaEl = document.getElementById('etaDisplay');
             if(!selectedRoute) return;
             const route = allRoutes.find(r=>r.id===selectedRoute); if(!route||!route.waypoints||!route.waypoints.length) return;
             // Direction-aware next stop: use progress along route
@@ -413,10 +414,10 @@
             const url = `https://router.project-osrm.org/route/v1/driving/${lng},${lat};${target[1]},${target[0]}?overview=false`;
             try{
                 const j = await osrmFetch(url, 5000);
-                if(j && j.routes && j.routes.length){ const secs = Math.round(j.routes[0].duration); const disp = smoothEta(secs); maybeUpdateEtaDisplay(formatSeconds(disp)); return; }
+                if(j && j.routes && j.routes.length){ const secs = Math.round(j.routes[0].duration); const disp = smoothEta(secs); const rounded = Math.round(disp/60)*60; maybeUpdateEtaDisplay(formatHHMM(rounded)); return; }
             }catch(e){ console.warn('OSRM duration fallback', e); }
             // Fallback: straight-line distance / avg speed (km/h)
-            const meters = Math.sqrt(Math.pow(lat-target[0],2)+Math.pow(lng-target[1],2)) * 111000; const avgKmh = 20; const estSecs = Math.round(meters/ (avgKmh*1000/3600) ); const disp = smoothEta(estSecs); maybeUpdateEtaDisplay(formatSeconds(disp));
+            const meters = Math.sqrt(Math.pow(lat-target[0],2)+Math.pow(lng-target[1],2)) * 111000; const avgKmh = 20; const estSecs = Math.round(meters/ (avgKmh*1000/3600) ); const disp = smoothEta(estSecs); const rounded = Math.round(disp/60)*60; maybeUpdateEtaDisplay(formatHHMM(rounded));
         }
 
         function formatSeconds(s){ if(!isFinite(s)) return '—'; if(s<60) return `${s}s`; const m=Math.floor(s/60); const rem=s%60; return `${m}m ${rem}s`; }
