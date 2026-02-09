@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, Response, stream_with_context
+from flask_cors import CORS
 import json
 import os
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -14,6 +15,9 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 app = Flask(__name__)
 app.config['WTF_CSRF_ENABLED'] = False
 app.secret_key = os.environ.get('FLASK_SECRET', 'dev-secret-change-this')
+
+# Enable CORS for API routes (frontends on different origins)
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # Make app proxy-aware (important on Render) so url_for + request.scheme honor X-Forwarded-* headers
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)
@@ -53,23 +57,49 @@ if not os.path.exists(CREDENTIALS_FILE):
     with open(CREDENTIALS_FILE, 'w') as f:
         json.dump({"admins": [], "institute_name": "INSTITUTE"}, f)
 
-# Safe JSON helpers to tolerate file corruption
+_file_locks = {
+    'buses': threading.Lock(),
+    'locations': threading.Lock(),
+    'credentials': threading.Lock(),
+}
+
+def _lock_for(path: str):
+    if path == BUSES_FILE:
+        return _file_locks['buses']
+    if path == LOCATIONS_FILE:
+        return _file_locks['locations']
+    if path == CREDENTIALS_FILE:
+        return _file_locks['credentials']
+    # Fallback single lock for unknown
+    return threading.Lock()
+
+# Safe JSON helpers to tolerate file corruption and concurrent access
 def safe_load_json(path: str, default):
-    try:
-        with open(path, 'r') as f:
-            return json.load(f)
-    except Exception:
-        # Reset corrupted file
+    lock = _lock_for(path)
+    with lock:
         try:
-            with open(path, 'w') as f:
-                json.dump(default, f)
+            with open(path, 'r') as f:
+                return json.load(f)
         except Exception:
-            pass
-        return default
+            # Reset corrupted file
+            try:
+                with open(path, 'w') as f:
+                    json.dump(default, f)
+            except Exception:
+                pass
+            return default
 
 def safe_save_json(path: str, data):
-    with open(path, 'w') as f:
-        json.dump(data, f, indent=2)
+    lock = _lock_for(path)
+    with lock:
+        with open(path, 'w') as f:
+            json.dump(data, f, indent=2)
+            try:
+                f.flush()
+                os.fsync(f.fileno())
+            except Exception:
+                # Not all environments support fsync
+                pass
 
 # === SSE subscribers ===
 _subscribers_lock = threading.Lock()
@@ -376,9 +406,7 @@ def get_all_buses():
     buses = safe_load_json(BUSES_FILE, {})
     return jsonify(buses)
 
-@app.route('/simulator')
-def simulator():
-    return render_template('simulator.html')
+# Removed duplicate /simulator route to avoid handler override
 
 
 @app.route('/api/buses/clear', methods=['POST'])
@@ -394,34 +422,28 @@ def clear_all_buses():
 
 @app.route('/api/locations', methods=['GET'])
 def get_locations():
-    with open(LOCATIONS_FILE, 'r') as f:
-        locations = json.load(f)
+    locations = safe_load_json(LOCATIONS_FILE, {"hostels": [], "classes": [], "routes": []})
     return jsonify(locations)
 
 @app.route('/api/hostels', methods=['GET'])
 def get_hostels():
-    with open(LOCATIONS_FILE, 'r') as f:
-        locations = json.load(f)
+    locations = safe_load_json(LOCATIONS_FILE, {"hostels": [], "classes": [], "routes": []})
     return jsonify(locations.get('hostels', []))
 
 @app.route('/api/classes', methods=['GET'])
 def get_classes():
-    with open(LOCATIONS_FILE, 'r') as f:
-        locations = json.load(f)
+    locations = safe_load_json(LOCATIONS_FILE, {"hostels": [], "classes": [], "routes": []})
     return jsonify(locations.get('classes', []))
 
 @app.route('/api/routes', methods=['GET'])
 def get_routes():
-    with open(LOCATIONS_FILE, 'r') as f:
-        locations = json.load(f)
+    locations = safe_load_json(LOCATIONS_FILE, {"hostels": [], "classes": [], "routes": []})
     return jsonify(locations.get('routes', []))
 
 @app.route('/api/route', methods=['POST'])
 def create_route():
     data = request.json
-    
-    with open(LOCATIONS_FILE, 'r') as f:
-        locations = json.load(f)
+    locations = safe_load_json(LOCATIONS_FILE, {"hostels": [], "classes": [], "routes": []})
     
     route = {
         'id': data.get('id', f"route_{int(len(locations.get('routes', [])) + 1)}"),
@@ -442,21 +464,18 @@ def create_route():
     
     locations['routes'] = routes
     
-    with open(LOCATIONS_FILE, 'w') as f:
-        json.dump(locations, f, indent=2)
+    safe_save_json(LOCATIONS_FILE, locations)
     
     return jsonify({'status': 'success', 'route': route})
 
 @app.route('/api/route/<route_id>', methods=['DELETE'])
 def delete_route(route_id):
-    with open(LOCATIONS_FILE, 'r') as f:
-        locations = json.load(f)
+    locations = safe_load_json(LOCATIONS_FILE, {"hostels": [], "classes": [], "routes": []})
     
     routes = locations.get('routes', [])
     locations['routes'] = [r for r in routes if r['id'] != route_id]
     
-    with open(LOCATIONS_FILE, 'w') as f:
-        json.dump(locations, f, indent=2)
+    safe_save_json(LOCATIONS_FILE, locations)
     
     return jsonify({'status': 'success'})
 
@@ -509,9 +528,7 @@ def stop_bus(bus_number):
 @app.route('/api/hostel', methods=['POST'])
 def create_hostel():
     data = request.json
-    
-    with open(LOCATIONS_FILE, 'r') as f:
-        locations = json.load(f)
+    locations = safe_load_json(LOCATIONS_FILE, {"hostels": [], "classes": [], "routes": []})
     
     hostel = {
         'id': f"hostel_{len(locations.get('hostels', [])) + 1}",
@@ -523,29 +540,24 @@ def create_hostel():
     
     locations['hostels'].append(hostel)
     
-    with open(LOCATIONS_FILE, 'w') as f:
-        json.dump(locations, f, indent=2)
+    safe_save_json(LOCATIONS_FILE, locations)
     
     return jsonify({'status': 'success', 'hostel': hostel})
 
 @app.route('/api/hostel/<hostel_id>', methods=['DELETE'])
 def delete_hostel(hostel_id):
-    with open(LOCATIONS_FILE, 'r') as f:
-        locations = json.load(f)
+    locations = safe_load_json(LOCATIONS_FILE, {"hostels": [], "classes": [], "routes": []})
     
     locations['hostels'] = [h for h in locations.get('hostels', []) if h['id'] != hostel_id]
     
-    with open(LOCATIONS_FILE, 'w') as f:
-        json.dump(locations, f, indent=2)
+    safe_save_json(LOCATIONS_FILE, locations)
     
     return jsonify({'status': 'success'})
 
 @app.route('/api/class', methods=['POST'])
 def create_class():
     data = request.json
-    
-    with open(LOCATIONS_FILE, 'r') as f:
-        locations = json.load(f)
+    locations = safe_load_json(LOCATIONS_FILE, {"hostels": [], "classes": [], "routes": []})
     
     cls = {
         'id': f"class_{len(locations.get('classes', [])) + 1}",
@@ -557,20 +569,17 @@ def create_class():
     
     locations['classes'].append(cls)
     
-    with open(LOCATIONS_FILE, 'w') as f:
-        json.dump(locations, f, indent=2)
+    safe_save_json(LOCATIONS_FILE, locations)
     
     return jsonify({'status': 'success', 'class': cls})
 
 @app.route('/api/class/<class_id>', methods=['DELETE'])
 def delete_class(class_id):
-    with open(LOCATIONS_FILE, 'r') as f:
-        locations = json.load(f)
+    locations = safe_load_json(LOCATIONS_FILE, {"hostels": [], "classes": [], "routes": []})
     
     locations['classes'] = [c for c in locations.get('classes', []) if c['id'] != class_id]
     
-    with open(LOCATIONS_FILE, 'w') as f:
-        json.dump(locations, f, indent=2)
+    safe_save_json(LOCATIONS_FILE, locations)
     
     return jsonify({'status': 'success'})
 
