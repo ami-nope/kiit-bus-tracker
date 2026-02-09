@@ -92,6 +92,50 @@ const trail = L.polyline([], { color: '#34d39955', weight: 2, dashArray: '4,4' }
 const trailPoints = [];
 const MAX_TRAIL = 200;
 
+// --- Route display on map ---
+let routePolyline = null;
+let routeStopMarkers = [];
+let allRoutesData = [];
+
+async function osrmRoute(waypoints) {
+  if (waypoints.length < 2) return waypoints;
+  try {
+    const coords = waypoints.map(wp => `${wp[1]},${wp[0]}`).join(';');
+    const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${coords}?geometries=geojson`);
+    const data = await res.json();
+    if (data.routes && data.routes[0]) return data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+  } catch(e) {}
+  return waypoints;
+}
+
+function clearRouteDisplay() {
+  if (routePolyline) { map.removeLayer(routePolyline); routePolyline = null; }
+  routeStopMarkers.forEach(m => map.removeLayer(m));
+  routeStopMarkers = [];
+}
+
+async function showRouteOnMap(routeId) {
+  clearRouteDisplay();
+  if (!routeId) return;
+  const route = allRoutesData.find(r => String(r.id) === String(routeId));
+  if (!route || !route.waypoints || route.waypoints.length < 2) return;
+
+  const coords = await osrmRoute(route.waypoints);
+  routePolyline = L.polyline(coords, {
+    color: route.color || '#667eea', weight: 4, opacity: 0.7, dashArray: '8,6'
+  }).addTo(map);
+
+  route.waypoints.forEach((wp, idx) => {
+    const name = (route.stops && route.stops[idx]) || `Stop ${idx+1}`;
+    const dot = L.circleMarker(wp, {
+      radius: 5, color: route.color || '#667eea', weight: 2,
+      fillColor: '#fff', fillOpacity: 0.9
+    }).addTo(map);
+    dot.bindTooltip(name, { direction: 'top', offset: [0, -8] });
+    routeStopMarkers.push(dot);
+  });
+}
+
 // --- Controls ---
 function initBusSelect() {
   const sel = document.getElementById("busSelect");
@@ -107,6 +151,7 @@ async function initRouteSelect() {
   try {
     const res = await fetch("/api/routes");
     const routes = await res.json();
+    allRoutesData = routes;
     const sel = document.getElementById("routeSelect");
     routes.forEach(r => {
       const o = document.createElement("option");
@@ -115,6 +160,7 @@ async function initRouteSelect() {
     });
     sel.onchange = () => {
       currentRouteId = sel.value || null;
+      showRouteOnMap(currentRouteId);
       if (currentRouteId) {
         fetch(`/api/bus/${bus}/route`, {
           method: "POST",
