@@ -7,6 +7,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 import threading
 import queue
 import time
+import datetime
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -26,6 +27,16 @@ app.config.update(
     SESSION_COOKIE_SECURE=IS_HTTPS if ON_RENDER else False,
     PREFERRED_URL_SCHEME='https' if IS_HTTPS else 'http'
 )
+
+# Lightweight runtime metrics
+APP_START_TS = time.time()
+REQUESTS_TOTAL = 0
+
+@app.before_request
+def _count_request():
+    # Skip noise from health checks optionally
+    global REQUESTS_TOTAL
+    REQUESTS_TOTAL += 1
 
 BUSES_FILE = os.path.join(BASE_DIR, 'buses_location.json')
 LOCATIONS_FILE = os.path.join(BASE_DIR, 'locations.json')
@@ -79,6 +90,9 @@ def broadcast(payload: dict):
 
 @app.route('/events')
 def sse_events():
+    # Allow Render free tier fallback via env to disable SSE
+    if os.environ.get('DISABLE_SSE', '').lower() in ('1', 'true', 'yes'):
+        return Response('SSE disabled', status=503, mimetype='text/plain')
     # Server-Sent Events endpoint
     def event_stream():
         q = queue.Queue(maxsize=100)
@@ -89,7 +103,9 @@ def sse_events():
         try:
             while True:
                 try:
-                    msg = q.get(timeout=10)
+                    # Heartbeat interval configurable via env
+                    heartbeat = max(5, int(os.environ.get('SSE_HEARTBEAT_SEC', '20')))
+                    msg = q.get(timeout=heartbeat)
                     yield f'data: {msg}\n\n'
                 except queue.Empty:
                     # heartbeat to keep connection alive through proxies
@@ -354,6 +370,11 @@ def get_all_buses():
     buses = safe_load_json(BUSES_FILE, {})
     return jsonify(buses)
 
+@app.route('/simulator')
+def simulator():
+    return render_template('simulator.html')
+
+
 @app.route('/api/buses/clear', methods=['POST'])
 def clear_all_buses():
     # Clear all bus entries by resetting the JSON file
@@ -581,6 +602,38 @@ def get_bus_routes():
         result[bus_num] = bus_info.get('routeId', None)
     
     return jsonify(result)
+
+# Health and status endpoints for debugging in production
+@app.route('/healthz')
+def healthz():
+    try:
+        buses = safe_load_json(BUSES_FILE, {})
+        locs = safe_load_json(LOCATIONS_FILE, {"hostels": [], "classes": [], "routes": []})
+        ok = isinstance(buses, dict) and isinstance(locs, dict)
+        return jsonify({
+            'status': 'ok' if ok else 'degraded',
+            'uptime_sec': int(time.time() - APP_START_TS),
+            'sse_clients': len(_subscribers),
+            'buses_count': len(buses),
+            'routes_count': len(locs.get('routes', [])),
+        }), 200 if ok else 503
+    except Exception:
+        return jsonify({ 'status': 'error' }), 500
+
+@app.route('/status')
+def status():
+    buses = safe_load_json(BUSES_FILE, {})
+    locs = safe_load_json(LOCATIONS_FILE, {"hostels": [], "classes": [], "routes": []})
+    return jsonify({
+        'uptime_sec': int(time.time() - APP_START_TS),
+        'requests_total': REQUESTS_TOTAL,
+        'sse_clients': len(_subscribers),
+        'buses_count': len(buses),
+        'routes_count': len(locs.get('routes', [])),
+        'on_render': ON_RENDER,
+        'heartbeat_sec': max(5, int(os.environ.get('SSE_HEARTBEAT_SEC', '20'))),
+        'disable_sse': os.environ.get('DISABLE_SSE', '').lower() in ('1','true','yes')
+    })
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
