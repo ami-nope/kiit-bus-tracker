@@ -38,6 +38,15 @@ body { margin:0; background:#0f0f23; color:#e6eef8; font-family:'Segoe UI',sans-
 .status-dot { display:inline-block; width:6px; height:6px; border-radius:50%; background:#34d399; margin-right:6px;
   box-shadow:0 0 6px rgba(52,211,153,0.5); }
 #syncStatus { font-size:11px; color:#9aa4b2; margin-top:8px; }
+#startBtn {
+  width:100%; margin-top:12px; padding:8px 0; border:none; border-radius:8px;
+  background:rgba(52,211,153,0.15); color:#34d399; font-size:13px; font-weight:600;
+  cursor:pointer; transition:all 0.2s;
+}
+#startBtn:hover:not(:disabled) { background:rgba(52,211,153,0.25); }
+#startBtn:disabled { opacity:0.35; cursor:not-allowed; }
+#startBtn.running { background:rgba(251,113,133,0.15); color:#fb7185; }
+#startBtn.running:hover { background:rgba(251,113,133,0.25); }
 </style>
 </head>
 <body>
@@ -46,11 +55,11 @@ body { margin:0; background:#0f0f23; color:#e6eef8; font-family:'Segoe UI',sans-
   <div style="font-weight:600; font-size:14px; margin-bottom:6px;">🚍 Bus Simulator</div>
 
   <label>Bus Number
-    <select id="busSelect"></select>
+    <select id="busSelect"><option value="" selected>— Select Bus —</option></select>
   </label>
 
   <label>Route
-    <select id="routeSelect"><option value="">— None —</option></select>
+    <select id="routeSelect"><option value="" selected>— Select Route —</option></select>
   </label>
 
   <label>Speed (km/h)
@@ -66,7 +75,8 @@ body { margin:0; background:#0f0f23; color:#e6eef8; font-family:'Segoe UI',sans-
     <kbd>Shift</kbd> to boost &nbsp; <kbd>Space</kbd> to brake
   </div>
 
-  <div id="syncStatus"><span class="status-dot"></span>Syncing...</div>
+  <div id="syncStatus"><span class="status-dot" style="background:#667"></span>Waiting to start...</div>
+  <button id="startBtn" disabled>Select bus & route first</button>
 </div>
 
 <div id="map"></div>
@@ -75,8 +85,9 @@ body { margin:0; background:#0f0f23; color:#e6eef8; font-family:'Segoe UI',sans-
 <script>
 // --- State ---
 let lat = 20.3549, lng = 85.8161;
-let bus = 1;
+let bus = null;
 let currentRouteId = null;
+let simRunning = false;
 
 // Physics
 const BOOST = 2.5;           // shift multiplier
@@ -140,6 +151,23 @@ async function showRouteOnMap(routeId) {
 }
 
 // --- Controls ---
+function updateStartBtn() {
+  const btn = document.getElementById('startBtn');
+  if (simRunning) {
+    btn.textContent = '⏹ Stop Simulation';
+    btn.className = 'running';
+    btn.disabled = false;
+  } else if (bus && currentRouteId) {
+    btn.textContent = '▶ Start Simulation';
+    btn.className = '';
+    btn.disabled = false;
+  } else {
+    btn.textContent = 'Select bus & route first';
+    btn.className = '';
+    btn.disabled = true;
+  }
+}
+
 function initBusSelect() {
   const sel = document.getElementById("busSelect");
   for (let i = 1; i <= 20; i++) {
@@ -147,7 +175,10 @@ function initBusSelect() {
     o.value = i; o.text = "Bus " + i;
     sel.appendChild(o);
   }
-  sel.onchange = () => { bus = parseInt(sel.value); };
+  sel.onchange = () => {
+    bus = sel.value ? parseInt(sel.value) : null;
+    updateStartBtn();
+  };
 }
 
 async function initRouteSelect() {
@@ -164,7 +195,8 @@ async function initRouteSelect() {
     sel.onchange = () => {
       currentRouteId = sel.value || null;
       showRouteOnMap(currentRouteId);
-      if (currentRouteId) {
+      updateStartBtn();
+      if (currentRouteId && bus && simRunning) {
         fetch(`/api/bus/${bus}/route`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -249,8 +281,8 @@ function animate(now) {
     }
   } catch (e) {}
 
-  // Send updates to server
-  if (now - lastSend >= SEND_INTERVAL) {
+  // Send updates to server only when simulation is running
+  if (simRunning && bus && now - lastSend >= SEND_INTERVAL) {
     lastSend = now;
     const payload = { lat, lng, lastUpdate: new Date().toISOString() };
     if (currentRouteId) payload.routeId = currentRouteId;
@@ -270,6 +302,30 @@ function animate(now) {
 
 initBusSelect();
 initRouteSelect();
+
+// Start/Stop button
+document.getElementById('startBtn').addEventListener('click', () => {
+  if (simRunning) {
+    simRunning = false;
+    // Notify server to remove this bus
+    if (bus) {
+      fetch(`/api/bus/${bus}`, { method: 'DELETE' }).catch(() => {});
+    }
+    document.getElementById('syncStatus').innerHTML = '<span class="status-dot" style="background:#667"></span>Stopped';
+  } else {
+    if (!bus || !currentRouteId) return;
+    simRunning = true;
+    // Assign route on server
+    fetch(`/api/bus/${bus}/route`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ routeId: currentRouteId })
+    }).catch(() => {});
+    document.getElementById('syncStatus').innerHTML = '<span class="status-dot"></span>Syncing...';
+  }
+  updateStartBtn();
+});
+
 requestAnimationFrame(animate);
 </script>
 </body>
