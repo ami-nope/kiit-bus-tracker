@@ -7,5 +7,3 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
-      - key: GUNICORN_CMD_ARGS
-        value: "--worker-class gthread --threads 8 --timeout 180 --keep-alive 30"
