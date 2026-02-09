@@ -31,6 +31,7 @@ Bus:
 Route:
 <select id="routeSelect"></select>
 <div>Use WASD to drive</div>
+<div style="margin-top:8px">Speed: <input type="range" id="speedMul" min="0.25" max="3" step="0.25" value="1"/> <span id="speedMulLabel">1x</span></div>
 </div>
 
 <div id="map"></div>
@@ -47,9 +48,10 @@ let velocityLat = 0;
 let velocityLng = 0;
 
 // Slightly higher speed and smoother inertia
-// Tune to ~25% of previous speed for gentler control
-const accel = 0.00000012; // slower acceleration
-const friction = 0.96;    // a bit more damping
+// Base acceleration and damping; multiplier will scale this
+const baseAccel = 0.00000012; // gentle acceleration
+const friction = 0.96;        // damping
+let speedMultiplier = 1.0;     // UI-controlled multiplier
 
 const map = L.map("map").setView([lat, lng], 16);
 
@@ -111,16 +113,27 @@ let lastFrame = performance.now();
 let lastSent = 0;
 const SEND_MS = 300; // throttle network updates
 
+// Wire up speed multiplier control
+const speedMulInput = document.getElementById('speedMul');
+const speedMulLabel = document.getElementById('speedMulLabel');
+if (speedMulInput) {
+  speedMulInput.addEventListener('input', () => {
+    speedMultiplier = parseFloat(speedMulInput.value) || 1.0;
+    if (speedMulLabel) speedMulLabel.textContent = `${speedMultiplier.toFixed(2)}x`;
+  });
+}
+
 function animate() {
   const now = performance.now();
   const dt = Math.max(0.016, (now - lastFrame) / 1000); // seconds
   lastFrame = now;
 
   // Acceleration based on input
-  if (keys["w"]) velocityLat += accel;
-  if (keys["s"]) velocityLat -= accel;
-  if (keys["a"]) velocityLng -= accel;
-  if (keys["d"]) velocityLng += accel;
+  const effectiveAccel = baseAccel * speedMultiplier;
+  if (keys["w"]) velocityLat += effectiveAccel;
+  if (keys["s"]) velocityLat -= effectiveAccel;
+  if (keys["a"]) velocityLng -= effectiveAccel;
+  if (keys["d"]) velocityLng += effectiveAccel;
 
   // Apply friction smoothly
   velocityLat *= friction;
