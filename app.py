@@ -371,11 +371,11 @@ def update_bus_location(bus_number):
     with _buses_lock:
         existing = _buses.get(bus_id, {})
         route_id = raw.get('routeId', existing.get('routeId'))
-        # Skip broadcast if position hasn't meaningfully changed (~2m threshold)
+        # Skip broadcast if position hasn't meaningfully changed (~0.5m threshold)
         if existing and 'lat' in existing and 'lng' in existing:
             dlat = abs(lat - existing['lat'])
             dlng = abs(lng - existing['lng'])
-            if dlat < 0.00002 and dlng < 0.00002:
+            if dlat < 0.000005 and dlng < 0.000005:
                 should_broadcast = False
         _buses[bus_id] = {'lat': lat, 'lng': lng, 'lastUpdate': last_update, 'routeId': route_id}
         current_data = _buses[bus_id]

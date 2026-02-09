@@ -386,9 +386,9 @@
                 const fromPos = marker ? [marker.getLatLng().lat, marker.getLatLng().lng] : toPos;
                 const rid = busRouteMap[busNum];
 
-                // Skip tween if position hasn't meaningfully changed (<3m)
+                // Skip tween if position hasn't meaningfully changed (<1m)
                 const tweenDist = calcDistance(fromPos[0], fromPos[1], toPos[0], toPos[1]);
-                if (tweenDist < 3) return;
+                if (tweenDist < 1) return;
 
                 // Anti-teleport: if jump > 500m, snap instantly instead of tweening
                 if (tweenDist > 500) {
