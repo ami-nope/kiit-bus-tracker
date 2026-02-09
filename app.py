@@ -143,6 +143,8 @@ def safe_save_json(path: str, data):
             pass
 # Global variable, initialized lazily
 _buses_cache = None
+_locations_cache = None
+_credentials_cache = None
 
 def get_buses_cache():
     global _buses_cache
@@ -154,6 +156,18 @@ def get_buses_cache():
             _buses_cache = {}
     return _buses_cache
 
+def get_locations_cache():
+    global _locations_cache
+    if _locations_cache is None:
+        _locations_cache = safe_load_json(LOCATIONS_FILE, {"hostels": [], "classes": [], "routes": []})
+    return _locations_cache
+
+def get_credentials_cache():
+    global _credentials_cache
+    if _credentials_cache is None:
+        _credentials_cache = safe_load_json(CREDENTIALS_FILE, {"admins": [], "institute_name": "INSTITUTE"})
+    return _credentials_cache
+
 _buses_lock = threading.Lock()
 _worker_initialized = False
 
@@ -163,9 +177,10 @@ def start_background_worker():
         return
     _worker_initialized = True
     
-    # Ensure cache is loaded in main thread before spawning worker
-    # This prevents race conditions where routes access _buses_cache before worker loads it
+    # Ensure all caches are loaded in main thread before spawning worker
     get_buses_cache()
+    get_locations_cache()
+    get_credentials_cache()
     
     threading.Thread(target=_sync_worker, daemon=True).start()
 
@@ -250,7 +265,7 @@ def sse_events():
     }
     return Response(stream_with_context(event_stream()), mimetype='text/event-stream', headers=headers)
 
-def load_credentials():
+def load_crget_credentials_cache(
     return safe_load_json(CREDENTIALS_FILE, {})
 
 @app.route('/driver')
@@ -270,8 +285,11 @@ def login_required(fn):
 
     
 def save_credentials(data: dict):
-    with open(CREDENTIALS_FILE, 'w') as f:
-        json.dump(data, f, indent=2)
+    global _credentials_cache
+    # Update cache
+    _credentials_cache = data
+    # Persist asynchronously/safely
+    gevent.get_hub().threadpool.apply(safe_save_json, args=(CREDENTIALS_FILE, data))
 
 
 
@@ -520,28 +538,28 @@ def clear_all_buses():
     except Exception:
         pass
     return jsonify({'status': 'success'})
-
-@app.route('/api/locations', methods=['GET'])
-def get_locations():
-    locations = safe_load_json(LOCATIONS_FILE, {"hostels": [], "classes": [], "routes": []})
+get_locations_cache()
     return jsonify(locations)
 
 @app.route('/api/hostels', methods=['GET'])
 def get_hostels():
-    locations = safe_load_json(LOCATIONS_FILE, {"hostels": [], "classes": [], "routes": []})
+    locations = get_locations_cache()
     return jsonify(locations.get('hostels', []))
 
 @app.route('/api/classes', methods=['GET'])
 def get_classes():
-    locations = safe_load_json(LOCATIONS_FILE, {"hostels": [], "classes": [], "routes": []})
+    locations = get_locations_cache()
     return jsonify(locations.get('classes', []))
 
 @app.route('/api/routes', methods=['GET'])
 def get_routes():
-    locations = safe_load_json(LOCATIONS_FILE, {"hostels": [], "classes": [], "routes": []})
+    locations = get_locations_cache()
     return jsonify(locations.get('routes', []))
 
 @app.route('/api/route', methods=['POST'])
+def create_route():
+    data = request.json
+    locations = get_locations_cache(
 def create_route():
     data = request.json
     locations = safe_load_json(LOCATIONS_FILE, {"hostels": [], "classes": [], "routes": []})
@@ -562,18 +580,26 @@ def create_route():
         routes[existing_idx] = route
     else:
         routes.append(route)
+    # Update cache implicitly (refers to same object) but good to be explicit if structure changes
+    global _locations_cache
+    _locations_cache = locations
     
-    locations['routes'] = routes
-    
-    safe_save_json(LOCATIONS_FILE, locations)
+    gevent.get_hub().threadpool.apply(safe_save_json, args=(LOCATIONS_FILE, locations))
     
     return jsonify({'status': 'success', 'route': route})
 
 @app.route('/api/route/<route_id>', methods=['DELETE'])
 def delete_route(route_id):
-    locations = safe_load_json(LOCATIONS_FILE, {"hostels": [], "classes": [], "routes": []})
+    locations = get_locations_cache()
     
     routes = locations.get('routes', [])
+    locations['routes'] = [r for r in routes if r['id'] != route_id]
+    
+    # Update cache
+    global _locations_cache
+    _locations_cache = locations
+    
+    gevent.get_hub().threadpool.apply(safe_save_json, args=(LOCATIONS_FILE, locations)
     locations['routes'] = [r for r in routes if r['id'] != route_id]
     
     safe_save_json(LOCATIONS_FILE, locations)
@@ -624,15 +650,7 @@ def stop_bus(bus_number):
     
     # Broadcast bus stop
     try:
-        broadcast({ 'type': 'bus_stop', 'bus': bus_id })
-    except Exception:
-        pass
-    return jsonify({'status': 'success'})
-
-@app.route('/api/hostel', methods=['POST'])
-def create_hostel():
-    data = request.json
-    locations = safe_load_json(LOCATIONS_FILE, {"hostels": [], "classes": [], "routes": []})
+        broadcasget_locations_cache()
     
     hostel = {
         'id': f"hostel_{len(locations.get('hostels', [])) + 1}",
@@ -644,24 +662,24 @@ def create_hostel():
     
     locations['hostels'].append(hostel)
     
-    safe_save_json(LOCATIONS_FILE, locations)
+    gevent.get_hub().threadpool.apply(safe_save_json, args=(LOCATIONS_FILE, locations))
     
     return jsonify({'status': 'success', 'hostel': hostel})
 
 @app.route('/api/hostel/<hostel_id>', methods=['DELETE'])
 def delete_hostel(hostel_id):
-    locations = safe_load_json(LOCATIONS_FILE, {"hostels": [], "classes": [], "routes": []})
+    locations = get_locations_cache()
     
     locations['hostels'] = [h for h in locations.get('hostels', []) if h['id'] != hostel_id]
     
-    safe_save_json(LOCATIONS_FILE, locations)
+    gevent.get_hub().threadpool.apply(safe_save_json, args=(LOCATIONS_FILE, locations))
     
     return jsonify({'status': 'success'})
 
 @app.route('/api/class', methods=['POST'])
 def create_class():
     data = request.json
-    locations = safe_load_json(LOCATIONS_FILE, {"hostels": [], "classes": [], "routes": []})
+    locations = get_locations_cache()
     
     cls = {
         'id': f"class_{len(locations.get('classes', [])) + 1}",
@@ -673,9 +691,17 @@ def create_class():
     
     locations['classes'].append(cls)
     
-    safe_save_json(LOCATIONS_FILE, locations)
+    gevent.get_hub().threadpool.apply(safe_save_json, args=(LOCATIONS_FILE, locations))
     
     return jsonify({'status': 'success', 'class': cls})
+
+@app.route('/api/class/<class_id>', methods=['DELETE'])
+def delete_class(class_id):
+    locations = get_locations_cache()
+    
+    locations['classes'] = [c for c in locations.get('classes', []) if c['id'] != class_id]
+    
+    gevent.get_hub().threadpool.apply(safe_save_json, args=(LOCATIONS_FILE, locations)ass': cls})
 
 @app.route('/api/class/<class_id>', methods=['DELETE'])
 def delete_class(class_id):
@@ -716,7 +742,7 @@ def get_bus_routes():
     result = {}
     with _buses_lock:
         for bus_num, bus_info in _buses_cache.items():
-            result[bus_num] = bus_info.get('routeId', None)
+            resget_locations_cache(
     
     return jsonify(result)
 
@@ -730,7 +756,7 @@ def healthz():
             'status': 'ok' if ok else 'degraded',
             'uptime_sec': int(time.time() - APP_START_TS),
             'sse_clients': len(_subscribers),
-            'buses_count': len(_buses_cache),
+           get_locations_cache(
             'routes_count': len(locs.get('routes', [])),
         }), 200 if ok else 503
     except Exception:
