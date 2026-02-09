@@ -436,7 +436,7 @@
             const x = dLng * Math.cos((lat1 + lat2) * 0.5 * _DEG2RAD);
             return 6371000 * Math.sqrt(dLat * dLat + x * x);
         }
-        function calcBearing(from, to) { const rad = Math.atan2(to[1] - from[1], to[0] - from[0]); return (rad * 180 / Math.PI + 90) % 360; }
+        function calcBearing(from, to) { return -Math.atan2(to[0] - from[0], to[1] - from[1]) * (180 / Math.PI); }
 
         // Zoom-responsive icon sizing
         let currentIconSize = 22;
@@ -454,27 +454,30 @@
             const cacheKey = `${busNum}_${color}_${size}_${glow ? 1 : 0}`;
             let cached = _iconSvgCache[cacheKey];
             if (!cached) {
-                const half = Math.round(size / 2);
-                const stroke = Math.max(1.5, Math.round(size * 0.1));
-                const headR = Math.round(size * 0.34);
-                const headCY = Math.round(size * 0.42);
-                const tipY = size - 1;
-                const fontSize = Math.max(8, Math.round(size * 0.40));
-                const textY = headCY;
-                const path = `M ${half} ${tipY} L ${Math.round(half - headR * 0.58)} ${Math.round(headCY + headR * 0.32)} A ${headR} ${headR} 0 1 1 ${Math.round(half + headR * 0.58)} ${Math.round(headCY + headR * 0.32)} L ${half} ${tipY} Z`;
-                const pad = 4;
-                const glowR = headR + 4;
-                const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="-${pad} -${pad} ${size+pad*2} ${size+pad*2}" style="filter:drop-shadow(0 0 6px ${color}88) drop-shadow(0 2px 3px rgba(0,0,0,0.6))">
-              ${glow ? `<circle cx="${half}" cy="${headCY}" r="${glowR}" fill="${color}" opacity="0.2"/>` : ''}
-              <path d="${path}" fill="${color}" stroke="#fff" stroke-width="${stroke}"/>
-              <circle cx="${half}" cy="${Math.round(headCY - headR * 0.15)}" r="${Math.round(headR * 0.55)}" fill="rgba(255,255,255,0.15)"/>
-              <text x="${half}" y="${textY}" text-anchor="middle" dominant-baseline="central"
-                fill="#fff" font-family="Segoe UI,Arial" font-weight="800" font-size="${fontSize}" style="text-shadow:0 1px 2px rgba(0,0,0,0.5)">${busNum}</text>
-            </svg>`;
-                cached = { svg, half, tipY, size };
+                const h = size;
+                const bodyW = Math.round(size * 1.2);
+                const arrowW = Math.round(size * 0.5);
+                const w = bodyW + arrowW;
+                const r = Math.round(h * 0.38);
+                const mid = Math.round(h / 2);
+                const fontSize = Math.max(8, Math.round(h * 0.44));
+                const shape = `M${r},0 H${bodyW} L${w},${mid} L${bodyW},${h} H${r} A${r},${r} 0 0,1 0,${h-r} V${r} A${r},${r} 0 0,1 ${r},0Z`;
+                const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="filter:drop-shadow(0 1px 4px rgba(0,0,0,0.5))">
+${glow ? `<path d="${shape}" fill="none" stroke="${color}" stroke-width="6" opacity="0.35"/>` : ''}
+<path d="${shape}" fill="${color}" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/>
+<text x="${Math.round(bodyW * 0.45)}" y="${mid}" text-anchor="middle" dominant-baseline="central" fill="#fff" font-family="Segoe UI,Arial" font-weight="800" font-size="${fontSize}" style="text-shadow:0 1px 2px rgba(0,0,0,0.6)">${busNum}</text></svg>`;
+                const anchorX = Math.round(bodyW / 2);
+                cached = { svg, w, h, anchorX, anchorY: mid };
                 _iconSvgCache[cacheKey] = cached;
             }
-            return L.divIcon({ className: 'bus-icon', html: cached.svg, iconSize: [cached.size, cached.size], iconAnchor: [cached.half, cached.tipY] });
+            const rot = Math.round(rotation);
+            return L.divIcon({
+                className: 'bus-icon',
+                html: `<div style="transform:rotate(${rot}deg);transform-origin:${cached.anchorX}px ${cached.anchorY}px">${cached.svg}</div>`,
+                iconSize: [cached.w, cached.h],
+                iconAnchor: [cached.anchorX, cached.anchorY],
+                popupAnchor: [0, -cached.anchorY - 4]
+            });
         }
 
         function createLocationIcon(type) { const html = type === 'hostel' ? '<span class="tiny-marker tiny-hostel"></span>' : '<span class="tiny-marker tiny-class"></span>'; return L.divIcon({ className: 'marker-wrapper', html, iconSize: [10,10], iconAnchor: [5,5], popupAnchor: [0, -8] }); }
@@ -869,7 +872,8 @@
                     const snapResult = snapToRoute(rawPos[0], rawPos[1], busNum);
                     const position = snapResult.pos;
                     busSnapInfo[busNum] = { segIdx: snapResult.segIdx };
-                    let rotation = 0; if (prevBusPositions[busNum]) { rotation = calcBearing(prevBusPositions[busNum], position); }
+                    let rotation = prevBusRotation[busNum] || 0;
+                    if (prevBusPositions[busNum]) { const _d = calcDistance(prevBusPositions[busNum][0], prevBusPositions[busNum][1], position[0], position[1]); if (_d > 3) rotation = calcBearing(prevBusPositions[busNum], position); }
                     const isTracked = trackedBus && busNum === trackedBus;
                     const status = determineStatus(busNum, rawPos, bus.lastUpdate);
                     const isOffline = status === 'Offline';
@@ -980,6 +984,19 @@
                                 busMarkers[busNum].on('click', () => { setTrackedBus(busNum); if (followEnabled) map.setView([b.lat,b.lng], 17); busMarkers[busNum].openPopup(); });
                                 busMarkers[busNum].on('mouseover', () => { followEnabled = false; }); busMarkers[busNum].on('mouseout', () => { followEnabled = true; });
                             } else {
+                                // Update arrow rotation for directional icon
+                                const _mLat = busMarkers[busNum].getLatLng().lat, _mLng = busMarkers[busNum].getLatLng().lng;
+                                const _mDist = calcDistance(_mLat, _mLng, b.lat, b.lng);
+                                if (_mDist > 3) {
+                                    const _newRot = calcBearing([_mLat, _mLng], [b.lat, b.lng]);
+                                    if (prevBusRotation[busNum] === undefined || Math.abs(_newRot - (prevBusRotation[busNum]||0)) > 5) {
+                                        const _c = colors[(parseInt(busNum) - 1) % colors.length];
+                                        const _rid = busRouteMap[busNum]; const _onR = selectedRouteId && String(_rid) === String(selectedRouteId);
+                                        const _tr = trackedBus && busNum === trackedBus;
+                                        busMarkers[busNum].setIcon(createIcon(busNum, _c, currentIconSize, _newRot, _tr || _onR));
+                                        prevBusRotation[busNum] = _newRot;
+                                    }
+                                }
                                 queueBusTween(busNum, [b.lat, b.lng]);
                             }
                             const now = new Date().toLocaleTimeString();
