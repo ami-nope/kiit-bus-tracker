@@ -178,6 +178,11 @@ def _before():
         app._ready = True
     REQUESTS_TOTAL += 1
 
+@app.after_request
+def _after(resp):
+    resp.headers.setdefault('Permissions-Policy', 'gamepad=(self)')
+    return resp
+
 def _sync_worker():
     last = None
     while True:

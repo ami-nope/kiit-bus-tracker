@@ -113,6 +113,52 @@ gamepadStatusEl.style.cssText = 'position:absolute;top:8px;right:8px;background:
 gamepadStatusEl.textContent = 'Controller: Not Connected';
 document.body.appendChild(gamepadStatusEl);
 
+const GAMEPAD_API_AVAILABLE =
+    typeof navigator.getGamepads === 'function' ||
+    typeof navigator.webkitGetGamepads === 'function';
+const GAMEPAD_ALLOWED_CONTEXT = window.isSecureContext || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+
+if (!GAMEPAD_API_AVAILABLE) {
+    gamepadStatusEl.style.borderColor = '#fb7185';
+    gamepadStatusEl.style.color = '#fb7185';
+    gamepadStatusEl.textContent = 'Controller: Not Supported';
+} else if (!GAMEPAD_ALLOWED_CONTEXT) {
+    gamepadStatusEl.style.borderColor = '#f59e0b';
+    gamepadStatusEl.style.color = '#f59e0b';
+    gamepadStatusEl.textContent = 'Controller: HTTPS Required';
+}
+
+function getGamepadsSafe() {
+    try {
+        if (typeof navigator.getGamepads === 'function') return navigator.getGamepads() || [];
+        if (typeof navigator.webkitGetGamepads === 'function') return navigator.webkitGetGamepads() || [];
+    } catch (e) {}
+    return [];
+}
+
+function getButtonValue(pad, index) {
+    const btn = pad && pad.buttons ? pad.buttons[index] : null;
+    return btn && typeof btn.value === 'number' ? Math.max(0, Math.min(1, btn.value)) : 0;
+}
+
+function getAxisValue(pad, index) {
+    const axis = pad && pad.axes ? pad.axes[index] : null;
+    return typeof axis === 'number' ? axis : 0;
+}
+
+function axisToTrigger(axisValue) {
+    return Math.max(0, Math.min(1, (axisValue + 1) / 2));
+}
+
+function getTriggerValue(pad, primaryButton, fallbackAxes) {
+    let value = getButtonValue(pad, primaryButton);
+    if (value > 0) return value;
+    for (const axisIdx of fallbackAxes) {
+        value = Math.max(value, axisToTrigger(getAxisValue(pad, axisIdx)));
+    }
+    return value;
+}
+
 // --- Efficient Gamepad Panel Update ---
 let lastGamepadPanel = '';
 let lastGamepadPanelTime = 0;
@@ -122,17 +168,25 @@ function renderGamepadPanel(eager) {
     if (!eager && now - lastGamepadPanelTime < 80) return;
     lastGamepadPanelTime = now;
     let html = '';
-    const pads = navigator.getGamepads();
+    if (!GAMEPAD_API_AVAILABLE) {
+        gamepadStatusEl.innerHTML = `<b style='color:#fb7185;font-size:13px;'>Controller API not supported</b>`;
+        return;
+    }
+    if (!GAMEPAD_ALLOWED_CONTEXT) {
+        gamepadStatusEl.innerHTML = `<b style='color:#f59e0b;font-size:13px;'>Controller requires HTTPS</b>`;
+        return;
+    }
+    const pads = getGamepadsSafe();
     let pad = null;
     for (let i = 0; i < pads.length; i++) {
         if (pads[i]) { pad = pads[i]; break; }
     }
     if (pad) {
         // Show only RT, LT, and left stick axes
-        const RT = pad.buttons[7] ? pad.buttons[7].value : 0;
-        const LT = pad.buttons[6] ? pad.buttons[6].value : 0;
-        const LX = pad.axes[0] ? pad.axes[0].toFixed(2) : '0.00';
-        const LY = pad.axes[1] ? pad.axes[1].toFixed(2) : '0.00';
+        const RT = getTriggerValue(pad, 7, [5, 2]);
+        const LT = getTriggerValue(pad, 6, [4, 3]);
+        const LX = getAxisValue(pad, 0).toFixed(2);
+        const LY = getAxisValue(pad, 1).toFixed(2);
         html += `<b style='color:#34d399;font-size:13px;'>Controller</b><br>`;
         html += `<span style='font-size:12px;color:#9aa4b2;'>RT: <b style='color:#34d399;'>${RT.toFixed(2)}</b> &nbsp; LT: <b style='color:#34d399;'>${LT.toFixed(2)}</b></span><br>`;
         html += `<span style='font-size:12px;color:#9aa4b2;'>L-Stick: <b style='color:#34d399;'>X:${LX} Y:${LY}</b></span>`;
@@ -390,12 +444,13 @@ class GamepadHandler {
         });
     }
     getInput() {
-        const pads = navigator.getGamepads();
+        if (!GAMEPAD_API_AVAILABLE || !GAMEPAD_ALLOWED_CONTEXT) return null;
+        const pads = getGamepadsSafe();
         const pad = this.gamepadIndex !== null ? pads[this.gamepadIndex] : pads[0];
         if (!pad) return null;
-        const RT = normalizeTrigger(pad.buttons[7].value);
-        const LT = normalizeTrigger(pad.buttons[6].value);
-        const steer = deadzone(pad.axes[0]);
+        const RT = normalizeTrigger(getTriggerValue(pad, 7, [5, 2]));
+        const LT = normalizeTrigger(getTriggerValue(pad, 6, [4, 3]));
+        const steer = deadzone(getAxisValue(pad, 0));
         return { RT, LT, steer };
     }
     isActive() {
@@ -408,7 +463,11 @@ let gamepadHeading = 0;
 
 // Add more robust polling and debug output
 function pollGamepadConnection() {
-    const pads = navigator.getGamepads();
+    if (!GAMEPAD_API_AVAILABLE || !GAMEPAD_ALLOWED_CONTEXT) {
+        gamepadHandler.gamepadIndex = null;
+        return;
+    }
+    const pads = getGamepadsSafe();
     let found = false;
     for (let i = 0; i < pads.length; i++) {
         if (pads[i]) {
@@ -419,6 +478,13 @@ function pollGamepadConnection() {
     }
     if (!found) gamepadHandler.gamepadIndex = null;
 }
+
+function primeGamepadDetection() {
+    pollGamepadConnection();
+    renderGamepadPanel(true);
+}
+window.addEventListener('pointerdown', primeGamepadDetection, { once: true });
+window.addEventListener('keydown', primeGamepadDetection, { once: true });
 
 // --- Animation Loop ---
 let lastFrame = performance.now();
@@ -528,7 +594,7 @@ function animate(now) {
             // Only move if both RT and LT are pressed, and use left stick for direction
             if (input.RT > 0.1 && input.LT > 0.1) {
                 dx = input.steer;
-                const pads = navigator.getGamepads();
+                const pads = getGamepadsSafe();
                 const pad = gamepadHandler.gamepadIndex !== null ? pads[gamepadHandler.gamepadIndex] : pads[0];
                 let stickY = pad && pad.axes.length > 1 ? -deadzone(pad.axes[1]) : 0;
                 const mag = Math.sqrt(dx * dx + stickY * stickY) || 1;
@@ -546,7 +612,7 @@ function animate(now) {
             } else if (input.RT > 0.1) {
                 // Only RT pressed: normal speed
                 dx = input.steer;
-                const pads = navigator.getGamepads();
+                const pads = getGamepadsSafe();
                 const pad = gamepadHandler.gamepadIndex !== null ? pads[gamepadHandler.gamepadIndex] : pads[0];
                 let stickY = pad && pad.axes.length > 1 ? -deadzone(pad.axes[1]) : 0;
                 const mag = Math.sqrt(dx * dx + stickY * stickY) || 1;
