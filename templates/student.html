@@ -199,7 +199,11 @@
                 <h3><span>📍</span> Route Details</h3>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px">
                     <div style="text-align:center"><div style="font-size:12px; color:#9aa4b2">Arriving In</div><div id="etaValue" style="font-size:18px; font-weight:600; color:#34d399; margin-top:4px">--</div></div>
-                    <div style="text-align:center"><div style="font-size:12px; color:#9aa4b2">Nearest Stop</div><div id="walkDistance" style="font-size:18px; font-weight:600; color:#667eea; margin-top:4px">--</div></div>
+                    <div style="text-align:center">
+                        <div style="font-size:12px; color:#9aa4b2">Nearest Stop</div>
+                        <div id="walkDistance" style="font-size:18px; font-weight:600; color:#667eea; margin-top:4px">--</div>
+                        <div id="nextStop" style="font-size:13px; color:#9aa4b2; margin-top:2px"></div>
+                    </div>
                 </div>
                 <div id="busesOnRoute" style="margin-top:12px; font-size:12px; color:#9aa4b2">🚌 Transports on route: <span id="busesOnRouteCount">-</span></div>
             </div>
@@ -1038,11 +1042,18 @@ ${glow ? `<path d="${shape}" fill="none" stroke="${color}" stroke-width="6" opac
             busesOnRoute.sort((a, b) => a.etaSec - b.etaSec);
             if (busesOnRoute.length === 0) { container.innerHTML = '<div style="color:var(--text-sub);font-size:12px;padding:6px 0">No active transports on this route</div>'; return; }
             const nearestStopName = (route.stops && route.stops[nearestStopIdx]) || ('Stop ' + (nearestStopIdx + 1));
+            const nextStopName = (route.stops && route.stops[nearestStopIdx + 1]) || (nearestStopIdx + 1 < route.waypoints.length ? ('Stop ' + (nearestStopIdx + 2)) : null);
             const frag = document.createDocumentFragment();
             const header = document.createElement('div');
-            header.style.cssText = 'font-size:11px;color:var(--text-sub);margin-bottom:6px;padding:2px 0';
+            header.style.cssText = 'font-size:11px;color:var(--text-sub);margin-bottom:2px;padding:2px 0';
             header.textContent = 'Arriving at ' + nearestStopName;
             frag.appendChild(header);
+            if (nextStopName) {
+                const nextHeader = document.createElement('div');
+                nextHeader.style.cssText = 'font-size:11px;color:var(--text-sub);margin-bottom:8px;padding:2px 0';
+                nextHeader.textContent = 'Next stop: ' + nextStopName;
+                frag.appendChild(nextHeader);
+            }
             busesOnRoute.forEach(bus => {
                 const colorIdx = (parseInt(bus.busNum) || 0);
                 const color = colors[(colorIdx > 0 ? colorIdx - 1 : 0) % colors.length];
@@ -1126,8 +1137,29 @@ ${glow ? `<path d="${shape}" fill="none" stroke="${color}" stroke-width="6" opac
                 })
                 .map(([busNum]) => busNum);
             if (_dom.busesOnRouteCount) _dom.busesOnRouteCount.textContent = busesOnRoute.length;
-            let nearestStop = null; let minDist = Infinity; const refLocation = (userLocation && userLocation.length === 2) ? userLocation : (map ? [map.getCenter().lat, map.getCenter().lng] : null);
-            if (refLocation && route.waypoints.length > 0) { route.waypoints.forEach((stop) => { const dist = calcDistance(refLocation[0], refLocation[1], stop[0], stop[1]); if (dist < minDist) { minDist = dist; nearestStop = stop; } }); if (nearestStop) { if (userLocation) { const distKm = (minDist / 1000).toFixed(2); const walkMin = Math.ceil(minDist / 1.4); if(_dom.walkDistance) _dom.walkDistance.textContent = `${distKm} km (${walkMin}m)`; if (walkingLine) map.removeLayer(walkingLine); walkingLine = L.polyline([userLocation, nearestStop], { color: '#999999', weight: 2, opacity: 0.6, dashArray: '5, 5' }).addTo(map); } else { if(_dom.walkDistance) _dom.walkDistance.textContent = '--'; } } } else { if(_dom.walkDistance) _dom.walkDistance.textContent = '--'; }
+            let nearestStop = null; let minDist = Infinity; let nearestStopIdx = 0; const refLocation = (userLocation && userLocation.length === 2) ? userLocation : (map ? [map.getCenter().lat, map.getCenter().lng] : null);
+            if (refLocation && route.waypoints.length > 0) {
+                route.waypoints.forEach((stop, idx) => { const dist = calcDistance(refLocation[0], refLocation[1], stop[0], stop[1]); if (dist < minDist) { minDist = dist; nearestStop = stop; nearestStopIdx = idx; } });
+                if (nearestStop) {
+                    if (userLocation) {
+                        const distKm = (minDist / 1000).toFixed(2);
+                        const walkMin = Math.ceil(minDist / 1.4);
+                        if(_dom.walkDistance) _dom.walkDistance.textContent = `${distKm} km (${walkMin}m)`;
+                        if (walkingLine) map.removeLayer(walkingLine);
+                        walkingLine = L.polyline([userLocation, nearestStop], { color: '#999999', weight: 2, opacity: 0.6, dashArray: '5, 5' }).addTo(map);
+                    } else {
+                        if(_dom.walkDistance) _dom.walkDistance.textContent = '--';
+                    }
+                    // Set nearest stop name and next stop name
+                    const nearestStopName = (route.stops && route.stops[nearestStopIdx]) || (`Stop ${nearestStopIdx + 1}`);
+                    const nextStopName = (route.stops && route.stops[nearestStopIdx + 1]) || (nearestStopIdx + 1 < route.waypoints.length ? `Stop ${nearestStopIdx + 2}` : null);
+                    if(document.getElementById('walkDistance')) document.getElementById('walkDistance').textContent = nearestStopName;
+                    if(document.getElementById('nextStop')) document.getElementById('nextStop').textContent = nextStopName ? `Next stop: ${nextStopName}` : '';
+                }
+            } else {
+                if(_dom.walkDistance) _dom.walkDistance.textContent = '--';
+                if(document.getElementById('nextStop')) document.getElementById('nextStop').textContent = '';
+            }
             // ETA computed separately to simplify: distance / speed
             if(_dom.etaValue) _dom.etaValue.innerHTML = '<span class="eta-spinner"></span>Updating'; if(_dom.etaOverlay) _dom.etaOverlay.innerHTML = '<span class="eta-spinner"></span>';
             studentEtaLastHtml = null; studentEtaLastTs = 0;

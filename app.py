@@ -58,7 +58,7 @@ _bus_stop_state = {}  # bus_id -> { 'atStop': str|None, 'nearestStopIdx': int, '
 
 def detect_stop_info(bus_id, lat, lng, route_id):
     """Detect nearest stop, at-stop, direction. Returns dict to merge into broadcast."""
-    result = {'atStop': None, 'nearestStopIdx': None, 'nearestStopName': None, 'direction': None}
+    result = {'atStop': None, 'nearestStopIdx': None, 'nearestStopName': None, 'nextStopName': None, 'direction': None}
     if not route_id:
         return result
     locs = load_json(LOCATIONS_FILE, {"hostels": [], "classes": [], "routes": []})
@@ -80,6 +80,9 @@ def detect_stop_info(bus_id, lat, lng, route_id):
     result['nearestStopIdx'] = best_idx
     stop_name = stops[best_idx] if best_idx < len(stops) and stops[best_idx] else f'Stop {best_idx + 1}'
     result['nearestStopName'] = stop_name
+    # Determine next stop index and name
+    next_idx = best_idx + 1 if best_idx + 1 < len(stops) else best_idx
+    result['nextStopName'] = stops[next_idx] if next_idx < len(stops) and stops[next_idx] else f'Stop {next_idx + 1}' if next_idx != best_idx else None
     if best_d <= _AT_STOP_M:
         result['atStop'] = stop_name
     # Direction

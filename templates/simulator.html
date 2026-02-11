@@ -107,6 +107,50 @@ body { margin:0; background:#0f0f23; color:#e6eef8; font-family:'Segoe UI',sans-
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
+// --- Gamepad Status Indicator ---
+let gamepadStatusEl = document.createElement('div');
+gamepadStatusEl.style.cssText = 'position:absolute;top:8px;right:8px;background:rgba(18,24,38,0.92);color:#34d399;padding:6px 12px;border-radius:8px;font-size:13px;z-index:1001;border:1px solid #34d399;';
+gamepadStatusEl.textContent = 'Controller: Not Connected';
+document.body.appendChild(gamepadStatusEl);
+
+// --- Efficient Gamepad Panel Update ---
+let lastGamepadPanel = '';
+let lastGamepadPanelTime = 0;
+function renderGamepadPanel(eager) {
+    // Only update at most every 80ms unless forced (eager=true)
+    const now = performance.now();
+    if (!eager && now - lastGamepadPanelTime < 80) return;
+    lastGamepadPanelTime = now;
+    let html = '';
+    const pads = navigator.getGamepads();
+    let pad = null;
+    for (let i = 0; i < pads.length; i++) {
+        if (pads[i]) { pad = pads[i]; break; }
+    }
+    if (pad) {
+        // Show only RT, LT, and left stick axes
+        const RT = pad.buttons[7] ? pad.buttons[7].value : 0;
+        const LT = pad.buttons[6] ? pad.buttons[6].value : 0;
+        const LX = pad.axes[0] ? pad.axes[0].toFixed(2) : '0.00';
+        const LY = pad.axes[1] ? pad.axes[1].toFixed(2) : '0.00';
+        html += `<b style='color:#34d399;font-size:13px;'>Controller</b><br>`;
+        html += `<span style='font-size:12px;color:#9aa4b2;'>RT: <b style='color:#34d399;'>${RT.toFixed(2)}</b> &nbsp; LT: <b style='color:#34d399;'>${LT.toFixed(2)}</b></span><br>`;
+        html += `<span style='font-size:12px;color:#9aa4b2;'>L-Stick: <b style='color:#34d399;'>X:${LX} Y:${LY}</b></span>`;
+    } else {
+        html += `<b style='color:#fb7185;font-size:13px;'>No Controller</b>`;
+    }
+    if (html !== lastGamepadPanel) {
+        gamepadStatusEl.innerHTML = html;
+        lastGamepadPanel = html;
+    }
+}
+
+// Update panel at most every 80ms, not every frame
+setInterval(() => renderGamepadPanel(false), 80);
+// Also update eagerly on connect/disconnect
+window.addEventListener('gamepadconnected', () => renderGamepadPanel(true));
+window.addEventListener('gamepaddisconnected', () => renderGamepadPanel(true));
+
 // --- State ---
 let lat = 20.3549, lng = 85.8161;
 let bus = null;
@@ -115,6 +159,7 @@ let simRunning = false;
 
 // Physics
 const BOOST = 2.5;           // shift multiplier
+const GAMEPAD_DUAL_TRIGGER_BOOST = 3; // LT + RT multiplier
 
 // --- Aligner state ---
 let alignerEnabled = false;
@@ -325,6 +370,56 @@ document.addEventListener("keydown", e => {
 });
 document.addEventListener("keyup", e => { keys[e.key.toLowerCase()] = false; });
 
+// --- Gamepad Helpers ---
+function deadzone(val, threshold = 0.1) {
+    return Math.abs(val) < threshold ? 0 : val;
+}
+function normalizeTrigger(val) {
+    return Math.max(0, Math.min(1, val));
+}
+
+// --- Gamepad Input Handler ---
+class GamepadHandler {
+    constructor() {
+        this.gamepadIndex = null;
+        window.addEventListener('gamepadconnected', e => {
+            this.gamepadIndex = e.gamepad.index;
+        });
+        window.addEventListener('gamepaddisconnected', e => {
+            if (this.gamepadIndex === e.gamepad.index) this.gamepadIndex = null;
+        });
+    }
+    getInput() {
+        const pads = navigator.getGamepads();
+        const pad = this.gamepadIndex !== null ? pads[this.gamepadIndex] : pads[0];
+        if (!pad) return null;
+        const RT = normalizeTrigger(pad.buttons[7].value);
+        const LT = normalizeTrigger(pad.buttons[6].value);
+        const steer = deadzone(pad.axes[0]);
+        return { RT, LT, steer };
+    }
+    isActive() {
+        return this.getInput() !== null;
+    }
+}
+
+const gamepadHandler = new GamepadHandler();
+let gamepadHeading = 0;
+
+// Add more robust polling and debug output
+function pollGamepadConnection() {
+    const pads = navigator.getGamepads();
+    let found = false;
+    for (let i = 0; i < pads.length; i++) {
+        if (pads[i]) {
+            found = true;
+            gamepadHandler.gamepadIndex = i;
+            break;
+        }
+    }
+    if (!found) gamepadHandler.gamepadIndex = null;
+}
+
 // --- Animation Loop ---
 let lastFrame = performance.now();
 let lastSend = 0;
@@ -336,150 +431,200 @@ let updatesSent = 0;
 let currentHeading = 0; // degrees, 0 = north, clockwise
 
 function animate(now) {
-  const dt = Math.min(0.1, (now - lastFrame) / 1000); // cap at 100ms to avoid jumps
-  lastFrame = now;
+    pollGamepadConnection();
+    const dt = Math.min(0.1, (now - lastFrame) / 1000); // cap at 100ms to avoid jumps
+    lastFrame = now;
 
-  const boost = keys["shift"] ? BOOST : 1;
-  const speedDegPerSec = (targetKmh / 3.6) / 111320; // convert km/h to degrees/sec
+    const boost = keys["shift"] ? BOOST : 1;
+    const speedDegPerSec = (targetKmh / 3.6) / 111320; // convert km/h to degrees/sec
 
-  if (alignerEnabled && alignerRouteCoords && alignerRouteCoords.length >= 2) {
-    // --- ALIGNER MODE: move along route track ---
-    // W = forward, S = reverse, Space = brake. A/D ignored.
-    const goForward = !!keys["w"] && !keys[" "];
-    const goReverse = !!keys["s"] && !keys[" "];
-    alignerMoving = goForward || goReverse;
-
-    if (alignerMoving) {
-      // Distance to travel this frame in degrees
-      let remaining = speedDegPerSec * boost * dt;
-
-      if (goForward) {
-        // --- Forward along route (increasing segment index) ---
-        while (remaining > 0 && alignerSegIdx < alignerRouteCoords.length - 1) {
-          const a = alignerRouteCoords[alignerSegIdx];
-          const b = alignerRouteCoords[alignerSegIdx + 1];
-          const segDx = b[0] - a[0], segDy = b[1] - a[1];
-          const segLen = Math.sqrt(segDx * segDx + segDy * segDy);
-          if (segLen === 0) { alignerSegIdx++; alignerT = 0; continue; }
-
-          const remainingInSeg = (1 - alignerT) * segLen;
-          if (remaining >= remainingInSeg) {
-            remaining -= remainingInSeg;
-            alignerSegIdx++;
-            alignerT = 0;
-          } else {
-            alignerT += remaining / segLen;
-            remaining = 0;
-          }
+    if (alignerEnabled && alignerRouteCoords && alignerRouteCoords.length >= 2) {
+        // --- ALIGNER MODE: move along route track ---
+        // Use gamepad if available, else keyboard
+        let goForward = false, goReverse = false;
+        if (gamepadHandler.isActive()) {
+            const input = gamepadHandler.getInput();
+            goForward = input.RT > 0.1 && input.LT < 0.1;
+            goReverse = input.LT > 0.1 && input.RT < 0.1;
+        } else {
+            goForward = !!keys["w"] && !keys[" "];
+            goReverse = !!keys["s"] && !keys[" "];
         }
-        // Clamp at end of route
-        if (alignerSegIdx >= alignerRouteCoords.length - 1) {
-          alignerSegIdx = alignerRouteCoords.length - 2;
-          alignerT = 1;
+        alignerMoving = goForward || goReverse;
+
+        if (alignerMoving) {
+            // Distance to travel this frame in degrees
+            let remaining = speedDegPerSec * boost * dt;
+
+            if (goForward) {
+                // --- Forward along route (increasing segment index) ---
+                while (remaining > 0 && alignerSegIdx < alignerRouteCoords.length - 1) {
+                    const a = alignerRouteCoords[alignerSegIdx];
+                    const b = alignerRouteCoords[alignerSegIdx + 1];
+                    const segDx = b[0] - a[0], segDy = b[1] - a[1];
+                    const segLen = Math.sqrt(segDx * segDx + segDy * segDy);
+                    if (segLen === 0) { alignerSegIdx++; alignerT = 0; continue; }
+
+                    const remainingInSeg = (1 - alignerT) * segLen;
+                    if (remaining >= remainingInSeg) {
+                        remaining -= remainingInSeg;
+                        alignerSegIdx++;
+                        alignerT = 0;
+                    } else {
+                        alignerT += remaining / segLen;
+                        remaining = 0;
+                    }
+                }
+                // Clamp at end of route
+                if (alignerSegIdx >= alignerRouteCoords.length - 1) {
+                    alignerSegIdx = alignerRouteCoords.length - 2;
+                    alignerT = 1;
+                }
+            } else {
+                // --- Reverse along route (decreasing segment index) ---
+                while (remaining > 0 && (alignerSegIdx > 0 || alignerT > 0)) {
+                    const a = alignerRouteCoords[alignerSegIdx];
+                    const b = alignerRouteCoords[alignerSegIdx + 1];
+                    const segDx = b[0] - a[0], segDy = b[1] - a[1];
+                    const segLen = Math.sqrt(segDx * segDx + segDy * segDy);
+                    if (segLen === 0) { if (alignerSegIdx > 0) { alignerSegIdx--; alignerT = 1; } else { alignerT = 0; } continue; }
+
+                    const travelledInSeg = alignerT * segLen;
+                    if (remaining >= travelledInSeg) {
+                        remaining -= travelledInSeg;
+                        if (alignerSegIdx > 0) { alignerSegIdx--; alignerT = 1; }
+                        else { alignerT = 0; remaining = 0; }
+                    } else {
+                        alignerT -= remaining / segLen;
+                        remaining = 0;
+                    }
+                }
+            }
+
+            // Compute actual position
+            const a = alignerRouteCoords[alignerSegIdx];
+            const b = alignerRouteCoords[alignerSegIdx + 1];
+            lat = a[0] + alignerT * (b[0] - a[0]);
+            lng = a[1] + alignerT * (b[1] - a[1]);
+            marker.setLatLng([lat, lng]);
+
+            // Compute heading from movement direction (forward or reverse along segment)
+            const hDx = b[1] - a[1], hDy = b[0] - a[0];
+            const fwdHeading = (Math.atan2(hDx, hDy) * 180 / Math.PI + 360) % 360;
+            currentHeading = goReverse ? (fwdHeading + 180) % 360 : fwdHeading;
+
+            trailPoints.push([lat, lng]);
+            if (trailPoints.length > MAX_TRAIL) trailPoints.shift();
+            trail.setLatLngs(trailPoints);
         }
-      } else {
-        // --- Reverse along route (decreasing segment index) ---
-        while (remaining > 0 && (alignerSegIdx > 0 || alignerT > 0)) {
-          const a = alignerRouteCoords[alignerSegIdx];
-          const b = alignerRouteCoords[alignerSegIdx + 1];
-          const segDx = b[0] - a[0], segDy = b[1] - a[1];
-          const segLen = Math.sqrt(segDx * segDx + segDy * segDy);
-          if (segLen === 0) { if (alignerSegIdx > 0) { alignerSegIdx--; alignerT = 1; } else { alignerT = 0; } continue; }
 
-          const travelledInSeg = alignerT * segLen;
-          if (remaining >= travelledInSeg) {
-            remaining -= travelledInSeg;
-            if (alignerSegIdx > 0) { alignerSegIdx--; alignerT = 1; }
-            else { alignerT = 0; remaining = 0; }
-          } else {
-            alignerT -= remaining / segLen;
-            remaining = 0;
-          }
+        isMoving = alignerMoving;
+    } else {
+        // --- NORMAL MODE: WASD or Gamepad free movement ---
+        let dx = 0, dy = 0;
+        let useGamepad = gamepadHandler.isActive();
+        if (useGamepad) {
+            const input = gamepadHandler.getInput();
+            // Only move if both RT and LT are pressed, and use left stick for direction
+            if (input.RT > 0.1 && input.LT > 0.1) {
+                dx = input.steer;
+                const pads = navigator.getGamepads();
+                const pad = gamepadHandler.gamepadIndex !== null ? pads[gamepadHandler.gamepadIndex] : pads[0];
+                let stickY = pad && pad.axes.length > 1 ? -deadzone(pad.axes[1]) : 0;
+                const mag = Math.sqrt(dx * dx + stickY * stickY) || 1;
+                dx /= mag; stickY /= mag;
+                // 3x speed boost when both triggers are pressed
+                const speed = input.RT * speedDegPerSec * GAMEPAD_DUAL_TRIGGER_BOOST * dt;
+                lat += stickY * speed;
+                lng += dx * speed;
+                currentHeading = (Math.atan2(dx, stickY) * 180 / Math.PI + 360) % 360;
+                marker.setLatLng([lat, lng]);
+                trailPoints.push([lat, lng]);
+                if (trailPoints.length > MAX_TRAIL) trailPoints.shift();
+                trail.setLatLngs(trailPoints);
+                isMoving = true;
+            } else if (input.RT > 0.1) {
+                // Only RT pressed: normal speed
+                dx = input.steer;
+                const pads = navigator.getGamepads();
+                const pad = gamepadHandler.gamepadIndex !== null ? pads[gamepadHandler.gamepadIndex] : pads[0];
+                let stickY = pad && pad.axes.length > 1 ? -deadzone(pad.axes[1]) : 0;
+                const mag = Math.sqrt(dx * dx + stickY * stickY) || 1;
+                dx /= mag; stickY /= mag;
+                const speed = input.RT * speedDegPerSec * dt;
+                lat += stickY * speed;
+                lng += dx * speed;
+                currentHeading = (Math.atan2(dx, stickY) * 180 / Math.PI + 360) % 360;
+                marker.setLatLng([lat, lng]);
+                trailPoints.push([lat, lng]);
+                if (trailPoints.length > MAX_TRAIL) trailPoints.shift();
+                trail.setLatLngs(trailPoints);
+                isMoving = true;
+            } else {
+                isMoving = false;
+            }
+        } else {
+            // ...existing WASD movement code...
+            dx = 0; dy = 0;
+            let boostVal = keys["shift"] ? 2 : 1;
+            if (keys["w"]) dy = 1;
+            if (keys["s"]) dy = -1;
+            if (keys["d"]) dx = 1;
+            if (keys["a"]) dx = -1;
+            const mag = Math.sqrt(dx * dx + dy * dy) || 1;
+            dx /= mag; dy /= mag;
+            isMoving = (dx !== 0 || dy !== 0);
+            if (isMoving) {
+                currentHeading = (Math.atan2(dx, dy) * 180 / Math.PI + 360) % 360;
+                lat += dy * speedDegPerSec * boostVal * dt;
+                lng += dx * speedDegPerSec * boostVal * dt;
+                marker.setLatLng([lat, lng]);
+                trailPoints.push([lat, lng]);
+                if (trailPoints.length > MAX_TRAIL) trailPoints.shift();
+                trail.setLatLngs(trailPoints);
+            }
         }
-      }
-
-      // Compute actual position
-      const a = alignerRouteCoords[alignerSegIdx];
-      const b = alignerRouteCoords[alignerSegIdx + 1];
-      lat = a[0] + alignerT * (b[0] - a[0]);
-      lng = a[1] + alignerT * (b[1] - a[1]);
-      marker.setLatLng([lat, lng]);
-
-      // Compute heading from movement direction (forward or reverse along segment)
-      const hDx = b[1] - a[1], hDy = b[0] - a[0];
-      const fwdHeading = (Math.atan2(hDx, hDy) * 180 / Math.PI + 360) % 360;
-      currentHeading = goReverse ? (fwdHeading + 180) % 360 : fwdHeading;
-
-      trailPoints.push([lat, lng]);
-      if (trailPoints.length > MAX_TRAIL) trailPoints.shift();
-      trail.setLatLngs(trailPoints);
     }
 
-    isMoving = alignerMoving;
-  } else {
-    // --- NORMAL MODE: WASD free movement ---
-    let dx = 0, dy = 0;
-    if (keys["w"]) dy = 1;
-    if (keys["s"]) dy = -1;
-    if (keys["d"]) dx = 1;
-    if (keys["a"]) dx = -1;
+    // Soft camera follow — pan only when near edge
+    try {
+        const px = map.latLngToContainerPoint([lat, lng]);
+        const sz = map.getSize();
+        const m = 60;
+        if (px.x < m || px.x > sz.x - m || px.y < m || px.y > sz.y - m) {
+            map.panTo([lat, lng], { animate: true, duration: 0.3 });
+        }
+    } catch (e) {}
 
-    // Normalize diagonal movement
-    const mag = Math.sqrt(dx * dx + dy * dy) || 1;
-    dx /= mag; dy /= mag;
-
-    isMoving = (dx !== 0 || dy !== 0);
-    if (isMoving) {
-      // Compute heading from WASD direction
-      currentHeading = (Math.atan2(dx, dy) * 180 / Math.PI + 360) % 360;
-      lat += dy * speedDegPerSec * boost * dt;
-      lng += dx * speedDegPerSec * boost * dt;
-      marker.setLatLng([lat, lng]);
-      trailPoints.push([lat, lng]);
-      if (trailPoints.length > MAX_TRAIL) trailPoints.shift();
-      trail.setLatLngs(trailPoints);
+    // Send updates to server — fast when moving, slow heartbeat when idle
+    const sendInterval = isMoving ? SEND_INTERVAL : IDLE_SEND_INTERVAL;
+    if (simRunning && bus && now - lastSend >= sendInterval) {
+        // Skip if position hasn't changed (within ~1m) and not first send
+        const posChanged = lastSentLat === null ||
+            Math.abs(lat - lastSentLat) > 0.00001 ||
+            Math.abs(lng - lastSentLng) > 0.00001;
+        // Always send at heartbeat interval even if not moved (keeps bus alive on server)
+        if (posChanged || now - lastSend >= IDLE_SEND_INTERVAL) {
+            lastSend = now;
+            lastSentLat = lat; lastSentLng = lng;
+            const payload = { lat, lng, lastUpdate: new Date().toISOString(), heading: currentHeading };
+            if (currentRouteId) payload.routeId = currentRouteId;
+            fetch(`/api/bus/${bus}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            }).then(() => {
+                updatesSent++;
+                document.getElementById('syncStatus').innerHTML = '<span class="status-dot"></span>Synced';
+                document.getElementById('updateCount').textContent = updatesSent;
+                document.getElementById('lastUpdateTime').textContent = new Date().toLocaleTimeString();
+            }).catch(() => {
+                document.getElementById('syncStatus').innerHTML = '<span class="status-dot" style="background:#fb7185"></span>Offline';
+            });
+        }
     }
-  }
 
-  // Soft camera follow — pan only when near edge
-  try {
-    const px = map.latLngToContainerPoint([lat, lng]);
-    const sz = map.getSize();
-    const m = 60;
-    if (px.x < m || px.x > sz.x - m || px.y < m || px.y > sz.y - m) {
-      map.panTo([lat, lng], { animate: true, duration: 0.3 });
-    }
-  } catch (e) {}
-
-  // Send updates to server — fast when moving, slow heartbeat when idle
-  const sendInterval = isMoving ? SEND_INTERVAL : IDLE_SEND_INTERVAL;
-  if (simRunning && bus && now - lastSend >= sendInterval) {
-    // Skip if position hasn't changed (within ~1m) and not first send
-    const posChanged = lastSentLat === null || 
-      Math.abs(lat - lastSentLat) > 0.00001 || 
-      Math.abs(lng - lastSentLng) > 0.00001;
-    // Always send at heartbeat interval even if not moved (keeps bus alive on server)
-    if (posChanged || now - lastSend >= IDLE_SEND_INTERVAL) {
-      lastSend = now;
-      lastSentLat = lat; lastSentLng = lng;
-      const payload = { lat, lng, lastUpdate: new Date().toISOString(), heading: currentHeading };
-      if (currentRouteId) payload.routeId = currentRouteId;
-      fetch(`/api/bus/${bus}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      }).then(() => {
-        updatesSent++;
-        document.getElementById('syncStatus').innerHTML = '<span class="status-dot"></span>Synced';
-        document.getElementById('updateCount').textContent = updatesSent;
-        document.getElementById('lastUpdateTime').textContent = new Date().toLocaleTimeString();
-      }).catch(() => {
-        document.getElementById('syncStatus').innerHTML = '<span class="status-dot" style="background:#fb7185"></span>Offline';
-      });
-    }
-  }
-
-  requestAnimationFrame(animate);
+    requestAnimationFrame(animate);
 }
 
 initBusSelect();
@@ -487,25 +632,25 @@ initRouteSelect();
 
 // Start/Stop button
 document.getElementById('startBtn').addEventListener('click', () => {
-  if (simRunning) {
-    simRunning = false;
-    // Notify server to remove this bus
-    if (bus) {
-      fetch(`/api/bus/${bus}`, { method: 'DELETE' }).catch(() => {});
+    if (simRunning) {
+        simRunning = false;
+        // Notify server to remove this bus
+        if (bus) {
+            fetch(`/api/bus/${bus}`, { method: 'DELETE' }).catch(() => {});
+        }
+        document.getElementById('syncStatus').innerHTML = '<span class="status-dot" style="background:#667"></span>Stopped';
+    } else {
+        if (!bus || !currentRouteId) return;
+        simRunning = true;
+        // Assign route on server
+        fetch(`/api/bus/${bus}/route`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ routeId: currentRouteId })
+        }).catch(() => {});
+        document.getElementById('syncStatus').innerHTML = '<span class="status-dot"></span>Syncing...';
     }
-    document.getElementById('syncStatus').innerHTML = '<span class="status-dot" style="background:#667"></span>Stopped';
-  } else {
-    if (!bus || !currentRouteId) return;
-    simRunning = true;
-    // Assign route on server
-    fetch(`/api/bus/${bus}/route`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ routeId: currentRouteId })
-    }).catch(() => {});
-    document.getElementById('syncStatus').innerHTML = '<span class="status-dot"></span>Syncing...';
-  }
-  updateStartBtn();
+    updateStartBtn();
 });
 
 requestAnimationFrame(animate);
