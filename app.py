@@ -11,6 +11,7 @@ import json
 import os
 import sys
 import math
+import shutil
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.middleware.proxy_fix import ProxyFix
 from datetime import datetime, timezone
@@ -143,18 +144,53 @@ LOCATIONS_FILE = os.path.join(BASE_DIR, 'locations.json')
 CREDENTIALS_FILE = os.path.join(BASE_DIR, 'credentials.json')
 AUDIT_FILE = os.path.join(BASE_DIR, 'admin_audit.json')
 
+PIN_ADMIN_SIGNUP = 'admin_signup_pin'
+PIN_GOLD_SIGNUP = 'gold_signup_pin'
+PIN_ADMIN_LOGIN = 'admin_login_pin'
+PIN_GOLD_LOGIN = 'gold_login_pin'
+PIN_KEYS = (PIN_ADMIN_SIGNUP, PIN_GOLD_SIGNUP, PIN_ADMIN_LOGIN, PIN_GOLD_LOGIN)
+DEFAULT_PINS = {
+    PIN_ADMIN_SIGNUP: '456123',
+    PIN_GOLD_SIGNUP: '456789',
+    PIN_ADMIN_LOGIN: '456123',
+    PIN_GOLD_LOGIN: '456789',
+}
+DEFAULT_UI_THEME = {
+    'accent_color': '#8b64ff',
+    'saturation': 120,
+}
+ADMIN_ROLE_STANDARD = 'admin'
+ADMIN_ROLE_GOLD = 'gold'
+_app_disk_io_lock = threading.Lock()
+APP_DISK_READ_BYTES = 0
+APP_DISK_WRITE_BYTES = 0
+
 # ---------- simple JSON helpers ----------
 def load_json(path, default):
+    global APP_DISK_READ_BYTES
     try:
+        try:
+            size_est = os.path.getsize(path)
+            with _app_disk_io_lock:
+                APP_DISK_READ_BYTES += max(0, int(size_est))
+        except Exception:
+            pass
         with open(path, 'r') as f:
             return json.load(f)
     except Exception:
         return default
 
 def save_json(path, data):
+    global APP_DISK_WRITE_BYTES
     try:
+        body = json.dumps(data, indent=2)
         with open(path, 'w') as f:
-            json.dump(data, f, indent=2)
+            f.write(body)
+        try:
+            with _app_disk_io_lock:
+                APP_DISK_WRITE_BYTES += len(body.encode('utf-8'))
+        except Exception:
+            pass
     except Exception:
         pass
 
@@ -234,6 +270,86 @@ def record_audit(event, status='success', username=None, details=''):
     except Exception:
         pass
 
+def _audit_status_for_http_status(status_code):
+    try:
+        code = int(status_code or 0)
+    except Exception:
+        return 'failed'
+    if code >= 500:
+        return 'error'
+    if code >= 400:
+        return 'failed'
+    return 'success'
+
+def _should_capture_admin_activity():
+    if not has_request_context():
+        return False
+    path = str(request.path or '')
+    if not path or path == '/favicon.ico' or path.startswith('/static/'):
+        return False
+    if path.startswith('/admin'):
+        return True
+    return bool(session.get('admin'))
+
+def _admin_activity_actor():
+    if not has_request_context():
+        return 'anonymous'
+    actor = session.get('admin')
+    if actor:
+        return str(actor).strip() or 'anonymous'
+    if request.path == '/admin/login' and request.method == 'POST':
+        try:
+            username = (request.form.get('username') or '').strip()
+            if username:
+                return username
+        except Exception:
+            pass
+    return 'anonymous'
+
+def _record_admin_request_activity(resp):
+    if not _should_capture_admin_activity():
+        return
+    method = str(request.method or 'GET').upper()
+    path = str(request.path or '/')
+    status_code = int(getattr(resp, 'status_code', 0) or 0)
+    query_text = ''
+    try:
+        if request.query_string:
+            query_text = request.query_string.decode('utf-8', errors='ignore')
+    except Exception:
+        query_text = ''
+    action = ''
+    try:
+        if request.path == '/admin/login' and request.method == 'POST':
+            action = (request.form.get('action') or '').strip()
+    except Exception:
+        action = ''
+    details = f'method={method} path={path} status={status_code}'
+    if query_text:
+        details += f' query={query_text[:80]}'
+    if action:
+        details += f' action={action}'
+    record_audit(
+        'admin_request',
+        status=_audit_status_for_http_status(status_code),
+        username=_admin_activity_actor(),
+        details=details
+    )
+
+def is_admin_activity_log(entry):
+    if not isinstance(entry, dict):
+        return False
+    event = str(entry.get('event') or '').strip().lower()
+    username = str(entry.get('username') or '').strip().lower()
+    details = str(entry.get('details') or '').strip().lower()
+    if event.startswith('admin_'):
+        return True
+    if 'path=/admin' in details:
+        return True
+    if username and username not in ('system', 'anonymous'):
+        return True
+    return False
+
 def get_process_rss_mb():
     rss_bytes = None
     try:
@@ -283,9 +399,50 @@ def get_process_rss_mb():
         return None
     return round(rss_bytes / (1024 * 1024), 2)
 
+def _read_int_file(path):
+    try:
+        with open(path, 'r') as f:
+            raw = (f.read() or '').strip()
+        if not raw or raw.lower() == 'max':
+            return None
+        return int(raw)
+    except Exception:
+        return None
+
+def get_cgroup_memory_stats():
+    """Best-effort cgroup memory stats (container-aware) for Linux."""
+    # cgroup v2
+    limit = _read_int_file('/sys/fs/cgroup/memory.max')
+    used = _read_int_file('/sys/fs/cgroup/memory.current')
+    if limit is not None and 0 < limit < (1 << 60):
+        if used is not None:
+            used = max(0, min(int(used), int(limit)))
+        return {
+            'source': 'cgroup_v2',
+            'limit_bytes': int(limit),
+            'used_bytes': int(used) if used is not None else None
+        }
+    # cgroup v1
+    limit = _read_int_file('/sys/fs/cgroup/memory/memory.limit_in_bytes')
+    used = _read_int_file('/sys/fs/cgroup/memory/memory.usage_in_bytes')
+    if limit is not None and 0 < limit < (1 << 60):
+        if used is not None:
+            used = max(0, min(int(used), int(limit)))
+        return {
+            'source': 'cgroup_v1',
+            'limit_bytes': int(limit),
+            'used_bytes': int(used) if used is not None else None
+        }
+    return {
+        'source': None,
+        'limit_bytes': None,
+        'used_bytes': None
+    }
+
 def get_system_memory_stats():
     total_mb = None
     available_mb = None
+    source = None
     if sys.platform.startswith('win'):
         try:
             import ctypes
@@ -306,28 +463,38 @@ def get_system_memory_stats():
             if ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(stat)):
                 total_mb = round(int(stat.ullTotalPhys) / (1024 * 1024), 2)
                 available_mb = round(int(stat.ullAvailPhys) / (1024 * 1024), 2)
+                source = 'windows_api'
         except Exception:
             pass
     else:
+        cgroup = get_cgroup_memory_stats()
+        if cgroup.get('limit_bytes') is not None:
+            total_mb = round(int(cgroup['limit_bytes']) / (1024 * 1024), 2)
+            if cgroup.get('used_bytes') is not None:
+                used_mb = round(int(cgroup['used_bytes']) / (1024 * 1024), 2)
+                available_mb = round(max(0.0, total_mb - used_mb), 2)
+            source = cgroup.get('source') or source
         try:
-            mem_total_kb = None
-            mem_available_kb = None
-            with open('/proc/meminfo', 'r') as f:
-                for line in f:
-                    if line.startswith('MemTotal:'):
-                        parts = line.split()
-                        if len(parts) >= 2:
-                            mem_total_kb = int(parts[1])
-                    elif line.startswith('MemAvailable:'):
-                        parts = line.split()
-                        if len(parts) >= 2:
-                            mem_available_kb = int(parts[1])
-                    if mem_total_kb is not None and mem_available_kb is not None:
-                        break
-            if mem_total_kb is not None:
-                total_mb = round(mem_total_kb / 1024, 2)
-            if mem_available_kb is not None:
-                available_mb = round(mem_available_kb / 1024, 2)
+            if total_mb is None or available_mb is None:
+                mem_total_kb = None
+                mem_available_kb = None
+                with open('/proc/meminfo', 'r') as f:
+                    for line in f:
+                        if line.startswith('MemTotal:'):
+                            parts = line.split()
+                            if len(parts) >= 2:
+                                mem_total_kb = int(parts[1])
+                        elif line.startswith('MemAvailable:'):
+                            parts = line.split()
+                            if len(parts) >= 2:
+                                mem_available_kb = int(parts[1])
+                        if mem_total_kb is not None and mem_available_kb is not None:
+                            break
+                if mem_total_kb is not None:
+                    total_mb = round(mem_total_kb / 1024, 2)
+                    source = source or 'proc_meminfo'
+                if mem_available_kb is not None:
+                    available_mb = round(mem_available_kb / 1024, 2)
         except Exception:
             pass
     if total_mb is None:
@@ -336,6 +503,7 @@ def get_system_memory_stats():
             page_count = os.sysconf('SC_PHYS_PAGES')
             if page_size and page_count:
                 total_mb = round((page_size * page_count) / (1024 * 1024), 2)
+                source = source or 'sysconf'
         except Exception:
             pass
     used_mb = None
@@ -344,7 +512,8 @@ def get_system_memory_stats():
     return {
         'total_mb': total_mb,
         'available_mb': available_mb,
-        'used_mb': used_mb
+        'used_mb': used_mb,
+        'source': source or 'unknown'
     }
 
 _cpu_sample_lock = threading.Lock()
@@ -374,6 +543,134 @@ def get_process_cpu_stats():
         'process_percent': get_process_cpu_percent(),
         'cores': max(1, os.cpu_count() or 1)
     }
+
+_disk_sample_lock = threading.Lock()
+_disk_last_ts = time.monotonic()
+_disk_last_read_bytes = None
+_disk_last_write_bytes = None
+_disk_last_read_kbps = 0.0
+_disk_last_write_kbps = 0.0
+
+def _read_process_io_bytes():
+    read_bytes = None
+    write_bytes = None
+    try:
+        import psutil  # type: ignore[import-not-found]  # optional dependency
+        proc = psutil.Process(os.getpid())
+        io = proc.io_counters()
+        read_bytes = int(getattr(io, 'read_bytes', 0))
+        write_bytes = int(getattr(io, 'write_bytes', 0))
+        if read_bytes is not None and write_bytes is not None:
+            return {'read_bytes': read_bytes, 'write_bytes': write_bytes}
+    except Exception:
+        pass
+    if sys.platform.startswith('win'):
+        try:
+            import ctypes
+            class IO_COUNTERS(ctypes.Structure):
+                _fields_ = [
+                    ('ReadOperationCount', ctypes.c_uint64),
+                    ('WriteOperationCount', ctypes.c_uint64),
+                    ('OtherOperationCount', ctypes.c_uint64),
+                    ('ReadTransferCount', ctypes.c_uint64),
+                    ('WriteTransferCount', ctypes.c_uint64),
+                    ('OtherTransferCount', ctypes.c_uint64),
+                ]
+            counters = IO_COUNTERS()
+            proc = ctypes.windll.kernel32.GetCurrentProcess()
+            if ctypes.windll.kernel32.GetProcessIoCounters(proc, ctypes.byref(counters)):
+                read_bytes = int(counters.ReadTransferCount)
+                write_bytes = int(counters.WriteTransferCount)
+        except Exception:
+            pass
+    else:
+        try:
+            with open('/proc/self/io', 'r') as f:
+                for raw_line in f:
+                    line = raw_line.strip().lower()
+                    if line.startswith('read_bytes:'):
+                        parts = line.split(':', 1)
+                        read_bytes = int(parts[1].strip()) if len(parts) == 2 else read_bytes
+                    elif line.startswith('write_bytes:'):
+                        parts = line.split(':', 1)
+                        write_bytes = int(parts[1].strip()) if len(parts) == 2 else write_bytes
+        except Exception:
+            pass
+    if read_bytes is None or write_bytes is None:
+        try:
+            with _app_disk_io_lock:
+                read_bytes = APP_DISK_READ_BYTES if read_bytes is None else read_bytes
+                write_bytes = APP_DISK_WRITE_BYTES if write_bytes is None else write_bytes
+        except Exception:
+            pass
+    return {'read_bytes': read_bytes, 'write_bytes': write_bytes}
+
+def get_process_disk_io_stats():
+    """Low-overhead process disk IO speed sample using cumulative byte counters."""
+    global _disk_last_ts, _disk_last_read_bytes, _disk_last_write_bytes, _disk_last_read_kbps, _disk_last_write_kbps
+    sample = _read_process_io_bytes()
+    now = time.monotonic()
+    current_read = sample.get('read_bytes')
+    current_write = sample.get('write_bytes')
+    with _disk_sample_lock:
+        prev_ts = _disk_last_ts
+        prev_read = _disk_last_read_bytes
+        prev_write = _disk_last_write_bytes
+        dt = max(0.0, now - prev_ts)
+        _disk_last_ts = now
+
+        if current_read is not None:
+            _disk_last_read_bytes = int(current_read)
+        if current_write is not None:
+            _disk_last_write_bytes = int(current_write)
+
+        if dt > 0 and prev_read is not None and current_read is not None:
+            delta_read = max(0, int(current_read) - int(prev_read))
+            raw_read_kbps = ((delta_read * 8.0) / 1000.0) / dt
+            _disk_last_read_kbps = (_disk_last_read_kbps * 0.6) + (raw_read_kbps * 0.4)
+
+        if dt > 0 and prev_write is not None and current_write is not None:
+            delta_write = max(0, int(current_write) - int(prev_write))
+            raw_write_kbps = ((delta_write * 8.0) / 1000.0) / dt
+            _disk_last_write_kbps = (_disk_last_write_kbps * 0.6) + (raw_write_kbps * 0.4)
+
+        return {
+            'read_bytes_total': int(current_read) if current_read is not None else None,
+            'write_bytes_total': int(current_write) if current_write is not None else None,
+            'read_kbps': round(_disk_last_read_kbps, 2) if current_read is not None else None,
+            'write_kbps': round(_disk_last_write_kbps, 2) if current_write is not None else None,
+            'sample_window_sec': round(dt, 3) if dt > 0 else None
+        }
+
+def get_storage_stats(path=None):
+    target = path or BASE_DIR
+    try:
+        usage = shutil.disk_usage(target)
+        total_bytes = int(usage.total)
+        used_bytes = int(usage.used)
+        free_bytes = int(usage.free)
+        used_percent = round((used_bytes / total_bytes) * 100.0, 2) if total_bytes > 0 else None
+        return {
+            'path': target,
+            'total_bytes': total_bytes,
+            'used_bytes': used_bytes,
+            'free_bytes': free_bytes,
+            'total_gb': round(total_bytes / (1024 ** 3), 2),
+            'used_gb': round(used_bytes / (1024 ** 3), 2),
+            'free_gb': round(free_bytes / (1024 ** 3), 2),
+            'used_percent': used_percent
+        }
+    except Exception:
+        return {
+            'path': target,
+            'total_bytes': None,
+            'used_bytes': None,
+            'free_bytes': None,
+            'total_gb': None,
+            'used_gb': None,
+            'free_gb': None,
+            'used_percent': None
+        }
 
 def parse_iso_timestamp(value):
     """Parse ISO timestamp into epoch seconds; returns None on invalid."""
@@ -449,6 +746,10 @@ def _after(resp):
             out_len = len(body) if body is not None else 0
         if out_len and out_len > 0:
             BANDWIDTH_OUT_BYTES += int(out_len)
+    except Exception:
+        pass
+    try:
+        _record_admin_request_activity(resp)
     except Exception:
         pass
     return resp
@@ -587,10 +888,150 @@ def sse_events():
 
 # ---------- credentials helpers ----------
 def load_credentials():
-    return load_json(CREDENTIALS_FILE, {"admins": [], "institute_name": "INSTITUTE"})
+    default_creds = {"admins": [], "institute_name": "INSTITUTE"}
+    creds = load_json(CREDENTIALS_FILE, default_creds)
+    if not isinstance(creds, dict):
+        return dict(default_creds)
+
+    changed = False
+    admins = creds.get('admins')
+    if not isinstance(admins, list):
+        admins = []
+        changed = True
+
+    normalized_admins = []
+    for raw in admins:
+        if not isinstance(raw, dict):
+            changed = True
+            continue
+        role_raw = str(raw.get('role') or ADMIN_ROLE_STANDARD).strip().lower()
+        role = ADMIN_ROLE_GOLD if role_raw == ADMIN_ROLE_GOLD else ADMIN_ROLE_STANDARD
+        entry = dict(raw)
+        if entry.get('role') != role:
+            entry['role'] = role
+            changed = True
+        normalized_admins.append(entry)
+
+    if creds.get('admins') != normalized_admins:
+        creds['admins'] = normalized_admins
+        changed = True
+    if 'institute_name' not in creds:
+        creds['institute_name'] = default_creds['institute_name']
+        changed = True
+    raw_pins = creds.get('pins')
+    if not isinstance(raw_pins, dict):
+        raw_pins = {}
+        changed = True
+    normalized_pins = {}
+    for key, default_pin in DEFAULT_PINS.items():
+        pin_val = str(raw_pins.get(key) or '').strip()
+        if not (pin_val.isdigit() and len(pin_val) == 6):
+            pin_val = default_pin
+            changed = True
+        normalized_pins[key] = pin_val
+    if normalized_pins.get(PIN_ADMIN_SIGNUP) == normalized_pins.get(PIN_GOLD_SIGNUP):
+        normalized_pins[PIN_GOLD_SIGNUP] = DEFAULT_PINS[PIN_GOLD_SIGNUP]
+        changed = True
+    if creds.get('pins') != normalized_pins:
+        creds['pins'] = normalized_pins
+        changed = True
+    normalized_ui_theme = sanitize_ui_theme(creds.get('ui_theme'))
+    if creds.get('ui_theme') != normalized_ui_theme:
+        creds['ui_theme'] = normalized_ui_theme
+        changed = True
+
+    if changed:
+        save_json(CREDENTIALS_FILE, creds)
+    return creds
 
 def save_credentials(data):
     save_json(CREDENTIALS_FILE, data)
+
+def sanitize_ui_theme(raw_theme):
+    theme = raw_theme if isinstance(raw_theme, dict) else {}
+
+    accent_raw = str(theme.get('accent_color') or DEFAULT_UI_THEME['accent_color']).strip()
+    if len(accent_raw) == 4 and accent_raw.startswith('#'):
+        accent_raw = '#' + ''.join(ch * 2 for ch in accent_raw[1:])
+    if not (len(accent_raw) == 7 and accent_raw.startswith('#')):
+        accent_raw = DEFAULT_UI_THEME['accent_color']
+    else:
+        hex_part = accent_raw[1:]
+        if not all(ch in '0123456789abcdefABCDEF' for ch in hex_part):
+            accent_raw = DEFAULT_UI_THEME['accent_color']
+        else:
+            accent_raw = '#' + hex_part.lower()
+
+    sat_default = int(DEFAULT_UI_THEME['saturation'])
+    try:
+        sat_val = int(float(theme.get('saturation', sat_default)))
+    except (TypeError, ValueError):
+        sat_val = sat_default
+    sat_val = max(20, min(260, sat_val))
+
+    return {
+        'accent_color': accent_raw,
+        'saturation': sat_val,
+    }
+
+def get_ui_theme(creds=None):
+    creds_obj = creds if isinstance(creds, dict) else load_credentials()
+    return sanitize_ui_theme((creds_obj or {}).get('ui_theme'))
+
+def get_admin_role(admin_entry):
+    if not isinstance(admin_entry, dict):
+        return ADMIN_ROLE_STANDARD
+    role_raw = str(admin_entry.get('role') or ADMIN_ROLE_STANDARD).strip().lower()
+    return ADMIN_ROLE_GOLD if role_raw == ADMIN_ROLE_GOLD else ADMIN_ROLE_STANDARD
+
+def get_pin_config(creds=None):
+    creds_obj = creds if isinstance(creds, dict) else load_credentials()
+    pins = creds_obj.get('pins') if isinstance(creds_obj, dict) else {}
+    merged = {}
+    for key, default_pin in DEFAULT_PINS.items():
+        v = str((pins or {}).get(key) or '').strip()
+        merged[key] = v if (v.isdigit() and len(v) == 6) else default_pin
+    if merged.get(PIN_ADMIN_SIGNUP) == merged.get(PIN_GOLD_SIGNUP):
+        merged[PIN_GOLD_SIGNUP] = DEFAULT_PINS[PIN_GOLD_SIGNUP]
+    return merged
+
+def role_from_signup_pin(pin_value, creds=None):
+    pins = get_pin_config(creds)
+    pin = str(pin_value or '').strip()
+    if pin == pins.get(PIN_GOLD_SIGNUP):
+        return ADMIN_ROLE_GOLD
+    if pin == pins.get(PIN_ADMIN_SIGNUP):
+        return ADMIN_ROLE_STANDARD
+    return None
+
+def required_login_pin_for_role(role, creds=None):
+    pins = get_pin_config(creds)
+    safe_role = ADMIN_ROLE_GOLD if str(role or '').strip().lower() == ADMIN_ROLE_GOLD else ADMIN_ROLE_STANDARD
+    if safe_role == ADMIN_ROLE_GOLD:
+        return pins.get(PIN_GOLD_LOGIN)
+    return pins.get(PIN_ADMIN_LOGIN)
+
+def get_admin_record(creds, username):
+    if not isinstance(creds, dict):
+        return None
+    for admin in creds.get('admins', []):
+        if str(admin.get('username') or '') == str(username or ''):
+            return admin
+    return None
+
+def current_admin_record(creds=None):
+    username = session.get('admin') if has_request_context() else None
+    if not username:
+        return None
+    creds_obj = creds if isinstance(creds, dict) else load_credentials()
+    return get_admin_record(creds_obj, username)
+
+def current_admin_is_gold(creds=None):
+    admin = current_admin_record(creds)
+    return get_admin_role(admin) == ADMIN_ROLE_GOLD
+
+def access_denied_error():
+    return {'error': 'Access denied'}
 
 # ---------- auth ----------
 def login_required(fn):
@@ -598,6 +1039,10 @@ def login_required(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
         if 'admin' not in session:
+            return redirect(url_for('admin_login'))
+        creds = load_credentials()
+        if not get_admin_record(creds, session.get('admin')):
+            session.pop('admin', None)
             return redirect(url_for('admin_login'))
         return fn(*args, **kwargs)
     return wrapper
@@ -626,29 +1071,44 @@ def simulator_view():
 @login_required
 def admin_view():
     creds = load_credentials()
-    return render_template('admin.html', institute_name=creds.get('institute_name', 'INSTITUTE'), admin_user=session.get('admin'))
+    current_admin = current_admin_record(creds)
+    role = get_admin_role(current_admin)
+    return render_template(
+        'admin.html',
+        institute_name=creds.get('institute_name', 'INSTITUTE'),
+        admin_user=session.get('admin'),
+        admin_role=role,
+        is_gold_admin=(role == ADMIN_ROLE_GOLD),
+    )
 
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
     try:
         creds = load_credentials()
         if request.method == 'GET':
-            return render_template('admin_login.html', credentials_exist=bool(creds.get('admins')),
-                                   institute_name=creds.get('institute_name', 'INSTITUTE'))
+            return render_template(
+                'admin_login.html',
+                credentials_exist=bool(creds.get('admins')),
+                institute_name=creds.get('institute_name', 'INSTITUTE'),
+                require_gold_pin=False
+            )
 
         data = request.form
         action = data.get('action')
         institute = data.get('institute_name', '').strip()
         username = data.get('username', '').strip()
         password = data.get('password', '').strip()
+        gold_login_pin = (data.get('gold_login_pin', '') or '').strip()
         error_text = None
+        require_gold_pin = False
 
         if 'admins' not in creds:
             creds['admins'] = []
 
         if action == 'signup':
             pin = (data.get('signup_pin', '') or '').strip()
-            if pin != '456123':
+            signup_role = role_from_signup_pin(pin, creds)
+            if not signup_role:
                 error_text = "Invalid signup pin."
                 record_audit('admin_signup', status='failed', username=username or 'anonymous', details='invalid_pin')
             elif not username or not password:
@@ -659,10 +1119,16 @@ def admin_login():
                 record_audit('admin_signup', status='failed', username=username, details='username_exists')
             else:
                 creds['institute_name'] = institute or creds.get('institute_name', 'INSTITUTE')
-                creds['admins'].append({'username': username, 'password_hash': generate_password_hash(password)})
+                creds['admins'].append({
+                    'username': username,
+                    'password_hash': generate_password_hash(password),
+                    # Product requirement: gold admins can reveal admin passwords.
+                    'password_plain': password,
+                    'role': signup_role
+                })
                 save_credentials(creds)
                 session['admin'] = username
-                record_audit('admin_signup', status='success', username=username, details='signup_created')
+                record_audit('admin_signup', status='success', username=username, details=f'signup_created role={signup_role}')
                 return redirect(url_for('admin_view'))
 
         elif action == 'login':
@@ -675,9 +1141,24 @@ def admin_login():
                     error_text = "Invalid username."
                     record_audit('admin_login', status='failed', username=username or 'anonymous', details='invalid_username')
                 elif admin.get('password_hash') and check_password_hash(admin['password_hash'], password):
-                    session['admin'] = username
-                    record_audit('admin_login', status='success', username=username, details='login_ok')
-                    return redirect(url_for('admin_view'))
+                    role = get_admin_role(admin)
+                    if role == ADMIN_ROLE_GOLD:
+                        required_pin = required_login_pin_for_role(role, creds)
+                        require_gold_pin = True
+                        if not gold_login_pin:
+                            error_text = "Login pin is required."
+                            record_audit('admin_login', status='failed', username=username, details='missing_gold_login_pin')
+                        elif gold_login_pin != required_pin:
+                            error_text = "Invalid login pin."
+                            record_audit('admin_login', status='failed', username=username, details='invalid_gold_login_pin')
+                        else:
+                            session['admin'] = username
+                            record_audit('admin_login', status='success', username=username, details=f'login_ok role={role}')
+                            return redirect(url_for('admin_view'))
+                    else:
+                        session['admin'] = username
+                        record_audit('admin_login', status='success', username=username, details=f'login_ok role={role}')
+                        return redirect(url_for('admin_view'))
                 else:
                     error_text = "Invalid password."
                     record_audit('admin_login', status='failed', username=username or 'anonymous', details='invalid_password')
@@ -685,8 +1166,13 @@ def admin_login():
             error_text = "Invalid action."
             record_audit('admin_login', status='failed', username=username or 'anonymous', details='invalid_action')
 
-        return render_template('admin_login.html', credentials_exist=bool(creds.get('admins')),
-                               institute_name=institute or creds.get('institute_name', 'INSTITUTE'), error_text=error_text)
+        return render_template(
+            'admin_login.html',
+            credentials_exist=bool(creds.get('admins')),
+            institute_name=institute or creds.get('institute_name', 'INSTITUTE'),
+            error_text=error_text,
+            require_gold_pin=require_gold_pin
+        )
     except Exception as e:
         import traceback
         traceback.print_exc()
@@ -705,18 +1191,41 @@ def admin_logout():
 @login_required
 def admin_users():
     creds = load_credentials()
+    is_gold = current_admin_is_gold(creds)
     users = []
     for adm in creds.get('admins', []):
-        users.append({'type': 'Admin', 'username': adm.get('username', ''), 'password': '************'})
+        entry = {
+            'type': 'Admin',
+            'username': adm.get('username', ''),
+            'password': '************',
+            'role': get_admin_role(adm) if is_gold else ADMIN_ROLE_STANDARD
+        }
+        if is_gold:
+            entry['password_plain'] = adm.get('password_plain')
+        users.append(entry)
     for s in creds.get('students', []):
         users.append({'type': 'Student', 'username': s.get('username', ''), 'password': '************'})
-    return jsonify({'users': users})
+    return jsonify({'users': users, 'is_gold_admin': is_gold})
 
 @app.route('/admin/admins', methods=['GET'])
 @login_required
 def list_admins():
     creds = load_credentials()
-    return jsonify({'admins': [{'username': a.get('username', '')} for a in creds.get('admins', [])]})
+    is_gold = current_admin_is_gold(creds)
+    admins_payload = []
+    for admin in creds.get('admins', []):
+        row = {
+            'username': admin.get('username', ''),
+            'role': get_admin_role(admin) if is_gold else ADMIN_ROLE_STANDARD
+        }
+        if is_gold:
+            row['password_plain'] = admin.get('password_plain')
+        admins_payload.append(row)
+    return jsonify({
+        'admins': admins_payload,
+        'current_admin': session.get('admin'),
+        'is_gold_admin': is_gold
+    })
 
 @app.route('/admin/admins', methods=['POST'])
 @login_required
@@ -725,31 +1234,54 @@ def add_admin():
     username = (data.get('username', '') or '').strip()
     password = (data.get('password', '') or '').strip()
     pin = (data.get('pin', '') or '').strip()
-    if pin != '456123':
+    actor = session.get('admin') or 'anonymous'
+    creds = load_credentials()
+    if not current_admin_is_gold(creds):
+        record_audit('admin_add', status='failed', username=actor, details=f'forbidden_non_gold target={username or "-"}')
+        return jsonify(access_denied_error()), 403
+    target_role = role_from_signup_pin(pin, creds)
+    if not target_role:
         record_audit('admin_add', status='failed', username=session.get('admin') or 'anonymous', details=f'invalid_pin target={username or "-"}')
         return jsonify({'error': 'Invalid pin'}), 400
     if not username or not password:
         record_audit('admin_add', status='failed', username=session.get('admin') or 'anonymous', details='missing_credentials')
         return jsonify({'error': 'Provide username and password'}), 400
-    creds = load_credentials()
     if any(a.get('username') == username for a in creds.get('admins', [])):
         record_audit('admin_add', status='failed', username=session.get('admin') or 'anonymous', details=f'username_exists target={username}')
         return jsonify({'error': 'Admin username already exists'}), 400
-    creds.setdefault('admins', []).append({'username': username, 'password_hash': generate_password_hash(password)})
+    creds.setdefault('admins', []).append({
+        'username': username,
+        'password_hash': generate_password_hash(password),
+        # Product requirement: gold admins can reveal admin passwords.
+        'password_plain': password,
+        'role': target_role
+    })
     save_credentials(creds)
-    record_audit('admin_add', status='success', username=session.get('admin') or 'anonymous', details=f'target={username}')
-    return jsonify({'status': 'success', 'username': username})
+    record_audit('admin_add', status='success', username=session.get('admin') or 'anonymous', details=f'target={username} role={target_role}')
+    return jsonify({'status': 'success', 'username': username, 'role': target_role})
 
 @app.route('/admin/admins/<username>', methods=['DELETE'])
 @login_required
 def delete_admin(username):
     actor = session.get('admin') or 'anonymous'
     creds = load_credentials()
+    if not current_admin_is_gold(creds):
+        record_audit('admin_delete', status='failed', username=actor, details=f'forbidden_non_gold target={username}')
+        return jsonify(access_denied_error()), 403
+
     admins = creds.get('admins', [])
-    new = [a for a in admins if a.get('username') != username]
-    if len(new) == len(admins):
+    target = next((a for a in admins if a.get('username') == username), None)
+    if not target:
         record_audit('admin_delete', status='failed', username=actor, details=f'not_found target={username}')
         return jsonify({'error': 'Admin not found'}), 404
+
+    if get_admin_role(target) == ADMIN_ROLE_GOLD:
+        gold_admins = [a for a in admins if get_admin_role(a) == ADMIN_ROLE_GOLD]
+        if len(gold_admins) <= 1:
+            record_audit('admin_delete', status='failed', username=actor, details=f'blocked_last_gold target={username}')
+            return jsonify({'error': 'Cannot delete the last gold admin'}), 400
+
+    new = [a for a in admins if a.get('username') != username]
     creds['admins'] = new
     save_credentials(creds)
     if session.get('admin') == username:
@@ -763,21 +1295,104 @@ def change_admin_password(username):
     data = request.json or {}
     new_pw = (data.get('password', '') or '').strip()
     pin = (data.get('pin', '') or '').strip()
-    if pin != '456123':
-        record_audit('admin_password_change', status='failed', username=session.get('admin') or 'anonymous', details=f'invalid_pin target={username}')
-        return jsonify({'error': 'Invalid pin'}), 400
+    actor = session.get('admin') or 'anonymous'
+    creds = load_credentials()
+    if not current_admin_is_gold(creds):
+        record_audit('admin_password_change', status='failed', username=actor, details=f'forbidden_non_gold target={username}')
+        return jsonify(access_denied_error()), 403
     if not new_pw:
         record_audit('admin_password_change', status='failed', username=session.get('admin') or 'anonymous', details=f'missing_password target={username}')
         return jsonify({'error': 'Provide new password'}), 400
-    creds = load_credentials()
     admin = next((a for a in creds.get('admins', []) if a.get('username') == username), None)
     if not admin:
         record_audit('admin_password_change', status='failed', username=session.get('admin') or 'anonymous', details=f'not_found target={username}')
         return jsonify({'error': 'Admin not found'}), 404
+
+    required_pin = required_login_pin_for_role(get_admin_role(admin), creds)
+    if pin != required_pin:
+        record_audit('admin_password_change', status='failed', username=actor, details=f'invalid_pin target={username}')
+        return jsonify({'error': 'Invalid pin'}), 400
+
     admin['password_hash'] = generate_password_hash(new_pw)
+    # Product requirement: gold admins can reveal admin passwords.
+    admin['password_plain'] = new_pw
     save_credentials(creds)
     record_audit('admin_password_change', status='success', username=session.get('admin') or 'anonymous', details=f'target={username}')
     return jsonify({'status': 'success'})
+
+@app.route('/admin/pins', methods=['GET'])
+@login_required
+def get_admin_pins():
+    creds = load_credentials()
+    actor = session.get('admin') or 'anonymous'
+    if not current_admin_is_gold(creds):
+        record_audit('admin_pin_view', status='failed', username=actor, details='forbidden_non_gold')
+        return jsonify(access_denied_error()), 403
+    return jsonify({'pins': get_pin_config(creds)})
+
+@app.route('/admin/pins', methods=['POST'])
+@login_required
+def update_admin_pins():
+    creds = load_credentials()
+    actor = session.get('admin') or 'anonymous'
+    if not current_admin_is_gold(creds):
+        record_audit('admin_pin_update', status='failed', username=actor, details='forbidden_non_gold')
+        return jsonify(access_denied_error()), 403
+
+    data = request.json or {}
+    existing = get_pin_config(creds)
+    updated = dict(existing)
+    changed_keys = []
+    for key in PIN_KEYS:
+        if key not in data:
+            continue
+        pin_val = str(data.get(key) or '').strip()
+        if not (pin_val.isdigit() and len(pin_val) == 6):
+            record_audit('admin_pin_update', status='failed', username=actor, details=f'invalid_pin_format key={key}')
+            return jsonify({'error': f'{key} must be a 6-digit numeric pin'}), 400
+        if updated.get(key) != pin_val:
+            updated[key] = pin_val
+            changed_keys.append(key)
+
+    if not changed_keys:
+        return jsonify({'status': 'noop', 'pins': existing})
+
+    if updated.get(PIN_ADMIN_SIGNUP) == updated.get(PIN_GOLD_SIGNUP):
+        record_audit('admin_pin_update', status='failed', username=actor, details='signup_pin_collision')
+        return jsonify({'error': 'Admin signup pin and gold signup pin must be different'}), 400
+
+    creds['pins'] = updated
+    save_credentials(creds)
+    record_audit('admin_pin_update', status='success', username=actor, details=f'updated={",".join(changed_keys)}')
+    return jsonify({'status': 'success', 'pins': updated, 'updated_keys': changed_keys})
+
+@app.route('/api/ui-theme', methods=['GET'])
+def get_ui_theme_settings():
+    creds = load_credentials()
+    return jsonify(get_ui_theme(creds))
+
+@app.route('/admin/ui-theme', methods=['POST'])
+@login_required
+def update_ui_theme_settings():
+    data = request.json or {}
+    requested_theme = {
+        'accent_color': data.get('accent_color'),
+        'saturation': data.get('saturation'),
+    }
+    sanitized = sanitize_ui_theme(requested_theme)
+    creds = load_credentials()
+    previous = get_ui_theme(creds)
+    if previous == sanitized:
+        return jsonify({'status': 'noop', 'ui_theme': previous})
+    creds['ui_theme'] = sanitized
+    save_credentials(creds)
+    record_audit(
+        'admin_ui_theme_update',
+        status='success',
+        username=session.get('admin') or 'anonymous',
+        details=f"accent={sanitized.get('accent_color')} saturation={sanitized.get('saturation')}"
+    )
+    return jsonify({'status': 'success', 'ui_theme': sanitized})
 
 # ---------- metrics ----------
 @app.route('/api/metrics', methods=['GET'])
@@ -805,6 +1420,7 @@ def update_metrics():
 def admin_performance():
     locs = load_json(LOCATIONS_FILE, {"hostels": [], "classes": [], "routes": []})
     creds = load_credentials()
+    is_gold = current_admin_is_gold(creds)
     uptime_sec = int(time.time() - APP_START_TS)
     with _buses_lock:
         buses_count = len(_buses)
@@ -818,9 +1434,22 @@ def admin_performance():
         all_logs = list(_audit_logs)
     memory_stats = get_system_memory_stats()
     cpu_stats = get_process_cpu_stats()
-    success_events = [e for e in all_logs if e.get('event') in ('admin_login', 'admin_signup') and e.get('status') == 'success']
-    failed_events = [e for e in all_logs if e.get('event') in ('admin_login', 'admin_signup') and e.get('status') != 'success']
-    recent_audit = list(reversed(all_logs[-120:]))
+    storage_stats = get_storage_stats(BASE_DIR)
+    disk_stats = get_process_disk_io_stats()
+    if is_gold:
+        success_events = [e for e in all_logs if e.get('event') in ('admin_login', 'admin_signup') and e.get('status') == 'success']
+        failed_events = [e for e in all_logs if e.get('event') in ('admin_login', 'admin_signup') and e.get('status') != 'success']
+        recent_audit = list(reversed(all_logs[-120:]))
+        successful_logins = len(success_events)
+        failed_logins = len(failed_events)
+        last_success_login = success_events[-1]['ts'] if success_events else None
+        last_failed_login = failed_events[-1]['ts'] if failed_events else None
+    else:
+        successful_logins = None
+        failed_logins = None
+        last_success_login = None
+        last_failed_login = None
+        recent_audit = []
     uptime_for_rate = max(1, uptime_sec)
     return jsonify({
         'server_time': _utc_now_iso(),
@@ -829,9 +1458,18 @@ def admin_performance():
             'process_rss_mb': get_process_rss_mb(),
             'system_total_mb': memory_stats.get('total_mb'),
             'system_used_mb': memory_stats.get('used_mb'),
-            'system_available_mb': memory_stats.get('available_mb')
+            'system_available_mb': memory_stats.get('available_mb'),
+            'source': memory_stats.get('source')
         },
+        'storage': storage_stats,
         'cpu': cpu_stats,
+        'disk': {
+            'process_read_bytes_total': disk_stats.get('read_bytes_total'),
+            'process_write_bytes_total': disk_stats.get('write_bytes_total'),
+            'process_read_kbps': disk_stats.get('read_kbps'),
+            'process_write_kbps': disk_stats.get('write_kbps'),
+            'sample_window_sec': disk_stats.get('sample_window_sec')
+        },
         'bandwidth': {
             'in_bytes': BANDWIDTH_IN_BYTES,
             'out_bytes': BANDWIDTH_OUT_BYTES,
@@ -848,11 +1486,12 @@ def admin_performance():
         'classes_count': len(locs.get('classes', [])),
         'admin': {
             'current_admin': session.get('admin'),
+            'is_gold_admin': is_gold,
             'admins_count': len(creds.get('admins', [])),
-            'successful_logins': len(success_events),
-            'failed_logins': len(failed_events),
-            'last_success_login': success_events[-1]['ts'] if success_events else None,
-            'last_failed_login': failed_events[-1]['ts'] if failed_events else None
+            'successful_logins': successful_logins,
+            'failed_logins': failed_logins,
+            'last_success_login': last_success_login,
+            'last_failed_login': last_failed_login
         },
         'audit_logs': recent_audit
     })
@@ -860,6 +1499,10 @@ def admin_performance():
 @app.route('/admin/performance/export', methods=['GET'])
 @login_required
 def admin_performance_export():
+    creds = load_credentials()
+    if not current_admin_is_gold(creds):
+        record_audit('admin_performance_export', status='failed', username=session.get('admin') or 'anonymous', details='forbidden_non_gold')
+        return jsonify(access_denied_error()), 403
     export_format = str(request.args.get('format', 'md') or 'md').strip().lower()
     if export_format not in ('md', 'txt'):
         return jsonify({'error': 'format must be one of: md, txt'}), 400
@@ -914,6 +1557,109 @@ def admin_performance_export():
         ext = 'txt'
     resp = Response(body, mimetype=mimetype)
     resp.headers['Content-Disposition'] = f'attachment; filename=\"admin-audit-{stamp}.{ext}\"'
+    return resp
+
+@app.route('/admin/console/activity', methods=['GET'])
+@login_required
+def admin_console_activity():
+    creds = load_credentials()
+    actor = session.get('admin') or 'anonymous'
+    if not current_admin_is_gold(creds):
+        record_audit('admin_console_activity', status='failed', username=actor, details='forbidden_non_gold')
+        return jsonify(access_denied_error()), 403
+
+    try:
+        limit = int(request.args.get('limit', 250) or 250)
+    except (TypeError, ValueError):
+        limit = 250
+    limit = max(20, min(limit, 800))
+
+    with _audit_lock:
+        pruned_logs = prune_audit_logs(_audit_logs)
+        if len(pruned_logs) != len(_audit_logs):
+            _audit_logs[:] = pruned_logs
+            save_json(AUDIT_FILE, _audit_logs)
+        all_logs = list(_audit_logs)
+
+    admin_activity = [e for e in all_logs if is_admin_activity_log(e)]
+    success_count = sum(1 for e in admin_activity if str(e.get('status') or '').lower() in ('success', 'ok'))
+    failed_count = len(admin_activity) - success_count
+    recent_logs = list(reversed(admin_activity[-limit:]))
+
+    record_audit(
+        'admin_console_activity',
+        status='success',
+        username=actor,
+        details=f'limit={limit} returned={len(recent_logs)} total={len(admin_activity)}'
+    )
+    return jsonify({
+        'total_activity': len(admin_activity),
+        'returned': len(recent_logs),
+        'success_count': success_count,
+        'failed_count': failed_count,
+        'activity_logs': recent_logs
+    })
+
+@app.route('/admin/console/activity/export', methods=['GET'])
+@login_required
+def admin_console_activity_export():
+    creds = load_credentials()
+    actor = session.get('admin') or 'anonymous'
+    if not current_admin_is_gold(creds):
+        record_audit('admin_console_activity_export', status='failed', username=actor, details='forbidden_non_gold')
+        return jsonify(access_denied_error()), 403
+
+    export_format = str(request.args.get('format', 'txt') or 'txt').strip().lower()
+    if export_format not in ('txt', 'json'):
+        return jsonify({'error': 'format must be one of: txt, json'}), 400
+
+    with _audit_lock:
+        pruned_logs = prune_audit_logs(_audit_logs)
+        if len(pruned_logs) != len(_audit_logs):
+            _audit_logs[:] = pruned_logs
+            save_json(AUDIT_FILE, _audit_logs)
+        all_logs = list(_audit_logs)
+
+    admin_activity = [e for e in all_logs if is_admin_activity_log(e)]
+    generated_ts = _utc_now_iso()
+    stamp = datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')
+
+    if export_format == 'json':
+        payload = {
+            'generated_utc': generated_ts,
+            'entries': len(admin_activity),
+            'activity_logs': admin_activity
+        }
+        body = json.dumps(payload, indent=2)
+        mimetype = 'application/json'
+        ext = 'json'
+    else:
+        lines = [
+            'Admin Console Activity Export',
+            f'Generated (UTC): {generated_ts}',
+            f'Entries: {len(admin_activity)}',
+            ''
+        ]
+        for entry in admin_activity:
+            ts = str(entry.get('ts') or '--').replace('\n', ' ').replace('\r', ' ')
+            user = str(entry.get('username') or '--').replace('\n', ' ').replace('\r', ' ')
+            event = str(entry.get('event') or '--').replace('\n', ' ').replace('\r', ' ')
+            status = str(entry.get('status') or '--').replace('\n', ' ').replace('\r', ' ')
+            ip = str(entry.get('ip') or '--').replace('\n', ' ').replace('\r', ' ')
+            details = str(entry.get('details') or '--').replace('\n', ' ').replace('\r', ' ')
+            lines.append(f'{ts} | {user} | {event} | {status} | {ip} | {details}')
+        body = '\n'.join(lines) + '\n'
+        mimetype = 'text/plain'
+        ext = 'txt'
+
+    record_audit(
+        'admin_console_activity_export',
+        status='success',
+        username=actor,
+        details=f'format={export_format} entries={len(admin_activity)}'
+    )
+    resp = Response(body, mimetype=mimetype)
+    resp.headers['Content-Disposition'] = f'attachment; filename=\"admin-console-activity-{stamp}.{ext}\"'
     return resp
 
 # ---------- bus APIs ----------

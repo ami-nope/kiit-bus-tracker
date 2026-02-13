@@ -1,221 +1,243 @@
 <!DOCTYPE html>
-</body>
-</html>
-
-<!-- System Load Simulation scripts moved here to fix HTML structure -->
-<script>
-// --- System Load Simulation UI wiring ---
-document.addEventListener('DOMContentLoaded',()=>{
-  const startBtn = document.getElementById('systemSimStartBtn');
-  const stopBtn = document.getElementById('systemSimStopBtn');
-  const driverInput = document.getElementById('systemSimDriverCount');
-  const studentInput = document.getElementById('systemSimStudentCount');
-  startBtn.addEventListener('click', async ()=>{
-    if (systemSimRunning) return;
-    const driverCount = Math.max(1, Math.min(100, parseInt(driverInput.value)||20));
-    const studentCount = Math.max(1, Math.min(500, parseInt(studentInput.value)||100));
-    setSystemSimStatus('Starting simulation...', true);
-    systemSimRunning = true;
-    await startSystemDriverSimulation(driverCount);
-    startSystemStudentSimulation(studentCount);
-    setSystemSimStatus(`Running: ${driverCount} drivers, ${studentCount} students`, true);
-  });
-  stopBtn.addEventListener('click', ()=>{
-    if (!systemSimRunning) return;
-    setSystemSimStatus('Stopping simulation...', false);
-    systemSimRunning = false;
-    stopSystemDriverSimulation();
-    stopSystemStudentSimulation();
-    setSystemSimStatus('Idle', false);
-  });
-});
-// --- Student Simulation for System Load ---
-function startSystemStudentSimulation(studentCount) {
-  for (let i = 0; i < studentCount; i++) {
-    // Each student fetches /api/buses every 3-5s, /api/routes occasionally
-    const busInterval = setInterval(() => {
-      fetch('/api/buses').catch(()=>{});
-      // Occasionally fetch routes
-      if (Math.random() < 0.15) fetch('/api/routes').catch(()=>{});
-      // Optionally simulate SSE connection (no-op, just open/close EventSource)
-      if (Math.random() < 0.05) {
-        try { const es = new EventSource('/events'); setTimeout(()=>es.close(), 1000+Math.random()*2000); } catch(e){}
-      }
-    }, 3000 + Math.floor(Math.random()*2000));
-    systemSimStudentIntervals.push(busInterval);
-  }
-}
-
-function stopSystemStudentSimulation() {
-  for (const interval of systemSimStudentIntervals) clearInterval(interval);
-  systemSimStudentIntervals = [];
-}
-</script>
 <html>
 <head>
 <title>Bus Simulator</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <style>
-body { margin:0; background:#0f0f23; color:#e6eef8; font-family:'Segoe UI',sans-serif; }
+:root {
+  --ui-theme-hue: 0deg;
+  --ui-theme-saturation: 120%;
+  --bg:#0b0c14;
+  --bg-grad-1:rgba(142,105,255,0.34);
+  --bg-grad-2:rgba(110,80,228,0.24);
+  --text:#eef3ff;
+  --text-sub:#a7b0c9;
+  --edge:rgba(198,171,255,0.34);
+  --glass:linear-gradient(165deg, rgba(255,255,255,0.18), rgba(255,255,255,0.06) 52%, rgba(255,255,255,0.02));
+  --glass-soft:linear-gradient(165deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));
+  --ok:#7cf3c0;
+  --ok-bg:rgba(124,243,192,0.16);
+  --warn:#ffc1d2;
+  --warn-bg:rgba(255,130,150,0.15);
+}
+body {
+  margin:0;
+  color:var(--text);
+  font-family:'Inter','Segoe UI',sans-serif;
+  background:
+    radial-gradient(circle at 14% 10%, var(--bg-grad-1), transparent 44%),
+    radial-gradient(circle at 86% 22%, var(--bg-grad-2), transparent 40%),
+    var(--bg);
+  filter: hue-rotate(var(--ui-theme-hue)) saturate(var(--ui-theme-saturation));
+}
 #map { height:100vh; }
 .controls {
-  position:absolute; top:12px; left:12px; background:rgba(18,24,38,0.92);
-  padding:14px 16px; border-radius:12px; z-index:1000; min-width:220px;
-  border:1px solid rgba(255,255,255,0.08); backdrop-filter:blur(12px);
-  box-shadow:0 8px 32px rgba(0,0,0,0.5);
+  position:absolute; top:12px; left:12px;
+  padding:16px 18px; border-radius:24px; z-index:1000; min-width:240px;
+  border:1px solid var(--edge);
+  background-image: var(--glass);
+  backdrop-filter:blur(14px) saturate(126%);
+  -webkit-backdrop-filter:blur(14px) saturate(126%);
+  box-shadow:0 18px 38px rgba(4,10,24,0.34), inset 0 1px 0 rgba(255,255,255,0.16);
 }
-.controls label { display:block; font-size:12px; color:#9aa4b2; margin-top:8px; }
+.controls label { display:block; font-size:12px; color:var(--text-sub); margin-top:8px; }
 .controls select, .controls input[type=number] {
-  width:100%; padding:6px 8px; border-radius:6px; border:1px solid rgba(255,255,255,0.1);
-  background:#0f0f23; color:#e6eef8; font-size:13px; margin-top:2px;
+  width:100%; padding:7px 10px; border-radius:12px; border:1px solid var(--edge);
+  background-image:var(--glass-soft); color:var(--text); font-size:13px; margin-top:2px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.14);
 }
 .controls input[type=range] { width:100%; margin-top:2px; }
 .speed-row { display:flex; align-items:center; gap:8px; margin-top:4px; }
 .speed-row input[type=range] { flex:1; min-width:0; }
 .speed-row input[type=number] {
-  width:64px; flex:none; padding:4px 6px; border-radius:6px;
-  border:1px solid rgba(255,255,255,0.1); background:#0f0f23;
-  color:#34d399; font-size:13px; font-weight:600; text-align:center;
+  width:64px; flex:none; padding:4px 6px; border-radius:12px;
+  color:var(--ok); font-size:13px; font-weight:600; text-align:center;
   -moz-appearance:textfield;
   appearance:textfield;
 }
 .speed-row input[type=number]::-webkit-inner-spin-button,
 .speed-row input[type=number]::-webkit-outer-spin-button { opacity:1; }
-.speed-unit { font-size:11px; color:#667; flex:none; }
-.keys-hint { font-size:11px; color:#667; margin-top:10px; line-height:1.6; }
+.speed-unit { font-size:11px; color:var(--text-sub); opacity:.72; flex:none; }
+.keys-hint { font-size:11px; color:var(--text-sub); margin-top:10px; line-height:1.6; }
 .keys-hint kbd {
-  background:rgba(255,255,255,0.08); padding:2px 6px; border-radius:4px;
-  border:1px solid rgba(255,255,255,0.15); font-family:monospace; font-size:11px;
+  background:rgba(255,255,255,0.12); padding:2px 6px; border-radius:8px;
+  border:1px solid rgba(212,192,255,0.36); font-family:monospace; font-size:11px;
 }
 .status-dot { display:inline-block; width:6px; height:6px; border-radius:50%; background:#34d399; margin-right:6px;
   box-shadow:0 0 6px rgba(52,211,153,0.5); }
-#syncStatus { font-size:11px; color:#9aa4b2; margin-top:8px; }
+#syncStatus { font-size:11px; color:var(--text-sub); margin-top:8px; }
 #startBtn {
-  width:100%; margin-top:12px; padding:8px 0; border:none; border-radius:8px;
-  background:rgba(52,211,153,0.15); color:#34d399; font-size:13px; font-weight:600;
+  width:100%; margin-top:12px; padding:9px 0; border:1px solid rgba(124,243,192,0.42); border-radius:999px;
+  background:linear-gradient(160deg, var(--ok-bg), rgba(124,243,192,0.07));
+  color:var(--ok); font-size:13px; font-weight:600;
   cursor:pointer; transition:all 0.2s;
 }
-#startBtn:hover:not(:disabled) { background:rgba(52,211,153,0.25); }
+#startBtn:hover:not(:disabled) { transform:translateY(-1px); filter:brightness(1.06); }
 #startBtn:disabled { opacity:0.35; cursor:not-allowed; }
-#startBtn.running { background:rgba(251,113,133,0.15); color:#fb7185; }
-#startBtn.running:hover { background:rgba(251,113,133,0.25); }
+#startBtn.running { border-color:rgba(255,130,150,0.45); background:linear-gradient(160deg, var(--warn-bg), rgba(255,130,150,0.08)); color:var(--warn); }
+#startBtn.running:hover { filter:brightness(1.06); }
 .aligner-toggle {
   display:flex; align-items:center; gap:8px; margin-top:10px;
-  padding:8px 10px; border-radius:8px;
-  background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06);
+  padding:8px 10px; border-radius:14px;
+  background-image:var(--glass-soft); border:1px solid var(--edge);
 }
 .aligner-toggle input[type=checkbox] { accent-color:#667eea; width:16px; height:16px; cursor:pointer; }
-.aligner-toggle label { font-size:12px; color:#9aa4b2; cursor:pointer; flex:1; }
+.aligner-toggle label { font-size:12px; color:var(--text-sub); cursor:pointer; flex:1; }
 .aligner-toggle .aligner-badge {
-  font-size:10px; padding:2px 6px; border-radius:4px;
-  background:rgba(102,126,234,0.15); color:#667eea; font-weight:600;
+  font-size:10px; padding:2px 6px; border-radius:999px;
+  background:rgba(140,115,255,0.20); color:#d8ccff; font-weight:600;
 }
-.aligner-toggle.active { border-color:rgba(102,126,234,0.4); background:rgba(102,126,234,0.08); }
-.aligner-toggle.active .aligner-badge { background:rgba(102,126,234,0.25); }
+.aligner-toggle.active { border-color:rgba(161,140,255,0.54); background:rgba(140,115,255,0.14); }
+.aligner-toggle.active .aligner-badge { background:rgba(140,115,255,0.32); }
 .auto-follow-panel {
-  margin-top:8px; padding:8px 10px; border-radius:8px; display:none;
-  background:rgba(52,211,153,0.08); border:1px solid rgba(52,211,153,0.24);
+  margin-top:8px; padding:8px 10px; border-radius:14px; display:none;
+  background:rgba(124,243,192,0.10); border:1px solid rgba(124,243,192,0.30);
 }
 .auto-follow-panel.visible { display:block; }
 .auto-follow-row { display:flex; align-items:center; gap:8px; }
 #autoFollowBtn {
-  flex:1; border:none; border-radius:7px; padding:7px 8px;
-  background:rgba(52,211,153,0.15); color:#34d399; font-size:12px; font-weight:600;
+  flex:1; border:1px solid rgba(124,243,192,0.40); border-radius:999px; padding:7px 8px;
+  background:linear-gradient(160deg, var(--ok-bg), rgba(124,243,192,0.07)); color:var(--ok); font-size:12px; font-weight:600;
   cursor:pointer; transition:all 0.2s;
 }
-#autoFollowBtn:hover:not(:disabled) { background:rgba(52,211,153,0.25); }
+#autoFollowBtn:hover:not(:disabled) { transform:translateY(-1px); filter:brightness(1.06); }
 #autoFollowBtn:disabled { opacity:0.45; cursor:not-allowed; }
-#autoFollowBtn.running { background:rgba(102,126,234,0.2); color:#a5b4fc; }
+#autoFollowBtn.running { border-color:rgba(159,143,255,0.44); background:rgba(140,115,255,0.20); color:#ddd4ff; }
 .dir-toggle {
-  display:inline-flex; border:1px solid rgba(255,255,255,0.1); border-radius:7px; overflow:hidden;
+  display:inline-flex; border:1px solid var(--edge); border-radius:999px; overflow:hidden;
 }
 .dir-btn {
   border:none; padding:7px 8px; min-width:72px;
-  background:rgba(255,255,255,0.04); color:#9aa4b2; font-size:11px; cursor:pointer; transition:all 0.2s;
+  background:rgba(255,255,255,0.08); color:var(--text-sub); font-size:11px; cursor:pointer; transition:all 0.2s;
 }
-.dir-btn + .dir-btn { border-left:1px solid rgba(255,255,255,0.1); }
-.dir-btn.active { background:rgba(102,126,234,0.22); color:#c7d2fe; }
+.dir-btn + .dir-btn { border-left:1px solid var(--edge); }
+.dir-btn.active { background:rgba(140,115,255,0.26); color:#e4dbff; }
 .dir-btn:disabled { opacity:0.45; cursor:not-allowed; }
-.auto-follow-hint { margin-top:6px; font-size:10px; color:#9aa4b2; }
+.auto-follow-hint { margin-top:6px; font-size:10px; color:var(--text-sub); }
 .load-sim-panel {
-  margin-top:10px; padding:8px 10px; border-radius:8px;
-  background:rgba(102,126,234,0.08); border:1px solid rgba(102,126,234,0.24);
+  margin-top:10px; padding:8px 10px; border-radius:14px;
+  background:rgba(140,115,255,0.10); border:1px solid rgba(140,115,255,0.28);
 }
 .load-sim-panel label { margin-top:0; }
 #loadSimCount {
   margin-top:4px; width:100%; box-sizing:border-box;
-  padding:6px 8px; border-radius:6px; border:1px solid rgba(255,255,255,0.1);
-  background:#0f0f23; color:#e6eef8; font-size:13px;
+  padding:6px 8px; border-radius:12px; border:1px solid var(--edge);
+  background-image:var(--glass-soft); color:var(--text); font-size:13px;
 }
 .load-sim-row { display:flex; align-items:center; gap:8px; margin-top:8px; }
 #startLoadSimBtn, #stopLoadSimBtn {
-  flex:1; border:none; border-radius:7px; padding:7px 8px;
+  flex:1; border:1px solid var(--edge); border-radius:999px; padding:7px 8px;
   font-size:12px; font-weight:600; cursor:pointer; transition:all 0.2s;
 }
 #startLoadSimBtn {
-  background:rgba(52,211,153,0.15); color:#34d399;
+  border-color:rgba(124,243,192,0.40);
+  background:linear-gradient(160deg, var(--ok-bg), rgba(124,243,192,0.07)); color:var(--ok);
 }
-#startLoadSimBtn:hover:not(:disabled) { background:rgba(52,211,153,0.25); }
+#startLoadSimBtn:hover:not(:disabled) { transform:translateY(-1px); filter:brightness(1.06); }
 #stopLoadSimBtn {
-  background:rgba(251,113,133,0.15); color:#fb7185;
+  border-color:rgba(255,130,150,0.42);
+  background:linear-gradient(160deg, var(--warn-bg), rgba(255,130,150,0.08)); color:var(--warn);
 }
-#stopLoadSimBtn:hover:not(:disabled) { background:rgba(251,113,133,0.25); }
+#stopLoadSimBtn:hover:not(:disabled) { transform:translateY(-1px); filter:brightness(1.06); }
 #startLoadSimBtn:disabled, #stopLoadSimBtn:disabled {
   opacity:0.45; cursor:not-allowed;
 }
 #loadSimStatus {
-  margin-top:6px; font-size:11px; color:#9aa4b2;
+  margin-top:6px; font-size:11px; color:var(--text-sub);
+}
+#studentSimPanel {
+  border-radius: 20px !important;
+  border: 1px solid var(--edge) !important;
+  background: linear-gradient(165deg, rgba(136, 104, 240, 0.22), rgba(58, 45, 104, 0.26)) !important;
+  box-shadow: 0 16px 34px rgba(4,10,24,0.30), inset 0 1px 0 rgba(255,255,255,0.12) !important;
+  backdrop-filter: blur(14px) saturate(124%) !important;
+}
+#studentSimPanel #studentSimZone {
+  background-image: var(--glass-soft) !important;
+  border: 1px solid var(--edge) !important;
+  border-radius: 12px !important;
+}
+/* Solid theme overrides (no transparent/glass surfaces) */
+body {
+  background: #0b0c14 !important;
+}
+.controls {
+  background: #121a2d !important;
+  border: 1px solid #2b3b58 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: 0 10px 24px rgba(4, 10, 24, 0.48) !important;
+}
+.controls select,
+.controls input[type=number],
+#loadSimCount,
+#studentSimPanel #studentSimZone {
+  background: #0b1220 !important;
+  color: #e6eef8 !important;
+  border-color: #2b3b58 !important;
+}
+.controls select option,
+#studentSimPanel #studentSimZone option {
+  background: #0b1220 !important;
+  color: #e6eef8 !important;
+}
+.keys-hint kbd {
+  background: #1a253b !important;
+  border-color: #2b3b58 !important;
+  color: #dbeafe !important;
+}
+.aligner-toggle,
+.auto-follow-panel,
+.load-sim-panel {
+  background: #101a2d !important;
+  border-color: #2b3b58 !important;
+}
+.dir-btn {
+  background: #131f33 !important;
+  color: #c6d1e5 !important;
+}
+.dir-btn + .dir-btn {
+  border-left-color: #2b3b58 !important;
+}
+.dir-btn.active {
+  background: #22314d !important;
+  color: #eef3ff !important;
+}
+#studentSimPanel {
+  background: #171032 !important;
+  border: 1px solid #4a3a7c !important;
+  box-shadow: 0 10px 26px rgba(10, 4, 28, 0.55) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+#studentSimInfo {
+  background: #1d1a3a !important;
+  color: #c9bcff !important;
+}
+.leaflet-control-zoom a {
+  background: #111c2e !important;
+  color: #e6eef8 !important;
+  border-color: #2b3b58 !important;
+}
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background: #111c2e !important;
+  color: #e6eef8 !important;
+  border: 1px solid #2b3b58 !important;
 }
 </style>
 </head>
 <body>
 
 <div class="controls">
-  <div style="font-weight:600; font-size:14px; margin-bottom:6px;">🚍 Bus Simulator</div>
+  <div style="font-weight:600; font-size:14px; margin-bottom:6px;">Bus Simulator</div>
 
-    <!-- Student Activity Simulation Panel -->
-    <div id="studentSimPanel" style="margin-top:18px; border-radius:18px; background:rgba(40,20,60,0.32); box-shadow:0 4px 32px 0 rgba(102,126,234,0.18),0 1.5px 8px 0 rgba(102,0,255,0.08); border:1.5px solid rgba(180,120,255,0.18); backdrop-filter:blur(18px); padding:18px 18px 14px 18px; position:relative; overflow:hidden;">
-      <div style="font-weight:700; font-size:15px; color:#e0d6ff; margin-bottom:8px; letter-spacing:0.01em;">🧑‍🎓 Student Activity Simulation</div>
-      <div style="display:flex; align-items:center; gap:12px; margin-bottom:10px;">
-        <label style="flex:1; display:flex; align-items:center; gap:8px;">
-          <span style="font-size:13px; color:#b7aaff;">Enable Simulation</span>
-          <input type="checkbox" id="studentSimEnable" style="accent-color:#a78bfa; width:20px; height:20px; margin-left:4px;">
-        </label>
-        <span id="studentSimInfo" style="font-size:11px; color:#a78bfa; background:rgba(102,126,234,0.13); border-radius:6px; padding:2px 8px;">Simulated student demand activity</span>
-      </div>
-      <div style="margin-bottom:10px;">
-        <label style="font-size:12px; color:#b7aaff;">Active Students
-          <input type="range" id="studentSimCount" min="0" max="500" value="120" style="width:100%; margin-top:2px;">
-        </label>
-        <div style="font-size:11px; color:#a78bfa; margin-top:2px;">Max 200 visible</div>
-      </div>
-      <div style="margin-bottom:10px;">
-        <label style="font-size:12px; color:#b7aaff;">Movement Speed
-          <input type="range" id="studentSimSpeed" min="1" max="10" value="4" style="width:100%; margin-top:2px;">
-        </label>
-      </div>
-      <div style="margin-bottom:10px;">
-        <label style="font-size:12px; color:#b7aaff;">Primary Demand Zone
-          <select id="studentSimZone" style="width:100%; margin-top:2px; background:#1a1330; color:#e6eef8; border-radius:7px; border:1px solid #a78bfa;">
-            <option value="hostels">Hostels</option>
-            <option value="classes">Classes</option>
-            <option value="mixed" selected>Mixed</option>
-          </select>
-        </label>
-      </div>
-      <div style="display:flex; align-items:center; gap:10px; margin-top:8px;">
-        <span style="font-size:12px; color:#b7aaff;">Simulated viewers:</span>
-        <span id="studentSimViewerCount" style="font-size:15px; color:#fff; font-weight:700; text-shadow:0 0 8px #a78bfa;">0</span>
-      </div>
-    </div>
-
-
-  <label>Bus Number
-    <select id="busSelect"><option value="" selected>— Select Bus —</option></select>
+      <label>Bus Number
+    <select id="busSelect"><option value="" selected>- Select Bus -</option></select>
   </label>
 
   <label>Route
-    <select id="routeSelect"><option value="" selected>— Select Route —</option></select>
+    <select id="routeSelect"><option value="" selected>- Select Route -</option></select>
   </label>
 
   <label>Speed (km/h)
@@ -229,12 +251,12 @@ body { margin:0; background:#0f0f23; color:#e6eef8; font-family:'Segoe UI',sans-
   <div class="keys-hint">
     <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> to drive<br>
     <kbd>Shift</kbd> to boost &nbsp; <kbd>Space</kbd> to brake<br>
-    <span style="color:#667eea">Aligner:</span> <kbd>W</kbd> forward · <kbd>S</kbd> reverse · <kbd>Space</kbd> brake
+    <span style="color:#667eea">Aligner:</span> <kbd>W</kbd> forward - <kbd>S</kbd> reverse - <kbd>Space</kbd> brake
   </div>
 
   <div class="aligner-toggle" id="alignerToggle">
     <input type="checkbox" id="alignerCheck"/>
-    <label for="alignerCheck">🛤️ Aligner — lock to route track</label>
+    <label for="alignerCheck">Aligner - lock to route track</label>
     <span class="aligner-badge">OFF</span>
   </div>
 
@@ -252,11 +274,12 @@ body { margin:0; background:#0f0f23; color:#e6eef8; font-family:'Segoe UI',sans-
   <div id="syncStatus"><span class="status-dot" style="background:#667"></span>Waiting to start...</div>
   <div id="updateStats" style="font-size:11px; color:#9aa4b2; margin-top:4px; display:flex; justify-content:space-between">
     <span>Sent: <span id="updateCount" style="color:#34d399;font-weight:600">0</span></span>
-    <span>Last: <span id="lastUpdateTime" style="color:#667eea">—</span></span>
+    <span>Last: <span id="lastUpdateTime" style="color:#667eea">-</span></span>
   </div>
   <button id="startBtn" disabled>Select bus & route first</button>
 
   <div class="load-sim-panel">
+    <div style="font-weight:700; font-size:13px; color:#c7d2fe; margin-bottom:6px;">Transport Simulator</div>
     <label for="loadSimCount">Transport Count</label>
     <input type="number" id="loadSimCount" min="1" max="50" step="1" value="20"/>
     <div class="load-sim-row">
@@ -265,12 +288,166 @@ body { margin:0; background:#0f0f23; color:#e6eef8; font-family:'Segoe UI',sans-
     </div>
     <div id="loadSimStatus">Load simulation idle</div>
   </div>
+
+  <!-- Student Activity Simulation Panel -->
+  <div id="studentSimPanel" style="margin-top:18px; border-radius:18px; background:rgba(40,20,60,0.32); box-shadow:0 4px 32px 0 rgba(102,126,234,0.18),0 1.5px 8px 0 rgba(102,0,255,0.08); border:1.5px solid rgba(180,120,255,0.18); backdrop-filter:blur(18px); padding:18px 18px 14px 18px; position:relative; overflow:hidden;">
+    <div style="font-weight:700; font-size:15px; color:#e0d6ff; margin-bottom:8px; letter-spacing:0.01em;">Student Activity Simulation</div>
+    <div style="display:flex; align-items:center; gap:12px; margin-bottom:10px;">
+      <label style="flex:1; display:flex; align-items:center; gap:8px;">
+        <span style="font-size:13px; color:#b7aaff;">Enable Simulation</span>
+        <input type="checkbox" id="studentSimEnable" style="accent-color:#a78bfa; width:20px; height:20px; margin-left:4px;">
+      </label>
+      <span id="studentSimInfo" style="font-size:11px; color:#a78bfa; background:rgba(102,126,234,0.13); border-radius:6px; padding:2px 8px;">Simulated student demand activity</span>
+    </div>
+    <div style="margin-bottom:10px;">
+      <label style="font-size:12px; color:#b7aaff;">Active Students
+        <input type="range" id="studentSimCount" min="0" max="500" value="120" style="width:100%; margin-top:2px;">
+      </label>
+      <div style="font-size:11px; color:#a78bfa; margin-top:2px;">Max 200 visible</div>
+    </div>
+    <div style="margin-bottom:10px;">
+      <label style="font-size:12px; color:#b7aaff;">Movement Speed
+        <input type="range" id="studentSimSpeed" min="1" max="10" value="4" style="width:100%; margin-top:2px;">
+      </label>
+    </div>
+    <div style="margin-bottom:10px;">
+      <label style="font-size:12px; color:#b7aaff;">Primary Demand Zone
+        <select id="studentSimZone" style="width:100%; margin-top:2px; background:#1a1330; color:#e6eef8; border-radius:7px; border:1px solid #a78bfa;">
+          <option value="hostels">Hostels</option>
+          <option value="classes">Classes</option>
+          <option value="mixed" selected>Mixed</option>
+        </select>
+      </label>
+    </div>
+    <div style="display:flex; align-items:center; gap:10px; margin-top:8px;">
+      <span style="font-size:12px; color:#b7aaff;">Simulated viewers:</span>
+      <span id="studentSimViewerCount" style="font-size:15px; color:#fff; font-weight:700; text-shadow:0 0 8px #a78bfa;">0</span>
+    </div>
+  </div>
 </div>
 
 <div id="map"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
+function normalizeThemeHexColor(value){
+  let hex = String(value || '').trim();
+  if(/^#[0-9a-fA-F]{3}$/.test(hex)){
+    hex = '#' + hex.slice(1).split('').map(ch => ch + ch).join('');
+  }
+  if(!/^#[0-9a-fA-F]{6}$/.test(hex)) return '#8b64ff';
+  return `#${hex.slice(1).toLowerCase()}`;
+}
+function clampThemeSaturation(value){
+  const n = Number(value);
+  if(!Number.isFinite(n)) return 120;
+  return Math.max(20, Math.min(260, Math.round(n)));
+}
+function hexToRgb(hex){
+  const clean = normalizeThemeHexColor(hex).slice(1);
+  return {
+    r: parseInt(clean.slice(0, 2), 16),
+    g: parseInt(clean.slice(2, 4), 16),
+    b: parseInt(clean.slice(4, 6), 16),
+  };
+}
+function rgbToHue(r, g, b){
+  const rn = r / 255;
+  const gn = g / 255;
+  const bn = b / 255;
+  const max = Math.max(rn, gn, bn);
+  const min = Math.min(rn, gn, bn);
+  const d = max - min;
+  if(d === 0) return 0;
+  let h;
+  if(max === rn) h = ((gn - bn) / d) % 6;
+  else if(max === gn) h = ((bn - rn) / d) + 2;
+  else h = ((rn - gn) / d) + 4;
+  return ((h * 60) + 360) % 360;
+}
+function applyGlobalTheme(theme){
+  const accentRgb = hexToRgb(theme && theme.accent_color);
+  const baseRgb = hexToRgb('#8b64ff');
+  const hueDelta = rgbToHue(accentRgb.r, accentRgb.g, accentRgb.b) - rgbToHue(baseRgb.r, baseRgb.g, baseRgb.b);
+  const saturation = clampThemeSaturation(theme && theme.saturation);
+  document.documentElement.style.setProperty('--ui-theme-hue', `${hueDelta.toFixed(1)}deg`);
+  document.documentElement.style.setProperty('--ui-theme-saturation', `${saturation}%`);
+}
+async function loadGlobalTheme(){
+  try{
+    const res = await fetch('/api/ui-theme', { cache: 'no-store' });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error || 'theme_load_failed');
+    applyGlobalTheme(data);
+  }catch(e){
+    applyGlobalTheme({ accent_color: '#8b64ff', saturation: 120 });
+  }
+}
+const THEME_BROADCAST_KEY = 'kiit_ui_theme_broadcast_v1';
+window.addEventListener('storage', (e) => {
+  if(!e || e.key !== THEME_BROADCAST_KEY || !e.newValue) return;
+  try{
+    const payload = JSON.parse(e.newValue);
+    applyGlobalTheme(payload || {});
+  }catch(err){}
+});
+loadGlobalTheme();
+
+function getSystemSimControls() {
+  return {
+    startBtn: document.getElementById('systemSimStartBtn'),
+    stopBtn: document.getElementById('systemSimStopBtn'),
+    driverInput: document.getElementById('systemSimDriverCount'),
+    studentInput: document.getElementById('systemSimStudentCount'),
+  };
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const { startBtn, stopBtn, driverInput, studentInput } = getSystemSimControls();
+  if (!startBtn || !stopBtn || !driverInput || !studentInput) return;
+
+  startBtn.addEventListener('click', async () => {
+    if (systemSimRunning) return;
+    const driverCount = Math.max(1, Math.min(100, parseInt(driverInput.value, 10) || 20));
+    const studentCount = Math.max(1, Math.min(500, parseInt(studentInput.value, 10) || 100));
+    setSystemSimStatus('Starting simulation...', true);
+    systemSimRunning = true;
+    await startSystemDriverSimulation(driverCount);
+    startSystemStudentSimulation(studentCount);
+    setSystemSimStatus(`Running: ${driverCount} drivers, ${studentCount} students`, true);
+  });
+
+  stopBtn.addEventListener('click', () => {
+    if (!systemSimRunning) return;
+    setSystemSimStatus('Stopping simulation...', false);
+    systemSimRunning = false;
+    stopSystemDriverSimulation();
+    stopSystemStudentSimulation();
+    setSystemSimStatus('Idle', false);
+  });
+});
+
+function startSystemStudentSimulation(studentCount) {
+  for (let i = 0; i < studentCount; i++) {
+    const busInterval = setInterval(() => {
+      fetch('/api/buses').catch(() => {});
+      if (Math.random() < 0.15) fetch('/api/routes').catch(() => {});
+      if (Math.random() < 0.05) {
+        try {
+          const es = new EventSource('/events');
+          setTimeout(() => es.close(), 1000 + Math.random() * 2000);
+        } catch (e) {}
+      }
+    }, 3000 + Math.floor(Math.random() * 2000));
+    systemSimStudentIntervals.push(busInterval);
+  }
+}
+
+function stopSystemStudentSimulation() {
+  for (const interval of systemSimStudentIntervals) clearInterval(interval);
+  systemSimStudentIntervals = [];
+}
+
 // --- Student Simulation Layer ---
 let studentSimLayer = null;
 let studentSimDots = [];
@@ -374,7 +551,9 @@ function setStudentSimEnabled(val) {
   if (val) {
     if (!studentSimLayer) {
       studentSimLayer = L.layerGroup().addTo(map);
-      studentSimLayer.setZIndex(500);
+      if (typeof studentSimLayer.setZIndex === 'function') {
+        studentSimLayer.setZIndex(500);
+      }
     }
     studentSimDots = createStudentSimDots(studentSimCount);
     renderStudentSimDots();
@@ -436,9 +615,12 @@ let systemSimRunning = false;
 let systemSimRoutesCache = [];
 
 function setSystemSimStatus(msg, running) {
-  document.getElementById('systemSimStatus').textContent = msg;
-  document.getElementById('systemSimStartBtn').disabled = running;
-  document.getElementById('systemSimStopBtn').disabled = !running;
+  const statusEl = document.getElementById('systemSimStatus');
+  const startBtn = document.getElementById('systemSimStartBtn');
+  const stopBtn = document.getElementById('systemSimStopBtn');
+  if (statusEl) statusEl.textContent = msg;
+  if (startBtn) startBtn.disabled = !!running;
+  if (stopBtn) stopBtn.disabled = !running;
 }
 
 async function startSystemDriverSimulation(driverCount) {
@@ -601,6 +783,7 @@ let lat = 20.3549, lng = 85.8161;
 let bus = null;
 let currentRouteId = null;
 let simRunning = false;
+const DEFAULT_MAP_ZOOM = 17;
 
 // Physics
 const BOOST = 2.5;           // shift multiplier
@@ -698,7 +881,7 @@ function snapToNearestRoutePoint() {
 }
 
 // --- Map ---
-const map = L.map("map").setView([lat, lng], 16);
+const map = L.map("map").setView([lat, lng], DEFAULT_MAP_ZOOM);
 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', { maxZoom:19 }).addTo(map);
 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png', { maxZoom:19 }).addTo(map);
 
@@ -1118,11 +1301,11 @@ async function showRouteOnMap(routeId) {
 function updateStartBtn() {
   const btn = document.getElementById('startBtn');
   if (simRunning) {
-    btn.textContent = '⏹ Stop Simulation';
+    btn.textContent = 'Stop Simulation';
     btn.className = 'running';
     btn.disabled = false;
   } else if (bus && currentRouteId) {
-    btn.textContent = '▶ Start Simulation';
+    btn.textContent = 'Start Simulation';
     btn.className = '';
     btn.disabled = false;
   } else {
@@ -1175,7 +1358,7 @@ async function initRouteSelect() {
   } catch (e) { console.warn("Failed to load routes:", e); }
 }
 
-// Speed controls — slider and number input are synced (both in km/h)
+// Speed controls - slider and number input are synced (both in km/h)
 const speedSlider = document.getElementById('speedSlider');
 const customSpeedInput = document.getElementById('customSpeed');
 let targetKmh = 50; // current speed in km/h
@@ -1196,7 +1379,7 @@ navigator.geolocation.getCurrentPosition((pos) => {
   if (currentRouteId) return;
   lat = pos.coords.latitude;
   lng = pos.coords.longitude;
-  map.setView([lat, lng], 16);
+  map.setView([lat, lng], DEFAULT_MAP_ZOOM);
   marker.setLatLng([lat, lng]);
 });
 
@@ -1442,7 +1625,7 @@ function animate(now) {
         }
     }
 
-    // Soft camera follow — pan only when near edge
+    // Soft camera follow - pan only when near edge
     try {
         const px = map.latLngToContainerPoint([lat, lng]);
         const sz = map.getSize();
@@ -1452,7 +1635,7 @@ function animate(now) {
         }
     } catch (e) {}
 
-    // Send updates to server — fast when moving, slow heartbeat when idle
+    // Send updates to server - fast when moving, slow heartbeat when idle
     const sendInterval = isMoving ? SEND_INTERVAL : IDLE_SEND_INTERVAL;
     if (simRunning && bus && now - lastSend >= sendInterval) {
         // Skip if position hasn't changed (within ~1m) and not first send
@@ -1534,3 +1717,4 @@ requestAnimationFrame(animate);
 </script>
 </body>
 </html>
+

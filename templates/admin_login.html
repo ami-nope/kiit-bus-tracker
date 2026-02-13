@@ -4,15 +4,147 @@
     <title>Admin Login — Campus Transport</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background:#071018; color:#e6eef8; padding:20px }
-        .box { max-width:420px; margin:36px auto; background:#0d1117; padding:18px; border-radius:10px; border:1px solid rgba(255,255,255,0.03) }
-        h1 { font-size:18px; margin-bottom:6px }
-        p { color:#9aa4b2; margin-bottom:12px }
-        label { display:block; font-size:13px; color:#9aa4b2; margin-top:8px }
-        input { width:100%; padding:10px; border-radius:8px; margin-top:6px; background:#07101a; border:1px solid rgba(255,255,255,0.04); color:#e6eef8 }
-        button { margin-top:12px; padding:10px 12px; border-radius:8px; background:#34d399; border:none; color:#042017; cursor:pointer }
-        .muted { color:#9aa4b2; font-size:13px; margin-top:8px }
-        .note { font-size:12px; color:#8893a6 }
+        :root {
+            --bg: #0b0c14;
+            --bg-grad-1: rgba(142, 105, 255, 0.34);
+            --bg-grad-2: rgba(110, 80, 228, 0.24);
+            --text: #eef3ff;
+            --text-sub: #a5afc8;
+            --edge: rgba(198, 171, 255, 0.34);
+            --glass: linear-gradient(165deg, rgba(255,255,255,0.18), rgba(255,255,255,0.06) 52%, rgba(255,255,255,0.02));
+            --glass-soft: linear-gradient(165deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));
+            --shadow: 0 18px 42px rgba(4, 10, 24, 0.34), inset 0 1px 0 rgba(255,255,255,0.16);
+            --ok: #7cf3c0;
+            --ok-bg: rgba(124, 243, 192, 0.16);
+            --violet-bg: rgba(154, 126, 255, 0.18);
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            padding: 24px 16px;
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(circle at 14% 10%, var(--bg-grad-1), transparent 44%),
+                radial-gradient(circle at 86% 22%, var(--bg-grad-2), transparent 40%),
+                var(--bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .box {
+            width: 100%;
+            max-width: 470px;
+            padding: 22px;
+            border-radius: 26px;
+            border: 1px solid var(--edge);
+            background-image: var(--glass);
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(14px) saturate(128%);
+            -webkit-backdrop-filter: blur(14px) saturate(128%);
+        }
+        h1 { font-size: 20px; margin-bottom: 6px; letter-spacing: -0.01em; }
+        p { color: var(--text-sub); margin-bottom: 12px; }
+        label { display:block; font-size:13px; color:var(--text-sub); margin-top:10px; }
+        input {
+            width:100%;
+            padding:10px 12px;
+            border-radius: 14px;
+            margin-top:6px;
+            background-image: var(--glass-soft);
+            border:1px solid var(--edge);
+            color: var(--text);
+            outline: none;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.14);
+        }
+        input:focus { border-color: rgba(215, 194, 255, 0.60); }
+        button {
+            margin-top: 12px;
+            padding: 10px 12px;
+            border-radius: 999px;
+            border: 1px solid var(--edge);
+            background-image: var(--glass-soft);
+            color: var(--text);
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform .18s ease, border-color .18s ease, filter .18s ease;
+        }
+        button:hover { transform: translateY(-1px); filter: brightness(1.05); }
+        .toggle-btn {
+            margin-top: 0;
+            min-width: 74px;
+            background: var(--violet-bg);
+            color: #efe7ff;
+        }
+        .primary-btn {
+            width: 100%;
+            color: #dcfff1;
+            border-color: rgba(124, 243, 192, 0.42);
+            background: linear-gradient(160deg, var(--ok-bg), rgba(124, 243, 192, 0.07));
+        }
+        .secondary-btn {
+            width: 100%;
+            background: linear-gradient(160deg, rgba(154, 126, 255, 0.20), rgba(154, 126, 255, 0.08));
+        }
+        .muted { color:var(--text-sub); font-size:13px; margin-top:8px; }
+        .note {
+            font-size:12px;
+            color:#9eadd3;
+            margin-top: 8px;
+            padding: 8px 10px;
+            border-radius: 12px;
+            border: 1px solid rgba(198, 171, 255, 0.24);
+            background: rgba(255,255,255,0.04);
+        }
+        .error-box {
+            color:#ffc7d0;
+            margin-bottom:10px;
+            font-size:14px;
+            border: 1px solid rgba(255, 130, 150, 0.34);
+            background: rgba(255, 130, 150, 0.12);
+            padding: 8px 10px;
+            border-radius: 12px;
+        }
+        /* Solid surfaces for admin login */
+        body {
+            background: #0b0c14 !important;
+        }
+        .box {
+            background: #121a2d !important;
+            border-color: #2b3b58 !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            box-shadow: 0 10px 24px rgba(4, 10, 24, 0.48) !important;
+        }
+        input {
+            background: #0f1728 !important;
+            border-color: #2b3b58 !important;
+            color: #e6eef8 !important;
+            box-shadow: none !important;
+        }
+        button {
+            background: #18253b !important;
+            border-color: #2b3b58 !important;
+            color: #e6eef8 !important;
+        }
+        .toggle-btn {
+            background: #22314d !important;
+        }
+        .primary-btn {
+            background: #1d3a2b !important;
+            border-color: #2f6b52 !important;
+            color: #d6ffea !important;
+        }
+        .secondary-btn {
+            background: #202a46 !important;
+            border-color: #384a73 !important;
+        }
+        .note {
+            background: #141f33 !important;
+            border-color: #2b3b58 !important;
+            color: #b4c0d8 !important;
+        }
     </style>
 </head>
 <body>
@@ -26,31 +158,39 @@
 
 
         {% if error_text %}
-        <div style="color:#ff5a5a; margin-bottom:10px; font-size:14px;">{{ error_text }}</div>
+        <div class="error-box">{{ error_text }}</div>
         {% endif %}
-        <form method="POST" action="/admin/login">
+        <form method="POST" action="/admin/login" autocomplete="on">
             <label>Campus Transport System-Admin Login</label>
-            <input name="institute_name" placeholder="E.g. Your Institute" value="{{ institute_name | default('') }}">
+            <input name="institute_name" placeholder="E.g. Your Institute" value="{{ institute_name | default('') }}" autocomplete="organization">
 
             <label>Admin Username</label>
-            <input name="username" placeholder="admin" required>
+            <input name="username" placeholder="admin" required autocomplete="username" autocapitalize="off" spellcheck="false">
 
             <label>Password</label>
             <div style="display:flex; gap:8px; align-items:center">
-                <input id="loginPassword" name="password" type="password" placeholder="Enter password" required style="flex:1">
-                <button type="button" onclick="toggleVisibility('loginPassword', this)" style="margin-top:0;background:#667eea;color:#fff">Show</button>
+                <input id="loginPassword" name="password" type="password" placeholder="Enter password" required autocomplete="current-password" style="flex:1">
+                <button type="button" class="toggle-btn" onclick="toggleVisibility('loginPassword', this)">Show</button>
+            </div>
+
+            <div id="secondary-pin-fields" style="display:{% if require_gold_pin %}block{% else %}none{% endif %};">
+                <label>Login Pin (role-specific)</label>
+                <div style="display:flex; gap:8px; align-items:center">
+                    <input id="loginPin" name="gold_login_pin" type="text" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="Enter 6-digit pin" autocomplete="one-time-code" data-lpignore="true" data-1p-ignore="true" autocapitalize="off" spellcheck="false" style="flex:1">
+                </div>
+                <div class="note" style="margin-top:6px">Shown only when additional verification is required.</div>
             </div>
 
             <div id="signup-fields" style="display: none;">
                 <label>6-digit Signup Pin</label>
                 <div style="display:flex; gap:8px; align-items:center">
-                    <input id="signupPin" name="signup_pin" type="password" maxlength="6" placeholder="Enter 6-digit pin" style="flex:1">
-                    <button type="button" onclick="toggleVisibility('signupPin', this)" style="margin-top:0;background:#667eea;color:#fff">Show</button>
+                    <input id="signupPin" name="signup_pin" type="text" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="Enter 6-digit pin" autocomplete="one-time-code" data-lpignore="true" data-1p-ignore="true" autocapitalize="off" spellcheck="false" style="flex:1">
                 </div>
+                <div class="note" style="margin-top:6px">Enter the configured 6-digit signup pin.</div>
             </div>
             <input type="hidden" name="action" id="actionField" value="login">
-            <button type="button" onclick="submitLogin()">Login</button>
-            <button type="button" id="createBtn" onclick="submitSignup()">Create Account</button>
+            <button type="button" class="primary-btn" onclick="submitLogin()">Login</button>
+            <button type="button" class="secondary-btn" id="createBtn" onclick="submitSignup()">Create Account</button>
         </form>
         <script>
         function toggleVisibility(inputId, btn){
@@ -83,9 +223,7 @@
         }
         </script>
 
-        <div class="note" style="margin-top:12px">
-            
-        </div>
+        <div class="note" style="margin-top:12px">Signup and login pins are managed in admin security settings.</div>
     </div>
 </body>
 </html>

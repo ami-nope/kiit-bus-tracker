@@ -5,12 +5,294 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
+        :root {
+            --ui-theme-accent: #8b64ff;
+            --ui-theme-accent-rgb: 139, 100, 255;
+            --ui-theme-hue: 0deg;
+            --ui-theme-saturation: 120%;
+        }
         * { box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0b0c10; color:#e6eef8; padding:24px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0b0c10; color:#e6eef8; padding:24px; filter: hue-rotate(var(--ui-theme-hue)) saturate(var(--ui-theme-saturation)); }
         .panel { max-width:1400px; margin: 0 auto; background: #0d1117; border-radius:12px; padding:18px; border:1px solid rgba(255,255,255,0.04); box-shadow: none }
+        body.gold-admin {
+            position: relative;
+            min-height: 100vh;
+            color: #f6e6b8;
+            background:
+                radial-gradient(1200px 700px at 86% -8%, rgba(255, 220, 128, 0.22), transparent 56%),
+                radial-gradient(940px 560px at -10% 100%, rgba(219, 155, 34, 0.18), transparent 54%),
+                linear-gradient(160deg, #0f0b04 0%, #171106 42%, #120d05 100%);
+        }
+        body.gold-admin::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            opacity: 0.56;
+            background:
+                linear-gradient(115deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0) 38%),
+                repeating-linear-gradient(135deg, rgba(212, 164, 48, 0.05) 0 1px, transparent 1px 18px);
+            mix-blend-mode: screen;
+        }
+        body.gold-admin .panel {
+            position: relative;
+            overflow: hidden;
+            background:
+                linear-gradient(180deg, rgba(40, 29, 11, 0.98) 0%, rgba(24, 18, 8, 0.98) 100%);
+            border-color: rgba(212, 164, 48, 0.42);
+            box-shadow:
+                0 0 0 1px rgba(212, 164, 48, 0.2),
+                0 16px 44px rgba(0, 0, 0, 0.45),
+                0 0 44px rgba(212, 164, 48, 0.08);
+        }
+        body.gold-admin .panel::after {
+            content: '';
+            position: absolute;
+            top: -140%;
+            left: -40%;
+            width: 62%;
+            height: 320%;
+            transform: rotate(16deg);
+            background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,230,164,0.18), rgba(255,255,255,0));
+            pointer-events: none;
+            animation: goldSweep 8s linear infinite;
+        }
+        body.gold-admin .topbar {
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1px solid rgba(212, 164, 48, 0.26);
+            background: linear-gradient(180deg, rgba(255, 220, 140, 0.09), rgba(255, 220, 140, 0.03));
+            box-shadow: inset 0 1px 0 rgba(255, 243, 205, 0.12);
+        }
+        body.gold-admin .subtitle,
+        body.gold-admin .muted,
+        body.gold-admin .small {
+            color: #c7b894;
+        }
+        body.gold-admin a {
+            color: #f6d783 !important;
+        }
+        body.gold-admin .tabs {
+            border-bottom-color: rgba(212, 164, 48, 0.24);
+        }
+        body.gold-admin .tab {
+            color: #c8b17b;
+            transition: color .2s ease, background .2s ease, border-color .2s ease, box-shadow .2s ease;
+        }
+        body.gold-admin .tab:hover {
+            color: #f5df9f;
+            background: rgba(212, 164, 48, 0.08);
+        }
+        body.gold-admin .tab.active {
+            border-bottom-color: #d4a430;
+            color: #ffe6a6;
+            text-shadow: 0 0 10px rgba(255, 224, 140, 0.25);
+            box-shadow: inset 0 -2px 0 rgba(212, 164, 48, 0.34);
+        }
+        body.gold-admin input,
+        body.gold-admin select,
+        body.gold-admin textarea {
+            background: linear-gradient(180deg, #171005 0%, #100b04 100%);
+            border-color: rgba(212, 164, 48, 0.36);
+            color: #f9edc6;
+        }
+        body.gold-admin input:focus,
+        body.gold-admin select:focus,
+        body.gold-admin textarea:focus {
+            outline: none;
+            border-color: rgba(255, 214, 116, 0.78);
+            box-shadow: 0 0 0 2px rgba(212, 164, 48, 0.18);
+        }
+        body.gold-admin button {
+            color: #f5e5ba;
+            border-color: rgba(212, 164, 48, 0.34);
+            background: linear-gradient(180deg, #2b1f0c 0%, #1a1309 100%);
+            box-shadow: inset 0 1px 0 rgba(255, 234, 179, 0.11);
+            transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease;
+        }
+        body.gold-admin button:hover {
+            transform: translateY(-1px);
+            border-color: rgba(235, 188, 77, 0.62);
+            background: linear-gradient(180deg, #38280f 0%, #21170a 100%);
+            box-shadow: 0 6px 18px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255, 236, 190, 0.18);
+        }
+        body.gold-admin .ok {
+            color: #fff0c0;
+            border-color: rgba(219, 170, 53, 0.68);
+            background: linear-gradient(180deg, #8f6a19 0%, #6b4f12 100%);
+        }
+        body.gold-admin .ok:hover {
+            border-color: rgba(245, 199, 90, 0.86);
+            background: linear-gradient(180deg, #a2771b 0%, #785714 100%);
+        }
+        body.gold-admin .route-panel,
+        body.gold-admin .perf-card,
+        body.gold-admin .audit-wrap {
+            background: linear-gradient(180deg, rgba(38, 28, 12, 0.84), rgba(23, 17, 8, 0.84));
+            border-color: rgba(212, 164, 48, 0.26);
+            box-shadow: inset 0 1px 0 rgba(255, 240, 194, 0.08);
+        }
+        body.gold-admin thead th {
+            color: #e4ce90;
+            border-bottom-color: rgba(212, 164, 48, 0.24);
+        }
+        body.gold-admin tbody td {
+            border-bottom-color: rgba(212, 164, 48, 0.12);
+        }
+        .gold-badge {
+            display:inline-block;
+            margin-left:6px;
+            padding:3px 10px;
+            border-radius:999px;
+            background: linear-gradient(120deg, #8d6314 0%, #f5d983 48%, #8d6314 100%);
+            background-size: 210% 100%;
+            color:#291b05;
+            border:1px solid rgba(243, 210, 119, 0.74);
+            box-shadow: 0 2px 10px rgba(212, 164, 48, 0.34);
+            font-size:11px;
+            font-weight:700;
+            letter-spacing:0.05em;
+            animation: goldPulse 3.2s ease-in-out infinite;
+        }
+        .gold-banner {
+            position: relative;
+            overflow: hidden;
+            margin-bottom:12px;
+            padding:11px 13px;
+            border-radius:12px;
+            border:1px solid rgba(236, 190, 79, 0.54);
+            background: linear-gradient(95deg, rgba(112, 79, 17, 0.34), rgba(212, 164, 48, 0.2), rgba(112, 79, 17, 0.34));
+            color:#f5db8d;
+            font-size:13px;
+            box-shadow: inset 0 1px 0 rgba(255, 239, 196, 0.12);
+        }
+        .gold-banner::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -50%;
+            width: 46%;
+            height: 100%;
+            transform: skewX(-18deg);
+            background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,246,219,0.2), rgba(255,255,255,0));
+            animation: goldBannerSweep 4.8s linear infinite;
+            pointer-events: none;
+        }
+        .pw-toggle-btn {
+            margin-top:0;
+            border: 1px solid rgba(230, 189, 85, 0.68);
+            background: linear-gradient(180deg, #b8871e 0%, #936b16 100%);
+            color:#fef3d0;
+            padding:4px 8px;
+            border-radius:6px;
+            cursor:pointer;
+            font-size:11px;
+        }
+        .pw-pill {
+            display:inline-block;
+            min-width:110px;
+            font-family:monospace;
+            font-size:12px;
+        }
+        @keyframes goldSweep {
+            0% { transform: translateX(0) rotate(16deg); opacity: 0; }
+            10% { opacity: 1; }
+            50% { opacity: 1; }
+            100% { transform: translateX(240%) rotate(16deg); opacity: 0; }
+        }
+        @keyframes goldPulse {
+            0%, 100% { background-position: 0% 50%; box-shadow: 0 2px 10px rgba(212, 164, 48, 0.25); }
+            50% { background-position: 100% 50%; box-shadow: 0 3px 14px rgba(212, 164, 48, 0.45); }
+        }
+        @keyframes goldBannerSweep {
+            0% { left: -52%; }
+            100% { left: 130%; }
+        }
         h1 { margin:0 0 6px 0; font-size:20px }
         p.subtitle { margin:0 0 14px 0; color:#9aa4b2 }
         .controls { display:flex; gap:10px; align-items:center; margin-bottom:12px; flex-wrap:wrap }
+        .theme-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 10px;
+            border-radius: 12px;
+            border: 1px solid rgba(var(--ui-theme-accent-rgb), 0.35);
+            background: linear-gradient(180deg, rgba(var(--ui-theme-accent-rgb), 0.18), rgba(255,255,255,0.03));
+            min-width: 320px;
+        }
+        .theme-controls .field-label {
+            margin: 0;
+            font-size: 11px;
+            line-height: 1.1;
+            color: #d4ddf0;
+        }
+        .theme-controls input[type=color] {
+            width: 46px;
+            height: 34px;
+            border-radius: 9px;
+            border: 1px solid rgba(255,255,255,0.22);
+            background: rgba(10,14,24,0.45);
+            padding: 2px;
+            cursor: pointer;
+        }
+        .theme-controls input[type=range] {
+            width: 120px;
+        }
+        .theme-sat-value {
+            min-width: 48px;
+            text-align: right;
+            font-size: 12px;
+            color: #d6dff5;
+        }
+        .theme-save-status {
+            min-width: 84px;
+            font-size: 11px;
+            color: #b6c2d8;
+            white-space: nowrap;
+        }
+        .theme-save-timer {
+            min-width: 92px;
+            font-size: 11px;
+            color: #d2dbf0;
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .theme-save-timer[hidden] {
+            display: none !important;
+        }
+        .theme-save-timer .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 999px;
+            background: var(--ui-theme-accent);
+            box-shadow: 0 0 0 rgba(var(--ui-theme-accent-rgb), 0.38);
+            animation: themeApplyPulse 1s ease-in-out infinite;
+        }
+        @keyframes themeApplyPulse {
+            0%, 100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(var(--ui-theme-accent-rgb), 0.38); }
+            50% { transform: scale(1.1); box-shadow: 0 0 0 6px rgba(var(--ui-theme-accent-rgb), 0); }
+        }
+        .theme-controls.is-applying button,
+        .theme-controls.is-applying input {
+            opacity: 0.82;
+        }
+        .theme-controls button {
+            background: rgba(var(--ui-theme-accent-rgb), 0.24);
+            border-color: rgba(var(--ui-theme-accent-rgb), 0.46);
+        }
+        .theme-controls button:hover {
+            background: rgba(var(--ui-theme-accent-rgb), 0.34);
+        }
+        .theme-preview-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 999px;
+            background: var(--ui-theme-accent);
+            box-shadow: 0 0 0 1px rgba(255,255,255,0.55), 0 0 12px rgba(var(--ui-theme-accent-rgb), 0.55);
+        }
         input, select, textarea { padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.06); background:#0f0f23; color:#e6eef8 }
         button { background:#0f0f23; color:#e6eef8; border:1px solid rgba(255,255,255,0.06); padding:8px 12px; border-radius:10px; cursor:pointer }
         button:hover { background:rgba(255,255,255,0.05) }
@@ -26,11 +308,64 @@
         .topbar { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:20px }
         .tabs { display:flex; gap:8px; border-bottom:1px solid rgba(255,255,255,0.03); margin-bottom:18px }
         .tab { padding:10px 16px; cursor:pointer; color:#9aa4b2; border-bottom:2px solid transparent }
-        .tab.active { color:#e6eef8; border-bottom-color:#34d399 }
+        .tab.active { color:#e6eef8; border-bottom-color: var(--ui-theme-accent) }
         .tab-content { display:none }
         .tab-content.active { display:block }
         .field-group { margin-bottom:12px }
         .field-label { font-size:12px; color:#9aa4b2; margin-bottom:4px; display:block; font-weight:600 }
+        /* Solid surface overrides for standard admin mode */
+        body:not(.gold-admin) .panel,
+        body:not(.gold-admin) .route-panel,
+        body:not(.gold-admin) .stops-list,
+        body:not(.gold-admin) .route-card,
+        body:not(.gold-admin) .perf-card,
+        body:not(.gold-admin) .audit-wrap {
+            background: #0d111b;
+            border-color: #243149;
+        }
+        body:not(.gold-admin) .instruction-box {
+            background: #16233b;
+            border-color: #2d4c88;
+        }
+        body:not(.gold-admin) .stop-radius-wrap {
+            background: #141f33;
+            border-color: #2b467d;
+        }
+        body:not(.gold-admin) .draw-mode-hint kbd {
+            background: #1a2539;
+            border-color: #2b3b58;
+            color: #dbeafe;
+        }
+        body:not(.gold-admin) input,
+        body:not(.gold-admin) select,
+        body:not(.gold-admin) textarea {
+            background: #0f1728;
+            border-color: #2b3b58;
+            color: #e6eef8;
+        }
+        body:not(.gold-admin) select option {
+            background: #0f1728;
+            color: #e6eef8;
+        }
+        body:not(.gold-admin) button {
+            background: #18253b;
+            border-color: #2b3b58;
+            color: #e6eef8;
+        }
+        body:not(.gold-admin) button:hover {
+            background: #21314b;
+        }
+        .leaflet-control-zoom a {
+            background: #111c2e !important;
+            color: #e6eef8 !important;
+            border-color: #2b3b58 !important;
+        }
+        .leaflet-popup-content-wrapper,
+        .leaflet-popup-tip {
+            background: #111c2e !important;
+            color: #e6eef8 !important;
+            border: 1px solid #2b3b58 !important;
+        }
         
         /* Route Builder */
         #routeMap { height:500px; border-radius:8px; margin-bottom:16px; border:2px solid rgba(102,126,234,0.3) }
@@ -166,6 +501,113 @@
         .perf-v.small { font-size:13px; font-weight:500; color:#c8d2e0 }
         .perf-two-col { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px }
         @media (max-width:900px) { .perf-two-col { grid-template-columns:1fr; } }
+        .sparkline-card { padding-bottom:10px; }
+        .sparkline {
+            width: 100%;
+            height: 72px;
+            display: block;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.02);
+            cursor: zoom-in;
+        }
+        .sparkline:focus-visible {
+            outline: 2px solid #60a5fa;
+            outline-offset: 2px;
+        }
+        .sparkline-meta {
+            margin-top: 8px;
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            font-size: 11px;
+            color: #9aa4b2;
+        }
+        .sparkline-value {
+            font-size: 12px;
+            font-weight: 600;
+            color: #e6eef8;
+        }
+        body.gold-admin .sparkline {
+            background: rgba(212, 164, 48, 0.08);
+        }
+        body.gold-admin .sparkline-meta {
+            color: #c7b894;
+        }
+        body.perf-detail-open { overflow: hidden; }
+        .perf-detail-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 1200;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(2, 6, 14, 0.78);
+            backdrop-filter: blur(4px);
+            padding: 24px;
+        }
+        .perf-detail-modal[hidden] { display: none !important; }
+        .perf-detail-dialog {
+            width: min(1080px, 96vw);
+            height: min(78vh, 760px);
+            background: #0b1220;
+            border: 1px solid rgba(255,255,255,0.10);
+            border-radius: 12px;
+            box-shadow: 0 28px 80px rgba(0,0,0,0.55);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        body.gold-admin .perf-detail-dialog {
+            background: #161107;
+            border-color: rgba(212,164,48,0.35);
+            box-shadow: 0 28px 80px rgba(0,0,0,0.60), 0 0 0 1px rgba(212,164,48,0.18) inset;
+        }
+        .perf-detail-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 14px 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+        .perf-detail-title {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 700;
+            color: #e6eef8;
+        }
+        .perf-detail-subtitle {
+            margin-top: 4px;
+            font-size: 12px;
+            color: #9aa4b2;
+        }
+        .perf-detail-close {
+            border: 1px solid rgba(255,255,255,0.16);
+            background: rgba(255,255,255,0.06);
+            color: #e6eef8;
+            border-radius: 8px;
+            padding: 8px 12px;
+            cursor: pointer;
+        }
+        .perf-detail-close:hover {
+            background: rgba(255,255,255,0.12);
+        }
+        .perf-detail-body {
+            flex: 1;
+            padding: 14px 14px 16px 14px;
+            min-height: 280px;
+        }
+        .perf-detail-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.02);
+        }
+        @media (max-width: 768px) {
+            .perf-detail-modal { padding: 12px; }
+            .perf-detail-dialog { height: min(86vh, 760px); }
+        }
         .audit-wrap {
             background:#0f0f23;
             border:1px solid rgba(255,255,255,0.06);
@@ -181,7 +623,7 @@
         cursor-info { font-size:11px; color:#667eea; text-align:center; margin-top:8px; display:block }
     </style>
 </head>
-<body>
+<body class="{% if is_gold_admin %}gold-admin{% endif %}">
     <div class="panel">
         <div class="topbar">
             <div>
@@ -194,6 +636,21 @@
                     <input id="totalTransportsInput" type="number" min="0" value="100" style="width:100px">
                     <button id="incTotalTransports">+</button>
                     <button id="saveTotalTransports" class="ok">Save</button>
+                    <div class="theme-controls" title="Global UI theme">
+                        <span class="theme-preview-dot" id="themePreviewDot" aria-hidden="true"></span>
+                        <div>
+                            <label class="field-label" for="themeAccentInput">Global Color</label>
+                            <input id="themeAccentInput" type="color" value="#8b64ff" aria-label="Global color picker">
+                        </div>
+                        <div>
+                            <label class="field-label" for="themeSaturationInput">Saturation</label>
+                            <input id="themeSaturationInput" type="range" min="20" max="260" step="1" value="120" aria-label="Global saturation slider">
+                        </div>
+                        <span class="theme-sat-value" id="themeSaturationValue">120%</span>
+                        <button id="saveUiThemeBtn" type="button">Apply Theme</button>
+                        <span class="theme-save-status" id="themeSaveStatus"></span>
+                        <span class="theme-save-timer" id="themeSaveTimer" hidden><span class="dot" aria-hidden="true"></span><span id="themeSaveTimerText">Applying 0.0s</span></span>
+                    </div>
                 </div>
             </div>
             <div style="text-align:right">
@@ -201,8 +658,15 @@
                 <a href="/driver" target="_blank" rel="noopener noreferrer" style="color:#9aa4b2; text-decoration:none; margin-right:12px">Driver View</a>
                 <a href="/simulator" target="_blank" rel="noopener noreferrer" style="color:#9aa4b2; text-decoration:none; margin-right:12px">Simulator</a>
                 <button onclick="showUsersSection()" style="background:#34d399;color:#042017;margin-right:12px;padding:8px 16px;border-radius:8px;border:none;cursor:pointer">Users</button>
+                {% if is_gold_admin %}
+                <button id="openAuditLogBtn" style="margin-right:8px;padding:8px 12px;border-radius:8px;border:none;cursor:pointer;background:#b8871e;color:#fff3d0">Audit Log</button>
+                <button id="openAdminLogBtn" style="margin-right:12px;padding:8px 12px;border-radius:8px;border:none;cursor:pointer;background:#8f6a19;color:#fff3d0">Admin Log</button>
+                {% endif %}
                 {% if admin_user %}
                     <span style="color:#9aa4b2; margin-right:8px">{{ admin_user }}</span>
+                    {% if is_gold_admin %}
+                        <span class="gold-badge">GOLD ADMIN</span>
+                    {% endif %}
                     <a href="/admin/logout" style="color:#ff9aa2; text-decoration:none">Logout</a>
                 {% else %}
                     <a href="/admin/login" style="color:#9aa4b2; text-decoration:none">Admin Login</a>
@@ -210,60 +674,256 @@
             </div>
         </div>
 
+        {% if is_gold_admin %}
+        <div class="gold-banner">Gold Admin mode is active. You can manage admins, review all admin activity, and reveal stored admin passwords.</div>
+        {% endif %}
+
         <div class="tabs">
             <div class="tab" data-tab="routes"><span class="icon">🗺️</span> Create Route</div>
             <div class="tab active" data-tab="buses"><span class="icon">🚌</span> Manage Transports</div>
             <div class="tab" data-tab="buildings"><span class="icon">🏠</span> Buildings</div>
             <div class="tab" data-tab="serverPerf"><span class="icon">⚡</span> Server Performance</div>
+            {% if is_gold_admin %}
+            <div class="tab" data-tab="adminConsole"><span class="icon">🛡️</span> Admin Console</div>
+            {% endif %}
         </div>
         <div id="usersSection" style="display:none;background:#07101a;padding:18px;border-radius:8px;margin-bottom:18px">
             <h2 style="color:#34d399">All Users</h2>
             <div id="usersTable"></div>
             <h3 style="margin-top:16px;color:#e6eef8;font-size:16px">Manage Admins</h3>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center">
+            <div id="manageAdminControls" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center">
                 <input id="adminUsername" placeholder="Username" style="min-width:160px">
                 <div style="display:flex;gap:8px;align-items:center">
                     <input id="adminPassword" type="password" placeholder="Password" style="min-width:160px">
                     <button type="button" onclick="toggleVisibility('adminPassword', this)" style="margin-top:0;background:#667eea;color:#fff">Show</button>
                 </div>
-                <input id="adminPin" placeholder="Pin (456123)" style="min-width:140px">
+                <input id="adminPin" placeholder="Role signup pin (6 digits)" style="min-width:220px">
                 <button class="ok" onclick="addAdmin()">+ Add Admin</button>
+            </div>
+            <div id="manageAdminsHint" class="note" style="margin-bottom:8px;color:#b9c3d2">{% if is_gold_admin %}You can create admins using the active signup pins.{% else %}Admin account management is restricted for this account.{% endif %}</div>
+            <div id="pinManager" style="display:none; margin:12px 0; padding:12px; border-radius:10px; border:1px solid rgba(212, 164, 48, 0.35); background:rgba(212, 164, 48, 0.08)">
+                <div style="font-weight:700; margin-bottom:10px; color:#f2d27a">Security Pins</div>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:10px; margin-bottom:10px">
+                    <label class="note" style="margin:0">Admin Signup Pin
+                        <input id="pinAdminSignup" type="password" maxlength="6" placeholder="6 digits">
+                    </label>
+                    <label class="note" style="margin:0">Gold Signup Pin
+                        <input id="pinGoldSignup" type="password" maxlength="6" placeholder="6 digits">
+                    </label>
+                    <label class="note" style="margin:0">Admin Login Pin
+                        <input id="pinAdminLogin" type="password" maxlength="6" placeholder="6 digits">
+                    </label>
+                    <label class="note" style="margin:0">Gold Login Pin
+                        <input id="pinGoldLogin" type="password" maxlength="6" placeholder="6 digits">
+                    </label>
+                </div>
+                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap">
+                    <button type="button" class="ok" onclick="savePinSettings()">Save Pins</button>
+                    <button type="button" onclick="togglePinVisibility()">Show/Hide Pins</button>
+                    <span id="pinSaveStatus" class="note"></span>
+                </div>
             </div>
             <div id="adminsTable"></div>
             <button onclick="hideUsersSection()" style="margin-top:12px;background:#ff7b8a;color:#fff;padding:8px 16px;border-radius:8px;border:none;cursor:pointer">Close</button>
         </div>
         <script>
+        const CURRENT_ADMIN = {{ (admin_user or '') | tojson }};
+        const CAN_ACCESS_SECURE_ADMIN = {{ (is_gold_admin or false) | tojson }};
+        const adminPasswordCache = {};
+
+        function escapeHtml(v) {
+            return String(v ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function maskSecret(secret) {
+            const raw = String(secret || '');
+            if (!raw) return '(unavailable)';
+            return '*'.repeat(Math.max(8, raw.length));
+        }
+
+        function toggleInlineSecret(spanId, btn) {
+            const span = document.getElementById(spanId);
+            if (!span) return;
+            const secret = String(adminPasswordCache[spanId] || '');
+            const isShowing = span.getAttribute('data-show') === '1';
+            if (isShowing) {
+                span.textContent = maskSecret(secret);
+                span.setAttribute('data-show', '0');
+                if (btn) btn.textContent = 'Show';
+            } else {
+                span.textContent = secret || '(unavailable)';
+                span.setAttribute('data-show', '1');
+                if (btn) btn.textContent = 'Hide';
+            }
+        }
+
+        function applyAdminRoleUi() {
+            const controls = document.getElementById('manageAdminControls');
+            const hint = document.getElementById('manageAdminsHint');
+            const pinManager = document.getElementById('pinManager');
+            if (CAN_ACCESS_SECURE_ADMIN) {
+                if (controls) controls.style.display = 'flex';
+                if (hint) hint.textContent = 'Full admin security controls are enabled for this account.';
+                if (pinManager) pinManager.style.display = 'block';
+                return;
+            }
+            if (controls) controls.style.display = 'none';
+            if (hint) hint.textContent = 'You do not have permission to manage admin accounts or security settings.';
+            if (pinManager) pinManager.style.display = 'none';
+        }
+
+        function pinInputIds() {
+            return ['pinAdminSignup', 'pinGoldSignup', 'pinAdminLogin', 'pinGoldLogin'];
+        }
+
+        function setPinSaveStatus(msg, isError = false) {
+            const el = document.getElementById('pinSaveStatus');
+            if (!el) return;
+            el.textContent = msg || '';
+            el.style.color = isError ? '#ff7b8a' : '#b9c3d2';
+        }
+
+        function togglePinVisibility() {
+            for (const id of pinInputIds()) {
+                const input = document.getElementById(id);
+                if (!input) continue;
+                input.type = input.type === 'password' ? 'text' : 'password';
+            }
+        }
+
+        async function loadPinSettings() {
+            if (!CAN_ACCESS_SECURE_ADMIN) return;
+            try {
+                const res = await fetch('/admin/pins', { cache: 'no-store' });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Failed to load pins');
+                const pins = data.pins || {};
+                const map = {
+                    pinAdminSignup: pins.admin_signup_pin || '',
+                    pinGoldSignup: pins.gold_signup_pin || '',
+                    pinAdminLogin: pins.admin_login_pin || '',
+                    pinGoldLogin: pins.gold_login_pin || '',
+                };
+                Object.entries(map).forEach(([id, value]) => {
+                    const input = document.getElementById(id);
+                    if (input) input.value = value;
+                });
+                setPinSaveStatus('Pins loaded');
+            } catch (e) {
+                setPinSaveStatus('Failed to load pin settings', true);
+            }
+        }
+
+        async function savePinSettings() {
+            if (!CAN_ACCESS_SECURE_ADMIN) { alert('Access denied.'); return; }
+            const payload = {
+                admin_signup_pin: (document.getElementById('pinAdminSignup')?.value || '').trim(),
+                gold_signup_pin: (document.getElementById('pinGoldSignup')?.value || '').trim(),
+                admin_login_pin: (document.getElementById('pinAdminLogin')?.value || '').trim(),
+                gold_login_pin: (document.getElementById('pinGoldLogin')?.value || '').trim(),
+            };
+            for (const [key, val] of Object.entries(payload)) {
+                if (!/^\d{6}$/.test(val)) {
+                    alert(`Invalid ${key}. Use exactly 6 digits.`);
+                    return;
+                }
+            }
+            if (payload.admin_signup_pin === payload.gold_signup_pin) {
+                alert('Admin signup pin and gold signup pin must be different.');
+                return;
+            }
+            try {
+                const res = await fetch('/admin/pins', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Failed to save');
+                setPinSaveStatus('Pins updated successfully');
+            } catch (e) {
+                setPinSaveStatus(e.message || 'Failed to update pins', true);
+            }
+        }
+
         function showUsersSection() {
-            fetch('/admin/users').then(r=>r.json()).then(data=>{
-                let html = '<table style="width:100%;margin-top:12px"><thead><tr><th>Type</th><th>Username</th><th>Password</th></tr></thead><tbody>';
-                for(let user of data.users){
-                    html += `<tr><td>${user.type}</td><td>${user.username}</td><td>${user.password}</td></tr>`;
+            fetch('/admin/users').then(r => r.json()).then(data => {
+                const users = Array.isArray(data.users) ? data.users : [];
+                const includeRole = !!CAN_ACCESS_SECURE_ADMIN;
+                const roleHeader = includeRole ? '<th>Role</th>' : '';
+                const colspan = includeRole ? 4 : 3;
+                let html = `<table style="width:100%;margin-top:12px"><thead><tr><th>Type</th><th>Username</th>${roleHeader}<th>Password</th></tr></thead><tbody>`;
+                if (!users.length) {
+                    html += `<tr><td colspan="${colspan}" class="empty">No users found</td></tr>`;
+                } else {
+                    for (const user of users) {
+                        const type = escapeHtml(user.type || '--');
+                        const username = escapeHtml(user.username || '--');
+                        const roleCell = includeRole ? `<td>${escapeHtml(user.role || '--')}</td>` : '';
+                        const password = escapeHtml(user.password || '************');
+                        html += `<tr><td>${type}</td><td>${username}</td>${roleCell}<td>${password}</td></tr>`;
+                    }
                 }
                 html += '</tbody></table>';
                 document.getElementById('usersTable').innerHTML = html;
                 document.getElementById('usersSection').style.display = 'block';
-            }).then(()=>{
+            }).then(() => {
                 loadAdmins();
+                loadPinSettings();
             });
         }
-        function hideUsersSection(){
+
+        function hideUsersSection() {
             document.getElementById('usersSection').style.display = 'none';
         }
 
-        function loadAdmins(){
-            fetch('/admin/admins').then(r=>r.json()).then(data=>{
-                const admins = data.admins || [];
-                let html = '<table style="width:100%;margin-top:8px"><thead><tr><th>Admin</th><th style="width:280px">Actions</th></tr></thead><tbody>';
-                if(admins.length===0){
-                    html += '<tr><td colspan="2" class="empty">No admins yet</td></tr>';
+        function loadAdmins() {
+            fetch('/admin/admins').then(r => r.json()).then(data => {
+                const admins = Array.isArray(data.admins) ? data.admins : [];
+                const canManage = !!data.is_gold_admin;
+                const roleHeader = canManage ? '<th>Role</th>' : '';
+                const actionsHeader = canManage ? '<th style="width:300px">Actions</th>' : '';
+                const colspan = canManage ? 4 : 2;
+                let html = `<table style="width:100%;margin-top:8px"><thead><tr><th>Admin</th>${roleHeader}<th>Password</th>${actionsHeader}</tr></thead><tbody>`;
+                if (admins.length === 0) {
+                    html += `<tr><td colspan="${colspan}" class="empty">No admins yet</td></tr>`;
                 } else {
-                    for(let a of admins){
+                    for (let i = 0; i < admins.length; i++) {
+                        const admin = admins[i] || {};
+                        const username = String(admin.username || '');
+                        const safeUsername = escapeHtml(username);
+                        const role = String(admin.role || 'admin').toLowerCase() === 'gold' ? 'Gold' : 'Admin';
+                        const roleCell = canManage ? `<td>${role === 'Gold' ? '<span class="gold-badge">GOLD</span>' : '<span class="muted">Admin</span>'}</td>` : '';
+                        const pwdId = `admin_pw_${i}`;
+                        const usernameArg = JSON.stringify(username);
+                        adminPasswordCache[pwdId] = String(admin.password_plain || '');
+
+                        let passwordCell = '<span class="muted">Hidden</span>';
+                        if (canManage) {
+                            passwordCell = `<span id="${pwdId}" class="pw-pill" data-show="0">${escapeHtml(maskSecret(adminPasswordCache[pwdId]))}</span>`;
+                            if (adminPasswordCache[pwdId]) {
+                                passwordCell += ` <button type="button" class="pw-toggle-btn" onclick="toggleInlineSecret('${pwdId}', this)">Show</button>`;
+                            }
+                        }
+
+                        let actionsCell = '';
+                        if (canManage) {
+                            actionsCell = `
+                                <button onclick='promptChangeAdminPassword(${usernameArg})'>Change Password</button>
+                                <button class="danger" onclick='deleteAdmin(${usernameArg})'>Delete</button>
+                            `;
+                        }
+
                         html += `<tr>
-                            <td><strong>${a.username}</strong></td>
-                            <td class="row-actions">
-                                <button onclick="promptChangeAdminPassword('${a.username}')">Change Password</button>
-                                <button class="danger" onclick="deleteAdmin('${a.username}')">Delete</button>
-                            </td>
+                            <td><strong>${safeUsername}</strong>${username === CURRENT_ADMIN ? ' <span class="muted">(you)</span>' : ''}</td>
+                            ${roleCell}
+                            <td>${passwordCell}</td>
+                            ${canManage ? `<td class="row-actions">${actionsCell}</td>` : ''}
                         </tr>`;
                     }
                 }
@@ -272,48 +932,56 @@
             });
         }
 
-        function addAdmin(){
+        function addAdmin() {
+            if (!CAN_ACCESS_SECURE_ADMIN) { alert('Access denied.'); return; }
             const username = document.getElementById('adminUsername').value.trim();
             const password = document.getElementById('adminPassword').value.trim();
             const pin = document.getElementById('adminPin').value.trim();
-            if(!username || !password || !pin){ alert('Enter username, password and pin'); return; }
+            if (!username || !password || !pin) { alert('Enter username, password and pin.'); return; }
             fetch('/admin/admins', {
-                method:'POST', headers:{'Content-Type':'application/json'},
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
                 body: JSON.stringify({ username, password, pin })
-            }).then(async r=>{
-                if(!r.ok){ const e = await r.json(); alert(e.error||'Failed'); return; }
-                document.getElementById('adminUsername').value='';
-                document.getElementById('adminPassword').value='';
-                document.getElementById('adminPin').value='';
+            }).then(async r => {
+                if (!r.ok) { const e = await r.json(); alert(e.error || 'Failed'); return; }
+                document.getElementById('adminUsername').value = '';
+                document.getElementById('adminPassword').value = '';
+                document.getElementById('adminPin').value = '';
                 loadAdmins();
             });
         }
 
-        function deleteAdmin(username){
-            fetch(`/admin/admins/${encodeURIComponent(username)}`, { method:'DELETE' }).then(async r=>{
-                if(!r.ok){ const e = await r.json(); alert(e.error||'Failed'); return; }
+        function deleteAdmin(username) {
+            if (!CAN_ACCESS_SECURE_ADMIN) { alert('Access denied.'); return; }
+            fetch(`/admin/admins/${encodeURIComponent(username)}`, { method:'DELETE' }).then(async r => {
+                if (!r.ok) { const e = await r.json(); alert(e.error || 'Failed'); return; }
                 loadAdmins();
             });
         }
 
-        function promptChangeAdminPassword(username){
+        function promptChangeAdminPassword(username) {
+            if (!CAN_ACCESS_SECURE_ADMIN) { alert('Access denied.'); return; }
             const pwd = prompt(`New password for ${username}:`);
-            if(pwd===null) return;
-            const pin = prompt('Enter pin (456123):');
-            if(pin===null) return;
+            if (pwd === null) return;
+            const pin = prompt('Enter target role login pin (6 digits):');
+            if (pin === null) return;
             changeAdminPassword(username, pwd, pin);
         }
 
-        function changeAdminPassword(username, password, pin){
-            if(!password || !pin){ alert('Password and pin are required'); return; }
+        function changeAdminPassword(username, password, pin) {
+            if (!CAN_ACCESS_SECURE_ADMIN) { alert('Access denied.'); return; }
+            if (!password || !pin) { alert('Password and pin are required.'); return; }
             fetch(`/admin/admins/${encodeURIComponent(username)}/password`, {
-                method:'POST', headers:{'Content-Type':'application/json'},
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
                 body: JSON.stringify({ password, pin })
-            }).then(async r=>{
-                if(!r.ok){ const e = await r.json(); alert(e.error||'Failed'); return; }
+            }).then(async r => {
+                if (!r.ok) { const e = await r.json(); alert(e.error || 'Failed'); return; }
                 alert('Password updated');
+                loadAdmins();
             });
         }
+
         function toggleVisibility(id, btn){
             const el = document.getElementById(id);
             if(!el) return;
@@ -321,9 +989,217 @@
             el.type = isPwd ? 'text' : 'password';
             if(btn) btn.textContent = isPwd ? 'Hide' : 'Show';
         }
+        applyAdminRoleUi();
         </script>
         <script>
-        
+        let uiThemeDraft = { accent_color: '#8b64ff', saturation: 120 };
+        let themeApplyTimerId = null;
+        let themeApplyStartedMs = 0;
+        const THEME_BROADCAST_KEY = 'kiit_ui_theme_broadcast_v1';
+
+        function normalizeHexColor(v) {
+            let hex = String(v || '').trim();
+            if (/^#[0-9a-fA-F]{3}$/.test(hex)) {
+                hex = '#' + hex.slice(1).split('').map(ch => ch + ch).join('');
+            }
+            if (!/^#[0-9a-fA-F]{6}$/.test(hex)) return '#8b64ff';
+            return '#' + hex.slice(1).toLowerCase();
+        }
+
+        function clampThemeSaturation(v) {
+            const n = Number(v);
+            if (!Number.isFinite(n)) return 120;
+            return Math.max(20, Math.min(260, Math.round(n)));
+        }
+
+        function hexToRgb(hex) {
+            const clean = normalizeHexColor(hex).slice(1);
+            return {
+                r: parseInt(clean.slice(0, 2), 16),
+                g: parseInt(clean.slice(2, 4), 16),
+                b: parseInt(clean.slice(4, 6), 16),
+            };
+        }
+
+        function rgbToHue(r, g, b) {
+            const rn = r / 255;
+            const gn = g / 255;
+            const bn = b / 255;
+            const max = Math.max(rn, gn, bn);
+            const min = Math.min(rn, gn, bn);
+            const d = max - min;
+            if (d === 0) return 0;
+            let h;
+            if (max === rn) h = ((gn - bn) / d) % 6;
+            else if (max === gn) h = ((bn - rn) / d) + 2;
+            else h = ((rn - gn) / d) + 4;
+            return ((h * 60) + 360) % 360;
+        }
+
+        function applyUiTheme(theme) {
+            const accent = normalizeHexColor(theme && theme.accent_color);
+            const saturation = clampThemeSaturation(theme && theme.saturation);
+            const rgb = hexToRgb(accent);
+            const baseRgb = hexToRgb('#8b64ff');
+            const hueDelta = rgbToHue(rgb.r, rgb.g, rgb.b) - rgbToHue(baseRgb.r, baseRgb.g, baseRgb.b);
+            uiThemeDraft = { accent_color: accent, saturation };
+            const root = document.documentElement;
+            root.style.setProperty('--ui-theme-accent', accent);
+            root.style.setProperty('--ui-theme-accent-rgb', `${rgb.r}, ${rgb.g}, ${rgb.b}`);
+            root.style.setProperty('--ui-theme-hue', `${hueDelta.toFixed(1)}deg`);
+            root.style.setProperty('--ui-theme-saturation', `${saturation}%`);
+
+            const colorInput = document.getElementById('themeAccentInput');
+            const satInput = document.getElementById('themeSaturationInput');
+            const satValue = document.getElementById('themeSaturationValue');
+            const previewDot = document.getElementById('themePreviewDot');
+            if (colorInput) colorInput.value = accent;
+            if (satInput) satInput.value = String(saturation);
+            if (satValue) satValue.textContent = `${saturation}%`;
+            if (previewDot) previewDot.style.background = accent;
+        }
+
+        function setThemeSaveStatus(msg, isError = false) {
+            const el = document.getElementById('themeSaveStatus');
+            if (!el) return;
+            el.textContent = msg || '';
+            el.style.color = isError ? '#ff7b8a' : '#b6c2d8';
+        }
+
+        function setThemeControlsDisabled(disabled) {
+            const controls = document.querySelector('.theme-controls');
+            if (controls) controls.classList.toggle('is-applying', !!disabled);
+            const colorInput = document.getElementById('themeAccentInput');
+            const satInput = document.getElementById('themeSaturationInput');
+            const saveBtn = document.getElementById('saveUiThemeBtn');
+            if (colorInput) colorInput.disabled = !!disabled;
+            if (satInput) satInput.disabled = !!disabled;
+            if (saveBtn) {
+                saveBtn.disabled = !!disabled;
+                saveBtn.textContent = disabled ? 'Applying...' : 'Apply Theme';
+            }
+        }
+
+        function stopThemeApplyTimer() {
+            const timerWrap = document.getElementById('themeSaveTimer');
+            if (themeApplyTimerId) {
+                try { clearInterval(themeApplyTimerId); } catch (e) {}
+                themeApplyTimerId = null;
+            }
+            if (timerWrap) timerWrap.hidden = true;
+        }
+
+        function startThemeApplyTimer() {
+            const timerWrap = document.getElementById('themeSaveTimer');
+            const timerText = document.getElementById('themeSaveTimerText');
+            stopThemeApplyTimer();
+            themeApplyStartedMs = performance.now();
+            if (timerWrap) timerWrap.hidden = false;
+            if (timerText) timerText.textContent = 'Applying 0.0s';
+            themeApplyTimerId = setInterval(() => {
+                if (!timerText) return;
+                const elapsed = Math.max(0, (performance.now() - themeApplyStartedMs) / 1000);
+                timerText.textContent = `Applying ${elapsed.toFixed(1)}s`;
+            }, 100);
+        }
+
+        function broadcastUiTheme(theme) {
+            try {
+                const payload = {
+                    accent_color: normalizeHexColor(theme && theme.accent_color),
+                    saturation: clampThemeSaturation(theme && theme.saturation),
+                    ts: Date.now(),
+                };
+                localStorage.setItem(THEME_BROADCAST_KEY, JSON.stringify(payload));
+            } catch (e) {}
+        }
+
+        async function loadUiThemeSettings() {
+            try {
+                const res = await fetch('/api/ui-theme', { cache: 'no-store' });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Failed to load theme');
+                applyUiTheme(data || {});
+                setThemeSaveStatus('Loaded');
+            } catch (e) {
+                applyUiTheme(uiThemeDraft);
+                setThemeSaveStatus('Load failed', true);
+            }
+        }
+
+        async function saveUiThemeSettings() {
+            const started = performance.now();
+            setThemeSaveStatus('');
+            startThemeApplyTimer();
+            setThemeControlsDisabled(true);
+            try {
+                const res = await fetch('/admin/ui-theme', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(uiThemeDraft),
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Failed to save theme');
+                const elapsed = performance.now() - started;
+                if (elapsed < 600) {
+                    await new Promise((resolve) => setTimeout(resolve, 600 - elapsed));
+                }
+                applyUiTheme((data && data.ui_theme) || uiThemeDraft);
+                broadcastUiTheme((data && data.ui_theme) || uiThemeDraft);
+                const elapsedSec = Math.max(0, (performance.now() - started) / 1000);
+                setThemeSaveStatus(
+                    data.status === 'noop'
+                        ? `No changes (${elapsedSec.toFixed(1)}s)`
+                        : `Applied (${elapsedSec.toFixed(1)}s)`
+                );
+            } catch (e) {
+                setThemeSaveStatus(e.message || 'Save failed', true);
+            } finally {
+                stopThemeApplyTimer();
+                setThemeControlsDisabled(false);
+            }
+        }
+
+        function initUiThemeControls() {
+            const colorInput = document.getElementById('themeAccentInput');
+            const satInput = document.getElementById('themeSaturationInput');
+            const saveBtn = document.getElementById('saveUiThemeBtn');
+            if (colorInput && !colorInput.dataset.bound) {
+                colorInput.dataset.bound = '1';
+                const onColor = () => {
+                    uiThemeDraft.accent_color = normalizeHexColor(colorInput.value);
+                    applyUiTheme(uiThemeDraft);
+                    setThemeSaveStatus('');
+                };
+                colorInput.addEventListener('input', onColor);
+                colorInput.addEventListener('change', onColor);
+            }
+            if (satInput && !satInput.dataset.bound) {
+                satInput.dataset.bound = '1';
+                satInput.addEventListener('input', () => {
+                    uiThemeDraft.saturation = clampThemeSaturation(satInput.value);
+                    applyUiTheme(uiThemeDraft);
+                    setThemeSaveStatus('');
+                });
+            }
+            if (saveBtn && !saveBtn.dataset.bound) {
+                saveBtn.dataset.bound = '1';
+                saveBtn.addEventListener('click', saveUiThemeSettings);
+            }
+            if (!window.__uiThemeStorageBound) {
+                window.__uiThemeStorageBound = true;
+                window.addEventListener('storage', (e) => {
+                    if (e.key !== THEME_BROADCAST_KEY || !e.newValue) return;
+                    try {
+                        const payload = JSON.parse(e.newValue);
+                        applyUiTheme(payload || {});
+                        setThemeSaveStatus('Synced');
+                    } catch (err) {}
+                });
+            }
+            loadUiThemeSettings();
+        }
+
         async function loadTotalTransports(){
             try{
                 const res = await fetch('/api/metrics');
@@ -346,7 +1222,7 @@
                 alert('Saved');
             });
         }
-        document.addEventListener('DOMContentLoaded', ()=>{ loadTotalTransports(); initTotalTransportControls(); });
+        document.addEventListener('DOMContentLoaded', ()=>{ loadTotalTransports(); initTotalTransportControls(); initUiThemeControls(); });
         </script>
 
         <!-- ROUTES TAB -->
@@ -507,10 +1383,13 @@
         <!-- SERVER PERFORMANCE TAB -->
         <div id="serverPerf" class="tab-content">
             <div class="controls" style="justify-content:space-between; margin-bottom:14px">
-                <div class="small">Live server telemetry and admin audit logs</div>
+                <div class="small">{% if is_gold_admin %}Live server telemetry and admin audit logs{% else %}Live server telemetry{% endif %}</div>
                 <div>
+                    {% if is_gold_admin %}
                     <button id="perfExportMdBtn">Export .md</button>
                     <button id="perfExportTxtBtn">Export .txt</button>
+                    <button id="auditSaveViewBtn">Save View</button>
+                    {% endif %}
                     <button id="perfRefreshBtn">Refresh</button>
                 </div>
             </div>
@@ -545,6 +1424,44 @@
                 <div class="perf-card">
                     <div class="perf-k">SSE Clients</div>
                     <div class="perf-v" id="perfSseClients">--</div>
+                </div>
+            </div>
+
+            <div class="perf-grid">
+                <div class="perf-card sparkline-card">
+                    <div class="perf-k">Bandwidth In Rate</div>
+                    <canvas id="graphBandwidthIn" class="sparkline"></canvas>
+                    <div class="sparkline-meta"><span>Live</span><span id="graphBandwidthInVal" class="sparkline-value">--</span></div>
+                </div>
+                <div class="perf-card sparkline-card">
+                    <div class="perf-k">Bandwidth Out Rate</div>
+                    <canvas id="graphBandwidthOut" class="sparkline"></canvas>
+                    <div class="sparkline-meta"><span>Live</span><span id="graphBandwidthOutVal" class="sparkline-value">--</span></div>
+                </div>
+                <div class="perf-card sparkline-card">
+                    <div class="perf-k">API Lag</div>
+                    <canvas id="graphLagMs" class="sparkline"></canvas>
+                    <div class="sparkline-meta"><span>Round-trip</span><span id="graphLagMsVal" class="sparkline-value">--</span></div>
+                </div>
+                <div class="perf-card sparkline-card">
+                    <div class="perf-k">RAM Used</div>
+                    <canvas id="graphRamUsed" class="sparkline"></canvas>
+                    <div class="sparkline-meta"><span>System MB</span><span id="graphRamUsedVal" class="sparkline-value">--</span></div>
+                </div>
+                <div class="perf-card sparkline-card">
+                    <div class="perf-k">Storage Used</div>
+                    <canvas id="graphStorageUsed" class="sparkline"></canvas>
+                    <div class="sparkline-meta"><span>Disk %</span><span id="graphStorageUsedVal" class="sparkline-value">--</span></div>
+                </div>
+                <div class="perf-card sparkline-card">
+                    <div class="perf-k">Disk Read Speed</div>
+                    <canvas id="graphDiskRead" class="sparkline"></canvas>
+                    <div class="sparkline-meta"><span>Process IO</span><span id="graphDiskReadVal" class="sparkline-value">--</span></div>
+                </div>
+                <div class="perf-card sparkline-card">
+                    <div class="perf-k">Disk Write Speed</div>
+                    <canvas id="graphDiskWrite" class="sparkline"></canvas>
+                    <div class="sparkline-meta"><span>Process IO</span><span id="graphDiskWriteVal" class="sparkline-value">--</span></div>
                 </div>
             </div>
 
@@ -601,6 +1518,7 @@
                 </div>
             </div>
 
+            {% if is_gold_admin %}
             <div class="audit-wrap">
                 <h3 style="margin:0 0 10px 0; font-size:14px">Audit Log</h3>
                 <div class="audit-table-wrap">
@@ -620,6 +1538,76 @@
                         </tbody>
                     </table>
                 </div>
+            </div>
+            {% endif %}
+        </div>
+        {% if is_gold_admin %}
+        <div id="adminConsole" class="tab-content">
+            <div class="controls" style="justify-content:space-between; margin-bottom:14px">
+                <div class="small">Dedicated log of admin activity across the panel</div>
+                <div>
+                    <button id="adminConsoleExportTxtBtn">Export .txt</button>
+                    <button id="adminConsoleExportJsonBtn">Export .json</button>
+                    <button id="adminConsoleSaveViewBtn">Save View</button>
+                    <button id="adminConsoleRefreshBtn">Refresh</button>
+                </div>
+            </div>
+
+            <div class="perf-grid" style="margin-bottom:12px">
+                <div class="perf-card">
+                    <div class="perf-k">Total Activity (Window)</div>
+                    <div class="perf-v" id="consoleTotalActivity">--</div>
+                </div>
+                <div class="perf-card">
+                    <div class="perf-k">Returned Entries</div>
+                    <div class="perf-v" id="consoleReturnedActivity">--</div>
+                </div>
+                <div class="perf-card">
+                    <div class="perf-k">Success Events</div>
+                    <div class="perf-v" id="consoleSuccessCount">--</div>
+                </div>
+                <div class="perf-card">
+                    <div class="perf-k">Failed/Error Events</div>
+                    <div class="perf-v" id="consoleFailedCount">--</div>
+                </div>
+            </div>
+
+            <div class="audit-wrap">
+                <h3 style="margin:0 0 10px 0; font-size:14px">Admin Activity Stream</h3>
+                <div class="audit-table-wrap">
+                    <table id="adminConsoleTable">
+                        <thead>
+                            <tr>
+                                <th>Time (UTC)</th>
+                                <th>Event</th>
+                                <th>User</th>
+                                <th>Status</th>
+                                <th>IP</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminConsoleRows">
+                            <tr><td colspan="6" class="empty">No activity logs yet</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="small" style="margin-top:8px">Includes login attempts and request-level admin actions.</div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div id="perfDetailModal" class="perf-detail-modal" hidden aria-hidden="true">
+        <div id="perfDetailDialog" class="perf-detail-dialog" role="dialog" aria-modal="true" aria-labelledby="perfDetailTitle">
+            <div class="perf-detail-head">
+                <div>
+                    <h3 id="perfDetailTitle" class="perf-detail-title">Detailed Metric Graph</h3>
+                    <div id="perfDetailSubtitle" class="perf-detail-subtitle">X-axis: Time, Y-axis: Metric value</div>
+                </div>
+                <button id="perfDetailCloseBtn" class="perf-detail-close" type="button">Close</button>
+            </div>
+            <div class="perf-detail-body">
+                <canvas id="perfDetailCanvas" class="perf-detail-canvas"></canvas>
             </div>
         </div>
     </div>
@@ -651,6 +1639,37 @@
         let pendingClassName = null;
         let pendingClassDept = null;
         let perfAutoRefreshId = null;
+        let adminConsoleAutoRefreshId = null;
+        const PERF_GRAPH_MAX_POINTS = 72;
+        let perfLastBandwidthSample = null;
+        const perfGraphHistory = {
+            inKbps: [],
+            outKbps: [],
+            lagMs: [],
+            ramUsedMb: [],
+            storageUsedPct: [],
+            diskReadKbps: [],
+            diskWriteKbps: []
+        };
+        const perfGraphTimeHistory = {
+            inKbps: [],
+            outKbps: [],
+            lagMs: [],
+            ramUsedMb: [],
+            storageUsedPct: [],
+            diskReadKbps: [],
+            diskWriteKbps: []
+        };
+        const perfGraphConfigs = {
+            graphBandwidthIn: { key: 'inKbps', title: 'Bandwidth In Rate', yAxis: 'Bandwidth (kbps)', color: '#34d399', formatValue: (v) => formatKbps(v) },
+            graphBandwidthOut: { key: 'outKbps', title: 'Bandwidth Out Rate', yAxis: 'Bandwidth (kbps)', color: '#60a5fa', formatValue: (v) => formatKbps(v) },
+            graphLagMs: { key: 'lagMs', title: 'API Lag', yAxis: 'Latency (ms)', color: '#f59e0b', formatValue: (v) => `${v.toFixed(1)} ms` },
+            graphRamUsed: { key: 'ramUsedMb', title: 'RAM Used', yAxis: 'RAM (MB)', color: '#f97316', formatValue: (v) => `${v.toFixed(1)} MB` },
+            graphStorageUsed: { key: 'storageUsedPct', title: 'Storage Used', yAxis: 'Storage (%)', color: '#c084fc', formatValue: (v) => `${v.toFixed(1)}%` },
+            graphDiskRead: { key: 'diskReadKbps', title: 'Disk Read Speed', yAxis: 'Read speed (kbps)', color: '#22d3ee', formatValue: (v) => formatKbps(v) },
+            graphDiskWrite: { key: 'diskWriteKbps', title: 'Disk Write Speed', yAxis: 'Write speed (kbps)', color: '#f472b6', formatValue: (v) => formatKbps(v) }
+        };
+        let activePerfDetailGraphId = null;
 
         function isTabActive(tabId) {
             const el = document.getElementById(tabId);
@@ -708,9 +1727,373 @@
             return `${dd}/${mm}/${yy} ${hh}/${min}/${ss}`;
         }
 
-        function renderPerfAuditRows(logs) {
+        function latestNumeric(values) {
+            return (Array.isArray(values) && values.length) ? values[values.length - 1] : null;
+        }
+
+        function pushPerfGraphSample(key, value, sampleTsMs = null) {
+            const arr = perfGraphHistory[key];
+            const tsArr = perfGraphTimeHistory[key];
+            if (!arr || !tsArr) return;
+            const n = Number(value);
+            if (!Number.isFinite(n)) return;
+            const ts = Number(sampleTsMs);
+            arr.push(n);
+            tsArr.push(Number.isFinite(ts) ? ts : Date.now());
+            if (arr.length > PERF_GRAPH_MAX_POINTS) arr.shift();
+            if (tsArr.length > PERF_GRAPH_MAX_POINTS) tsArr.shift();
+        }
+
+        function hexToRgba(hex, alpha) {
+            const raw = String(hex || '').trim().replace('#', '');
+            if (!/^[0-9a-fA-F]{6}$/.test(raw)) return `rgba(102,126,234,${alpha})`;
+            const r = parseInt(raw.slice(0, 2), 16);
+            const g = parseInt(raw.slice(2, 4), 16);
+            const b = parseInt(raw.slice(4, 6), 16);
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        }
+
+        function drawSparkline(canvasId, values, colorHex) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            const cssW = Math.max(140, Math.floor(canvas.clientWidth || 220));
+            const cssH = Math.max(48, Math.floor(canvas.clientHeight || 72));
+            const dpr = Math.max(1, Math.floor(window.devicePixelRatio || 1));
+            const pxW = cssW * dpr;
+            const pxH = cssH * dpr;
+            if (canvas.width !== pxW || canvas.height !== pxH) {
+                canvas.width = pxW;
+                canvas.height = pxH;
+            }
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            ctx.clearRect(0, 0, cssW, cssH);
+            ctx.fillStyle = 'rgba(255,255,255,0.01)';
+            ctx.fillRect(0, 0, cssW, cssH);
+
+            const arr = Array.isArray(values) ? values.filter(v => Number.isFinite(v)) : [];
+            if (arr.length < 2) return;
+
+            const minV = Math.min(...arr);
+            const maxV = Math.max(...arr);
+            const safeMax = (maxV - minV) < 0.0001 ? (minV + 1) : maxV;
+            const range = safeMax - minV;
+            const padX = 6;
+            const padY = 6;
+            const w = cssW - (padX * 2);
+            const h = cssH - (padY * 2);
+            const stepX = arr.length > 1 ? (w / (arr.length - 1)) : w;
+
+            const toX = (idx) => padX + (idx * stepX);
+            const toY = (v) => padY + h - (((v - minV) / range) * h);
+
+            ctx.beginPath();
+            ctx.moveTo(toX(0), toY(arr[0]));
+            for (let i = 1; i < arr.length; i++) ctx.lineTo(toX(i), toY(arr[i]));
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = colorHex;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(toX(0), toY(arr[0]));
+            for (let i = 1; i < arr.length; i++) ctx.lineTo(toX(i), toY(arr[i]));
+            ctx.lineTo(toX(arr.length - 1), padY + h);
+            ctx.lineTo(toX(0), padY + h);
+            ctx.closePath();
+            ctx.fillStyle = hexToRgba(colorHex, 0.18);
+            ctx.fill();
+        }
+
+        function formatClockTime(tsMs) {
+            const d = new Date(Number(tsMs) || Date.now());
+            if (Number.isNaN(d.getTime())) return '--:--:--';
+            const hh = String(d.getHours()).padStart(2, '0');
+            const mm = String(d.getMinutes()).padStart(2, '0');
+            const ss = String(d.getSeconds()).padStart(2, '0');
+            return `${hh}:${mm}:${ss}`;
+        }
+
+        function closePerfDetailGraph() {
+            const modal = document.getElementById('perfDetailModal');
+            if (!modal) return;
+            modal.hidden = true;
+            modal.setAttribute('aria-hidden', 'true');
+            document.body.classList.remove('perf-detail-open');
+            activePerfDetailGraphId = null;
+        }
+
+        function openPerfDetailGraph(canvasId) {
+            const cfg = perfGraphConfigs[canvasId];
+            if (!cfg) return;
+            const modal = document.getElementById('perfDetailModal');
+            if (!modal) return;
+            activePerfDetailGraphId = canvasId;
+            setText('perfDetailTitle', `${cfg.title} (Detailed)`);
+            setText('perfDetailSubtitle', `X-axis: Time | Y-axis: ${cfg.yAxis}`);
+            modal.hidden = false;
+            modal.setAttribute('aria-hidden', 'false');
+            document.body.classList.add('perf-detail-open');
+            drawPerfDetailGraph();
+        }
+
+        function drawPerfDetailGraph() {
+            if (!activePerfDetailGraphId) return;
+            const cfg = perfGraphConfigs[activePerfDetailGraphId];
+            if (!cfg) return;
+            const modal = document.getElementById('perfDetailModal');
+            const canvas = document.getElementById('perfDetailCanvas');
+            if (!modal || modal.hidden || !canvas) return;
+            const values = Array.isArray(perfGraphHistory[cfg.key]) ? perfGraphHistory[cfg.key].slice() : [];
+            const times = Array.isArray(perfGraphTimeHistory[cfg.key]) ? perfGraphTimeHistory[cfg.key].slice() : [];
+
+            const cssW = Math.max(240, Math.floor(canvas.clientWidth || 920));
+            const cssH = Math.max(220, Math.floor(canvas.clientHeight || 520));
+            const dpr = Math.max(1, Math.floor(window.devicePixelRatio || 1));
+            const pxW = cssW * dpr;
+            const pxH = cssH * dpr;
+            if (canvas.width !== pxW || canvas.height !== pxH) {
+                canvas.width = pxW;
+                canvas.height = pxH;
+            }
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            ctx.clearRect(0, 0, cssW, cssH);
+            ctx.fillStyle = 'rgba(255,255,255,0.02)';
+            ctx.fillRect(0, 0, cssW, cssH);
+            if (!values.length || values.length !== times.length) {
+                ctx.fillStyle = '#9aa4b2';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.font = '14px Segoe UI, sans-serif';
+                ctx.fillText('Waiting for data points...', cssW / 2, cssH / 2);
+                return;
+            }
+
+            const padLeft = 84;
+            const padRight = 22;
+            const padTop = 24;
+            const padBottom = 58;
+            const chartW = Math.max(30, cssW - padLeft - padRight);
+            const chartH = Math.max(30, cssH - padTop - padBottom);
+
+            let minV = Math.min(...values);
+            let maxV = Math.max(...values);
+            if ((maxV - minV) < 0.000001) maxV = minV + 1;
+            const spread = maxV - minV;
+            const yPad = spread * 0.1;
+            let yMin = minV - yPad;
+            let yMax = maxV + yPad;
+            if (yMin > 0 && minV >= 0) yMin = Math.max(0, yMin);
+            const yRange = Math.max(0.000001, yMax - yMin);
+
+            const toX = (idx) => padLeft + ((chartW * idx) / Math.max(1, values.length - 1));
+            const toY = (v) => padTop + chartH - (((v - yMin) / yRange) * chartH);
+
+            ctx.strokeStyle = 'rgba(255,255,255,0.14)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(padLeft, padTop);
+            ctx.lineTo(padLeft, padTop + chartH);
+            ctx.lineTo(padLeft + chartW, padTop + chartH);
+            ctx.stroke();
+
+            const yTicks = 5;
+            ctx.font = '11px Segoe UI, sans-serif';
+            ctx.fillStyle = '#9aa4b2';
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            for (let i = 0; i <= yTicks; i++) {
+                const r = i / yTicks;
+                const y = padTop + chartH - (chartH * r);
+                const v = yMin + (yRange * r);
+                ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+                ctx.beginPath();
+                ctx.moveTo(padLeft, y);
+                ctx.lineTo(padLeft + chartW, y);
+                ctx.stroke();
+                const label = cfg.formatValue ? cfg.formatValue(v) : v.toFixed(2);
+                ctx.fillText(label, padLeft - 10, y);
+            }
+
+            const xTicks = Math.min(6, values.length);
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            for (let i = 0; i < xTicks; i++) {
+                const idx = Math.round(((values.length - 1) * i) / Math.max(1, xTicks - 1));
+                const x = toX(idx);
+                const ts = times[idx];
+                ctx.strokeStyle = 'rgba(255,255,255,0.10)';
+                ctx.beginPath();
+                ctx.moveTo(x, padTop);
+                ctx.lineTo(x, padTop + chartH);
+                ctx.stroke();
+                ctx.fillStyle = '#9aa4b2';
+                ctx.fillText(formatClockTime(ts), x, padTop + chartH + 8);
+            }
+
+            ctx.beginPath();
+            ctx.moveTo(toX(0), toY(values[0]));
+            for (let i = 1; i < values.length; i++) {
+                ctx.lineTo(toX(i), toY(values[i]));
+            }
+            ctx.lineWidth = 2.4;
+            ctx.strokeStyle = cfg.color;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(toX(0), toY(values[0]));
+            for (let i = 1; i < values.length; i++) ctx.lineTo(toX(i), toY(values[i]));
+            ctx.lineTo(toX(values.length - 1), padTop + chartH);
+            ctx.lineTo(toX(0), padTop + chartH);
+            ctx.closePath();
+            ctx.fillStyle = hexToRgba(cfg.color, 0.20);
+            ctx.fill();
+
+            const lastIdx = values.length - 1;
+            const lastX = toX(lastIdx);
+            const lastY = toY(values[lastIdx]);
+            ctx.beginPath();
+            ctx.arc(lastX, lastY, 4, 0, Math.PI * 2);
+            ctx.fillStyle = cfg.color;
+            ctx.fill();
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 1.2;
+            ctx.stroke();
+
+            ctx.fillStyle = '#c9d3e3';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.font = '12px Segoe UI, sans-serif';
+            ctx.fillText('Time', padLeft + (chartW / 2), cssH - 8);
+
+            ctx.save();
+            ctx.translate(22, padTop + (chartH / 2));
+            ctx.rotate(-Math.PI / 2);
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#c9d3e3';
+            ctx.fillText(cfg.yAxis, 0, 0);
+            ctx.restore();
+        }
+
+        function bindPerfGraphDetailInteractions() {
+            Object.keys(perfGraphConfigs).forEach((canvasId) => {
+                const canvas = document.getElementById(canvasId);
+                if (!canvas || canvas.dataset.detailBound === '1') return;
+                canvas.dataset.detailBound = '1';
+                canvas.tabIndex = 0;
+                canvas.setAttribute('role', 'button');
+                canvas.setAttribute('aria-label', 'Open detailed metric graph');
+                canvas.setAttribute('title', 'Open detailed graph');
+                canvas.addEventListener('click', () => openPerfDetailGraph(canvasId));
+                canvas.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        openPerfDetailGraph(canvasId);
+                    }
+                });
+            });
+
+            const modal = document.getElementById('perfDetailModal');
+            const closeBtn = document.getElementById('perfDetailCloseBtn');
+            if (modal && modal.dataset.bound !== '1') {
+                modal.dataset.bound = '1';
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) closePerfDetailGraph();
+                });
+            }
+            if (closeBtn && closeBtn.dataset.bound !== '1') {
+                closeBtn.dataset.bound = '1';
+                closeBtn.addEventListener('click', closePerfDetailGraph);
+            }
+            if (!document.body.dataset.perfDetailEscBound) {
+                document.body.dataset.perfDetailEscBound = '1';
+                document.addEventListener('keydown', (e) => {
+                    if (e.key !== 'Escape' || !activePerfDetailGraphId) return;
+                    e.preventDefault();
+                    e.stopPropagation();
+                    closePerfDetailGraph();
+                }, true);
+            }
+        }
+
+        function renderPerfGraphs() {
+            drawSparkline('graphBandwidthIn', perfGraphHistory.inKbps, '#34d399');
+            drawSparkline('graphBandwidthOut', perfGraphHistory.outKbps, '#60a5fa');
+            drawSparkline('graphLagMs', perfGraphHistory.lagMs, '#f59e0b');
+            drawSparkline('graphRamUsed', perfGraphHistory.ramUsedMb, '#f97316');
+            drawSparkline('graphStorageUsed', perfGraphHistory.storageUsedPct, '#c084fc');
+            drawSparkline('graphDiskRead', perfGraphHistory.diskReadKbps, '#22d3ee');
+            drawSparkline('graphDiskWrite', perfGraphHistory.diskWriteKbps, '#f472b6');
+
+            const inKbps = latestNumeric(perfGraphHistory.inKbps);
+            const outKbps = latestNumeric(perfGraphHistory.outKbps);
+            const lagMs = latestNumeric(perfGraphHistory.lagMs);
+            const ramUsedMb = latestNumeric(perfGraphHistory.ramUsedMb);
+            const storageUsedPct = latestNumeric(perfGraphHistory.storageUsedPct);
+            const diskReadKbps = latestNumeric(perfGraphHistory.diskReadKbps);
+            const diskWriteKbps = latestNumeric(perfGraphHistory.diskWriteKbps);
+
+            setText('graphBandwidthInVal', Number.isFinite(inKbps) ? formatKbps(inKbps) : '--');
+            setText('graphBandwidthOutVal', Number.isFinite(outKbps) ? formatKbps(outKbps) : '--');
+            setText('graphLagMsVal', Number.isFinite(lagMs) ? `${lagMs.toFixed(1)} ms` : '--');
+            setText('graphRamUsedVal', Number.isFinite(ramUsedMb) ? `${ramUsedMb.toFixed(1)} MB` : '--');
+            setText('graphStorageUsedVal', Number.isFinite(storageUsedPct) ? `${storageUsedPct.toFixed(1)}%` : '--');
+            setText('graphDiskReadVal', Number.isFinite(diskReadKbps) ? formatKbps(diskReadKbps) : '--');
+            setText('graphDiskWriteVal', Number.isFinite(diskWriteKbps) ? formatKbps(diskWriteKbps) : '--');
+            if (activePerfDetailGraphId) drawPerfDetailGraph();
+        }
+
+        function updatePerfGraphHistory(data, lagMs) {
+            const bandwidth = (data && data.bandwidth) || {};
+            const nowSec = Date.now() / 1000;
+            const sampleTs = Date.now();
+            const totalInBytes = Number(bandwidth.in_bytes);
+            const totalOutBytes = Number(bandwidth.out_bytes);
+            let inKbps = Number(bandwidth.avg_in_kbps);
+            let outKbps = Number(bandwidth.avg_out_kbps);
+
+            if (Number.isFinite(totalInBytes) && Number.isFinite(totalOutBytes)) {
+                if (perfLastBandwidthSample && Number.isFinite(perfLastBandwidthSample.ts)) {
+                    const dt = nowSec - perfLastBandwidthSample.ts;
+                    if (dt > 0.5) {
+                        const deltaIn = Math.max(0, totalInBytes - perfLastBandwidthSample.inBytes);
+                        const deltaOut = Math.max(0, totalOutBytes - perfLastBandwidthSample.outBytes);
+                        inKbps = ((deltaIn * 8) / 1000) / dt;
+                        outKbps = ((deltaOut * 8) / 1000) / dt;
+                    }
+                }
+                perfLastBandwidthSample = { ts: nowSec, inBytes: totalInBytes, outBytes: totalOutBytes };
+            }
+            if (!Number.isFinite(inKbps)) inKbps = 0;
+            if (!Number.isFinite(outKbps)) outKbps = 0;
+
+            pushPerfGraphSample('inKbps', inKbps, sampleTs);
+            pushPerfGraphSample('outKbps', outKbps, sampleTs);
+            pushPerfGraphSample('lagMs', lagMs, sampleTs);
+
+            const memory = (data && data.memory) || {};
+            const ramUsed = (memory.system_used_mb != null) ? Number(memory.system_used_mb) : Number(memory.process_rss_mb);
+            pushPerfGraphSample('ramUsedMb', ramUsed, sampleTs);
+
+            const storage = (data && data.storage) || {};
+            pushPerfGraphSample('storageUsedPct', Number(storage.used_percent), sampleTs);
+
+            const disk = (data && data.disk) || {};
+            pushPerfGraphSample('diskReadKbps', Number(disk.process_read_kbps), sampleTs);
+            pushPerfGraphSample('diskWriteKbps', Number(disk.process_write_kbps), sampleTs);
+            renderPerfGraphs();
+        }
+
+        function renderPerfAuditRows(logs, canViewAudit = false) {
             const tbody = document.getElementById('perfAuditRows');
             if (!tbody) return;
+            if (!canViewAudit) {
+                tbody.innerHTML = '<tr><td colspan="6" class="empty">Activity logs are restricted.</td></tr>';
+                return;
+            }
             const rows = Array.isArray(logs) ? logs : [];
             if (!rows.length) {
                 tbody.innerHTML = '<tr><td colspan="6" class="empty">No audit logs yet</td></tr>';
@@ -730,16 +2113,59 @@
             }).join('');
         }
 
+        function renderAdminConsoleRows(logs) {
+            const tbody = document.getElementById('adminConsoleRows');
+            if (!tbody) return;
+            const rows = Array.isArray(logs) ? logs : [];
+            if (!rows.length) {
+                tbody.innerHTML = '<tr><td colspan="6" class="empty">No activity logs yet</td></tr>';
+                return;
+            }
+            tbody.innerHTML = rows.map((entry) => {
+                const status = String(entry && entry.status ? entry.status : '').toLowerCase();
+                const statusClass = (status === 'success' || status === 'ok') ? 'status-ok' : `status-${status || 'failed'}`;
+                return `<tr>
+                    <td>${formatIsoUtc(entry.ts)}</td>
+                    <td>${entry.event || '--'}</td>
+                    <td>${entry.username || '--'}</td>
+                    <td class="${statusClass}">${entry.status || '--'}</td>
+                    <td>${entry.ip || '--'}</td>
+                    <td>${entry.details || '--'}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        async function loadAdminConsole() {
+            if (!CAN_ACCESS_SECURE_ADMIN) return;
+            try {
+                const res = await fetch('/admin/console/activity?limit=350', { cache: 'no-store' });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                setText('consoleTotalActivity', data.total_activity);
+                setText('consoleReturnedActivity', data.returned);
+                setText('consoleSuccessCount', data.success_count);
+                setText('consoleFailedCount', data.failed_count);
+                renderAdminConsoleRows(data.activity_logs);
+            } catch (e) {
+                setText('consoleTotalActivity', 'Failed to load');
+                renderAdminConsoleRows([]);
+            }
+        }
+
         async function loadServerPerformance() {
+            const reqStart = (window.performance && typeof performance.now === 'function') ? performance.now() : Date.now();
             try {
                 const res = await fetch('/admin/performance', { cache: 'no-store' });
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const data = await res.json();
+                const reqEnd = (window.performance && typeof performance.now === 'function') ? performance.now() : Date.now();
+                const lagMs = Math.max(0, reqEnd - reqStart);
                 setText('perfUptime', formatUptime(data.uptime_sec));
                 const processRam = data.memory && data.memory.process_rss_mb != null ? `${data.memory.process_rss_mb} MB` : '--';
                 const systemRam = data.memory && data.memory.system_total_mb != null ? `${data.memory.system_total_mb} MB` : '--';
                 const systemRamUsed = data.memory && data.memory.system_used_mb != null ? `${data.memory.system_used_mb} MB` : null;
-                setText('perfRam', systemRamUsed ? `${processRam} / ${systemRamUsed} of ${systemRam}` : `${processRam} / ${systemRam}`);
+                const memorySource = (data.memory && data.memory.source) ? ` (${data.memory.source})` : '';
+                setText('perfRam', (systemRamUsed ? `${processRam} / ${systemRamUsed} of ${systemRam}` : `${processRam} / ${systemRam}`) + memorySource);
                 const cpuPercent = data.cpu && data.cpu.process_percent != null ? formatPercent(data.cpu.process_percent) : '--';
                 const cpuCores = data.cpu && data.cpu.cores != null ? ` (${data.cpu.cores} cores)` : '';
                 setText('perfCpu', `${cpuPercent}${cpuCores}`);
@@ -759,14 +2185,24 @@
                 setText('perfRoutesCount', data.routes_count);
                 setText('perfHostelsCount', data.hostels_count);
                 setText('perfClassesCount', data.classes_count);
-                renderPerfAuditRows(data.audit_logs);
+                const canViewAudit = !!CAN_ACCESS_SECURE_ADMIN;
+                renderPerfAuditRows(data.audit_logs, canViewAudit);
+                updatePerfGraphHistory(data, lagMs);
             } catch (e) {
+                const reqEnd = (window.performance && typeof performance.now === 'function') ? performance.now() : Date.now();
+                pushPerfGraphSample('lagMs', Math.max(0, reqEnd - reqStart), Date.now());
+                renderPerfGraphs();
                 setText('perfUptime', 'Failed to load');
                 setText('perfCpu', '--');
+                renderPerfAuditRows([], CAN_ACCESS_SECURE_ADMIN);
             }
         }
 
         async function downloadPerfExport(format) {
+            if (!CAN_ACCESS_SECURE_ADMIN) {
+                alert('Access denied.');
+                return;
+            }
             const fmt = (format === 'txt') ? 'txt' : 'md';
             try {
                 const res = await fetch(`/admin/performance/export?format=${fmt}`, { cache: 'no-store' });
@@ -786,6 +2222,69 @@
             }
         }
 
+        async function downloadAdminConsoleExport(format) {
+            if (!CAN_ACCESS_SECURE_ADMIN) {
+                alert('Access denied.');
+                return;
+            }
+            const fmt = (format === 'json') ? 'json' : 'txt';
+            try {
+                const res = await fetch(`/admin/console/activity/export?format=${fmt}`, { cache: 'no-store' });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+                a.href = url;
+                a.download = `admin-console-activity-${stamp}.${fmt}`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(url);
+            } catch (e) {
+                alert(`Export failed (${fmt.toUpperCase()})`);
+            }
+        }
+
+        function exportTableView(tableId, filePrefix) {
+            if (!CAN_ACCESS_SECURE_ADMIN) {
+                alert('Access denied.');
+                return;
+            }
+            const table = document.getElementById(tableId);
+            if (!table) {
+                alert('Nothing to export.');
+                return;
+            }
+            const rows = Array.from(table.querySelectorAll('tr'));
+            if (!rows.length) {
+                alert('Nothing to export.');
+                return;
+            }
+            const csvRows = rows
+                .map((row) => Array.from(row.querySelectorAll('th,td')).map((cell) => {
+                    const raw = String(cell.textContent || '').replace(/\r?\n/g, ' ').trim();
+                    const escaped = raw.replace(/"/g, '""');
+                    return `"${escaped}"`;
+                }).join(','))
+                .filter((line) => line !== '""');
+            if (!csvRows.length) {
+                alert('Nothing to export.');
+                return;
+            }
+            const body = csvRows.join('\n') + '\n';
+            const blob = new Blob([body], { type: 'text/csv;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+            a.href = url;
+            a.download = `${filePrefix}-${stamp}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+        }
+
         function startPerfAutoRefresh() {
             stopPerfAutoRefresh();
             loadServerPerformance();
@@ -802,32 +2301,64 @@
             }
         }
 
+        function startAdminConsoleAutoRefresh() {
+            if (!CAN_ACCESS_SECURE_ADMIN) return;
+            stopAdminConsoleAutoRefresh();
+            loadAdminConsole();
+            adminConsoleAutoRefreshId = setInterval(() => {
+                if (!isTabActive('adminConsole') || document.hidden) return;
+                loadAdminConsole();
+            }, 5000);
+        }
+
+        function stopAdminConsoleAutoRefresh() {
+            if (adminConsoleAutoRefreshId) {
+                try { clearInterval(adminConsoleAutoRefreshId); } catch (e) {}
+                adminConsoleAutoRefreshId = null;
+            }
+        }
+
+        function activateTab(tabId) {
+            const tab = document.querySelector(`.tab[data-tab="${tabId}"]`);
+            const content = document.getElementById(tabId);
+            if (!tab || !content) return;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            tab.classList.add('active');
+            content.classList.add('active');
+            if (tabId !== 'serverPerf' && activePerfDetailGraphId) closePerfDetailGraph();
+
+            if (tabId === 'routes') {
+                setTimeout(initRouteMap, 100);
+                loadRoutes();
+                stopBusesAutoRefresh();
+                stopPerfAutoRefresh();
+                stopAdminConsoleAutoRefresh();
+            } else if (tabId === 'buildings') {
+                setTimeout(initBuildingsMap, 100);
+                loadHostels();
+                loadClasses();
+                stopBusesAutoRefresh();
+                stopPerfAutoRefresh();
+                stopAdminConsoleAutoRefresh();
+            } else if (tabId === 'buses') {
+                startBusesAutoRefresh();
+                stopPerfAutoRefresh();
+                stopAdminConsoleAutoRefresh();
+            } else if (tabId === 'serverPerf') {
+                stopBusesAutoRefresh();
+                startPerfAutoRefresh();
+                stopAdminConsoleAutoRefresh();
+            } else if (tabId === 'adminConsole') {
+                stopBusesAutoRefresh();
+                stopPerfAutoRefresh();
+                startAdminConsoleAutoRefresh();
+            }
+        }
+
         // Tab switching
         document.querySelectorAll('.tab').forEach(tab => {
-            tab.addEventListener('click', () => {
-                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-                tab.classList.add('active');
-                document.getElementById(tab.getAttribute('data-tab')).classList.add('active');
-                if (tab.getAttribute('data-tab') === 'routes') {
-                    setTimeout(initRouteMap, 100);
-                    loadRoutes();
-                    stopBusesAutoRefresh();
-                    stopPerfAutoRefresh();
-                } else if (tab.getAttribute('data-tab') === 'buildings') {
-                    setTimeout(initBuildingsMap, 100);
-                    loadHostels();
-                    loadClasses();
-                    stopBusesAutoRefresh();
-                    stopPerfAutoRefresh();
-                } else if (tab.getAttribute('data-tab') === 'buses') {
-                    startBusesAutoRefresh();
-                    stopPerfAutoRefresh();
-                } else if (tab.getAttribute('data-tab') === 'serverPerf') {
-                    stopBusesAutoRefresh();
-                    startPerfAutoRefresh();
-                }
-            });
+            tab.addEventListener('click', () => activateTab(tab.getAttribute('data-tab')));
         });
 
         // ==== ROUTE MAP ====
@@ -1550,12 +3081,34 @@
         }
 
         document.getElementById('refreshBtn').addEventListener('click', loadBuses);
+        const openAuditLogBtn = document.getElementById('openAuditLogBtn');
+        if (openAuditLogBtn) openAuditLogBtn.addEventListener('click', () => activateTab('serverPerf'));
+        const openAdminLogBtn = document.getElementById('openAdminLogBtn');
+        if (openAdminLogBtn) openAdminLogBtn.addEventListener('click', () => activateTab('adminConsole'));
+
         const perfRefreshBtn = document.getElementById('perfRefreshBtn');
         if (perfRefreshBtn) perfRefreshBtn.addEventListener('click', loadServerPerformance);
+        bindPerfGraphDetailInteractions();
+        const auditSaveViewBtn = document.getElementById('auditSaveViewBtn');
+        if (auditSaveViewBtn) auditSaveViewBtn.addEventListener('click', () => exportTableView('perfAuditTable', 'audit-log-view'));
+
+        const adminConsoleRefreshBtn = document.getElementById('adminConsoleRefreshBtn');
+        if (adminConsoleRefreshBtn) adminConsoleRefreshBtn.addEventListener('click', loadAdminConsole);
+        const adminConsoleExportTxtBtn = document.getElementById('adminConsoleExportTxtBtn');
+        if (adminConsoleExportTxtBtn) adminConsoleExportTxtBtn.addEventListener('click', () => downloadAdminConsoleExport('txt'));
+        const adminConsoleExportJsonBtn = document.getElementById('adminConsoleExportJsonBtn');
+        if (adminConsoleExportJsonBtn) adminConsoleExportJsonBtn.addEventListener('click', () => downloadAdminConsoleExport('json'));
+        const adminConsoleSaveViewBtn = document.getElementById('adminConsoleSaveViewBtn');
+        if (adminConsoleSaveViewBtn) adminConsoleSaveViewBtn.addEventListener('click', () => exportTableView('adminConsoleTable', 'admin-log-view'));
+
         const perfExportMdBtn = document.getElementById('perfExportMdBtn');
         const perfExportTxtBtn = document.getElementById('perfExportTxtBtn');
         if (perfExportMdBtn) perfExportMdBtn.addEventListener('click', () => downloadPerfExport('md'));
         if (perfExportTxtBtn) perfExportTxtBtn.addEventListener('click', () => downloadPerfExport('txt'));
+        if (!CAN_ACCESS_SECURE_ADMIN) {
+            if (perfExportMdBtn) { perfExportMdBtn.disabled = true; perfExportMdBtn.title = 'Restricted'; }
+            if (perfExportTxtBtn) { perfExportTxtBtn.disabled = true; perfExportTxtBtn.title = 'Restricted'; }
+        }
         document.getElementById('clearAllBtn').addEventListener('click', async () => {
             if (!confirm('Clear all transports?')) return;
             await fetch('/api/buses/clear', { method: 'POST' });
@@ -1610,6 +3163,11 @@
         window.addEventListener('beforeunload', () => {
             stopBusesAutoRefresh();
             stopPerfAutoRefresh();
+            stopAdminConsoleAutoRefresh();
+        });
+        window.addEventListener('resize', () => {
+            if (isTabActive('serverPerf')) renderPerfGraphs();
+            if (activePerfDetailGraphId) drawPerfDetailGraph();
         });
 
         // Live updates via SSE

@@ -4,119 +4,118 @@
     <title>Transport Tracker - Driver App</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
+        :root {
+            --ui-theme-hue: 0deg;
+            --ui-theme-saturation: 120%;
+        }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: #0b0c10;
-        .container { 
-            width: 100%; 
-            max-width: 420px; 
-            margin: 0 auto; 
-            background: rgba(15,23,36,0.28); 
-            border-radius: 14px; 
-            padding: 18px; 
-            box-shadow: 0 12px 32px rgba(2,6,23,0.55), inset 0 1px 0 rgba(255,255,255,0.06); 
-            border: 1px solid rgba(255,255,255,0.10); 
-            backdrop-filter: blur(12px) saturate(125%); 
+            color: #e6eef8;
+            padding: 16px 12px;
+            filter: hue-rotate(var(--ui-theme-hue)) saturate(var(--ui-theme-saturation));
         }
+        .container {
+            width: 100%;
+            max-width: 420px;
             margin: 0 auto;
             background: #0f1724;
             border-radius: 12px;
             padding: 18px;
-            box-shadow: 0 6px 24px rgba(2,6,23,0.7);
-        .status-card { background: linear-gradient(135deg, rgba(28,46,78,0.24), rgba(28,46,78,0.06)); padding: 12px; border-radius: 12px; margin-bottom: 12px; border:1px solid rgba(255,255,255,0.10); backdrop-filter: blur(10px) saturate(120%); box-shadow: 0 8px 24px rgba(2,6,23,0.45), inset 0 1px 0 rgba(255,255,255,0.06); }
+            border: 1px solid #243149;
+            box-shadow: 0 8px 24px rgba(2, 6, 23, 0.65);
         }
         h1 { font-size: 20px; color: #dbeafe; text-align: left; margin-bottom: 6px; }
         .subtitle { color: #9aa4b2; font-size: 13px; margin-bottom: 14px; }
-        .bus-selector { background: transparent; padding: 8px 0; margin-bottom: 12px; }
-        .bus-selector label { display:block; color:#9aa4b2; font-size:13px; margin-bottom:6px }
-        select { width:100%; padding:10px; font-size:14px; border-radius:8px; border:1px solid rgba(255,255,255,0.06); background:#0b1220; color:#e6eef8 }
-        .status-card { background: rgba(255,255,255,0.02); padding: 10px; border-radius: 8px; margin-bottom: 12px; }
-        .status-card h3 { color: #dbeafe; margin-bottom: 6px; font-size:14px }
-        .status-indicator { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:8px; vertical-align:middle; }
-        .status-indicator.active { background: #34d399; box-shadow: 0 0 6px rgba(52,211,153,0.15); }
-        .status-indicator.inactive { background: #fb7185; }
-        .status-indicator.slow { background: #fbbf24; }
-        button { width:100%; padding:10px; font-size:15px; border-radius:8px; border:1px solid rgba(255,255,255,0.04); cursor:pointer; background:transparent; color:#dbeafe }
-        .card { background: linear-gradient(135deg, rgba(28,46,78,0.24), rgba(28,46,78,0.06)); padding: 12px; border-radius: 12px; margin-top: 12px; border:1px solid rgba(255,255,255,0.10); backdrop-filter: blur(10px) saturate(120%); box-shadow: 0 8px 24px rgba(2,6,23,0.45), inset 0 1px 0 rgba(255,255,255,0.06); }
-        #stopBtn { background: transparent; border:1px solid rgba(255,255,255,0.06); color:#fda4af }
-        #startBtn:disabled, #stopBtn:disabled { opacity:0.5; cursor:not-allowed }
-        #startDriveBtn { margin-top:8px }
-        #driverMap { height: 200px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.10); background: #05060a; margin-top:8px; box-shadow: 0 6px 18px rgba(0,0,0,0.35); }
-        .progress-outer { width:100%; height:12px; background: rgba(255,255,255,0.04); border-radius:8px; overflow:hidden; margin-top:8px }
-        .progress-fill { height:100%; width:0%; background: linear-gradient(90deg,#34d399,#60a5fa); transition: width 600ms linear }
-        .info { background: linear-gradient(135deg, rgba(28,46,78,0.18), rgba(28,46,78,0.04)); padding: 10px; border-radius: 12px; color:#9aa4b2; font-size:13px; border:1px solid rgba(255,255,255,0.08); backdrop-filter: blur(8px) saturate(115%) }
-        .info p { margin:6px 0; }
-        /* small driver map */
-        #driverMap { height: 200px; border-radius: 10px; border: 2px solid rgba(255,255,255,0.06); background: #05060a; margin-top:8px }
-
-        /* Responsive / Mobile friendly */
-        @media (max-width: 520px) {
-            body { align-items: flex-start; justify-content: flex-start; padding: 12px; }
-            .container { margin: 12px 0; padding: 14px; border-radius: 10px; box-shadow: none; }
-            #driverMap { height: 260px; }
-            .bus-selector, .status-card, .info { margin-bottom: 10px }
-            select { font-size: 16px; padding: 12px }
-            button { font-size: 16px; padding: 12px; border-radius: 10px }
-            #startBtn, #stopBtn, #startDriveBtn, #stopDriveBtn { width: 100%; display:block }
-            .progress-outer { height: 14px }
-        }
-        /* Thinner ETA text styling */
-        #etaDisplay { font-weight: 400; color: #34d399; }
-
-        /* Glassmorphism overrides */
-        body {
+        .bus-selector { padding: 8px 0; margin-bottom: 12px; }
+        .bus-selector label { display: block; color: #9aa4b2; font-size: 13px; margin-bottom: 6px; }
+        select {
+            width: 100%;
+            padding: 10px;
+            font-size: 14px;
+            border-radius: 8px;
+            border: 1px solid #2b3b58;
+            background: #0b1220;
             color: #e6eef8;
-            background-image:
-                radial-gradient(circle at 20% 20%, rgba(99,102,241,0.12), transparent 40%),
-                radial-gradient(circle at 80% 30%, rgba(236,72,153,0.10), transparent 40%);
-            background-attachment: fixed;
         }
-        .container {
-            background: rgba(18, 24, 38, 0.55);
-            border-radius: 16px;
-            border: 1px solid rgba(255,255,255,0.06);
-            box-shadow: 0 8px 28px rgba(0,0,0,0.45);
-            backdrop-filter: blur(18px) saturate(140%);
-            transition: all 0.25s ease;
+        select option {
+            background: #0b1220;
+            color: #e6eef8;
         }
         .status-card {
-            background: rgba(18, 24, 38, 0.55);
-            border-radius: 16px;
-            border: 1px solid rgba(255,255,255,0.06);
-            box-shadow: 0 8px 28px rgba(0,0,0,0.45);
-            backdrop-filter: blur(18px) saturate(140%);
+            background: #111c2e;
             padding: 12px;
-            transition: all 0.25s ease;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            border: 1px solid #2b3b58;
         }
+        .status-card h3 { color: #dbeafe; margin-bottom: 6px; font-size: 14px; }
+        .status-indicator { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; vertical-align: middle; }
+        .status-indicator.active { background: #34d399; box-shadow: 0 0 6px rgba(52, 211, 153, 0.20); }
+        .status-indicator.inactive { background: #fb7185; }
+        .status-indicator.slow { background: #fbbf24; }
+        button {
+            width: 100%;
+            padding: 10px;
+            font-size: 15px;
+            border-radius: 8px;
+            border: 1px solid #2d3e5e;
+            cursor: pointer;
+            background: #162338;
+            color: #dbeafe;
+        }
+        button:hover:not(:disabled) { background: #1d2d46; }
+        #stopBtn { background: #2a1622; border-color: #583547; color: #fda4af; }
+        #startBtn:disabled, #stopBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+        #startDriveBtn { margin-top: 8px; }
         .card {
-            background: rgba(18, 24, 38, 0.55);
-            border-radius: 16px;
-            border: 1px solid rgba(255,255,255,0.06);
-            box-shadow: 0 8px 28px rgba(0,0,0,0.45);
-            backdrop-filter: blur(18px) saturate(140%);
-            transition: all 0.25s ease;
-        }
-        .info {
-            background: rgba(18, 24, 38, 0.55);
-            border-radius: 16px;
-            border: 1px solid rgba(255,255,255,0.06);
-            box-shadow: 0 8px 28px rgba(0,0,0,0.45);
-            backdrop-filter: blur(18px) saturate(140%);
-            transition: all 0.25s ease;
+            background: #111c2e;
+            padding: 12px;
+            border-radius: 10px;
+            margin-top: 12px;
+            border: 1px solid #2b3b58;
         }
         #driverMap {
-            border-radius: 16px;
-            border: 2px solid rgba(255,255,255,0.06);
-            box-shadow: 0 8px 28px rgba(0,0,0,0.45);
+            height: 200px;
+            border-radius: 10px;
+            border: 2px solid #2b3b58;
             background: #05060a;
+            margin-top: 8px;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
         }
-        button {
-            border-radius: 16px;
-            border: 1px solid rgba(255,255,255,0.06);
-            background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0));
-            box-shadow: 0 8px 28px rgba(0,0,0,0.45);
-            transition: all 0.25s ease;
+        .progress-outer { width: 100%; height: 12px; background: #1a2539; border-radius: 8px; overflow: hidden; margin-top: 8px; }
+        .progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #34d399, #60a5fa); transition: width 600ms linear; }
+        .info {
+            background: #111c2e;
+            padding: 10px;
+            border-radius: 10px;
+            color: #b8c1d2;
+            font-size: 13px;
+            border: 1px solid #2b3b58;
+        }
+        .info p { margin: 6px 0; }
+        #etaDisplay { font-weight: 500; color: #34d399; }
+        .leaflet-control-zoom a {
+            background: #111c2e !important;
+            color: #e6eef8 !important;
+            border-color: #2b3b58 !important;
+        }
+        .leaflet-popup-content-wrapper,
+        .leaflet-popup-tip {
+            background: #111c2e;
+            color: #e6eef8;
+            border: 1px solid #2b3b58;
+        }
+        @media (max-width: 520px) {
+            body { padding: 12px; }
+            .container { margin: 0; padding: 14px; border-radius: 10px; }
+            #driverMap { height: 260px; }
+            .bus-selector, .status-card, .info { margin-bottom: 10px; }
+            select { font-size: 16px; padding: 12px; }
+            button { font-size: 16px; padding: 12px; border-radius: 10px; }
+            #startBtn, #stopBtn, #startDriveBtn, #stopDriveBtn { width: 100%; display: block; }
+            .progress-outer { height: 14px; }
         }
     </style>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -128,7 +127,7 @@
                 <h1>🚌 {{ institute_name | default('INSTITUTE') }} Driver Companion</h1>
                 <p class="subtitle">Campus Shuttle Tracking</p>
             </div>
-            <a href="/admin/login" target="_blank" rel="noopener noreferrer" style="color:#666;font-size:11px;text-decoration:none;margin-top:4px">Admin</a>
+            <a href="/admin/login" target="_blank" rel="noopener noreferrer" style="color:#9aa4b2;font-size:11px;text-decoration:none;margin-top:4px">Admin</a>
         </div>
 
         <div class="bus-selector">
@@ -150,7 +149,7 @@
                 <span class="status-indicator" id="statusDot"></span>
                 Status: <span id="trackingStatus">Inactive</span>
             </h3>
-            <p style="color: #666; margin-top: 10px;">Updates sent: <span id="updateCount">0</span></p>
+            <p style="color: #9aa4b2; margin-top: 10px;">Updates sent: <span id="updateCount">0</span></p>
         </div>
 
         <button id="startBtn" onclick="startTracking()">Start Shift</button>
@@ -187,6 +186,7 @@
         let selectedBus = null;
         let selectedRoute = null;
         let allRoutes = [];
+        const THEME_BROADCAST_KEY = 'kiit_ui_theme_broadcast_v1';
 
         let driverMap = null;
         let driverMarker = null;
@@ -206,6 +206,67 @@
 
         const busSelect = document.getElementById('busNumber');
         const routeSelect = document.getElementById('routeSelect');
+
+        function normalizeThemeHexColor(value){
+            let hex = String(value || '').trim();
+            if(/^#[0-9a-fA-F]{3}$/.test(hex)){
+                hex = '#' + hex.slice(1).split('').map(ch => ch + ch).join('');
+            }
+            if(!/^#[0-9a-fA-F]{6}$/.test(hex)) return '#8b64ff';
+            return `#${hex.slice(1).toLowerCase()}`;
+        }
+        function clampThemeSaturation(value){
+            const n = Number(value);
+            if(!Number.isFinite(n)) return 120;
+            return Math.max(20, Math.min(260, Math.round(n)));
+        }
+        function hexToRgb(hex){
+            const clean = normalizeThemeHexColor(hex).slice(1);
+            return {
+                r: parseInt(clean.slice(0, 2), 16),
+                g: parseInt(clean.slice(2, 4), 16),
+                b: parseInt(clean.slice(4, 6), 16),
+            };
+        }
+        function rgbToHue(r, g, b){
+            const rn = r / 255;
+            const gn = g / 255;
+            const bn = b / 255;
+            const max = Math.max(rn, gn, bn);
+            const min = Math.min(rn, gn, bn);
+            const d = max - min;
+            if(d === 0) return 0;
+            let h;
+            if(max === rn) h = ((gn - bn) / d) % 6;
+            else if(max === gn) h = ((bn - rn) / d) + 2;
+            else h = ((rn - gn) / d) + 4;
+            return ((h * 60) + 360) % 360;
+        }
+        function applyGlobalTheme(theme){
+            const accentRgb = hexToRgb(theme && theme.accent_color);
+            const baseRgb = hexToRgb('#8b64ff');
+            const hueDelta = rgbToHue(accentRgb.r, accentRgb.g, accentRgb.b) - rgbToHue(baseRgb.r, baseRgb.g, baseRgb.b);
+            const saturation = clampThemeSaturation(theme && theme.saturation);
+            document.documentElement.style.setProperty('--ui-theme-hue', `${hueDelta.toFixed(1)}deg`);
+            document.documentElement.style.setProperty('--ui-theme-saturation', `${saturation}%`);
+        }
+        async function loadGlobalTheme(){
+            try{
+                const res = await fetch('/api/ui-theme', { cache: 'no-store' });
+                const data = await res.json();
+                if(!res.ok) throw new Error(data.error || 'theme_load_failed');
+                applyGlobalTheme(data);
+            }catch(e){
+                applyGlobalTheme({ accent_color: '#8b64ff', saturation: 120 });
+            }
+        }
+        window.addEventListener('storage', (e) => {
+            if (!e || e.key !== THEME_BROADCAST_KEY || !e.newValue) return;
+            try {
+                const payload = JSON.parse(e.newValue);
+                applyGlobalTheme(payload || {});
+            } catch (err) {}
+        });
 
     
         async function loadRoutes(){
@@ -460,6 +521,7 @@
         function updateDriveProgress(lat,lng){ if(!selectedRoute) return; const route = allRoutes.find(r=>r.id===selectedRoute); if(!route) return; const res = computeRouteProgress(lat,lng, route.waypoints); document.getElementById('progressFill').style.width = `${res.pct}%`; document.getElementById('progressPercent').textContent = `${res.pct}%`; const nextName = (route.stops && route.stops[res.nextIdx]) ? route.stops[res.nextIdx] : `Stop ${res.nextIdx}`; document.getElementById('nextStopDisplay').textContent = nextName; }
 
         // initial load
+        loadGlobalTheme();
         loadRoutes();
 
     </script>
