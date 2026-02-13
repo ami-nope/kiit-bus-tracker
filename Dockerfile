@@ -13,4 +13,4 @@ COPY . .
 
 EXPOSE 8080
 
-CMD ["gunicorn", "-c", "gunicorn.conf.py", "app:app"]
+CMD ["sh", "-c", "gunicorn -w 2 -k gthread -b 0.0.0.0:$PORT app:app"]
