@@ -453,6 +453,154 @@
             font-size: 11px;
             border-radius: 8px;
         }
+        .route-snap-wrap {
+            margin-top: 8px;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(102,126,234,0.24);
+            background: rgba(102,126,234,0.05);
+        }
+        .route-snap-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #d6e1ff;
+            margin-bottom: 8px;
+        }
+        .route-snap-head {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: #c7d2fe;
+            user-select: none;
+        }
+        .route-snap-head input[type=checkbox] {
+            width: 14px;
+            height: 14px;
+            accent-color: #667eea;
+            cursor: pointer;
+        }
+        .route-snap-head .value {
+            margin-left: auto;
+            font-size: 10px;
+            color: #dbe3ff;
+            border: 1px solid rgba(102,126,234,0.36);
+            border-radius: 999px;
+            padding: 2px 7px;
+            background: rgba(102,126,234,0.18);
+        }
+        .route-snap-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .route-snap-row input[type=range] {
+            flex: 1;
+            min-width: 0;
+        }
+        .route-snap-row input[type=number] {
+            flex: 1;
+            min-width: 0;
+            font-size: 12px;
+            padding: 6px 8px;
+        }
+        .route-snap-row .meter {
+            min-width: 54px;
+            text-align: right;
+            font-size: 11px;
+            color: #9aa4b2;
+        }
+        .route-snap-row button {
+            padding: 6px 10px;
+            font-size: 11px;
+            border-radius: 8px;
+            white-space: nowrap;
+        }
+        .route-snap-sep {
+            height: 1px;
+            margin: 10px 0 8px 0;
+            background: linear-gradient(90deg, rgba(255,255,255,0), rgba(102,126,234,0.32), rgba(255,255,255,0));
+        }
+        .route-snap-controls {
+            margin-top: 8px;
+            display: none;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .route-snap-controls.visible {
+            display: flex;
+        }
+        .route-follow-wrap {
+            margin-top: 8px;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(102,126,234,0.20);
+            background: rgba(102,126,234,0.05);
+        }
+        .follow-road-segments {
+            margin-top: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-height: 172px;
+            overflow-y: auto;
+            padding-right: 2px;
+        }
+        .follow-road-empty {
+            font-size: 11px;
+            color: #9aa4b2;
+            border: 1px dashed rgba(102,126,234,0.35);
+            border-radius: 8px;
+            padding: 8px;
+            background: rgba(15, 23, 42, 0.35);
+        }
+        .follow-road-segment-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            color: #d8e2ff;
+            border: 1px solid rgba(102,126,234,0.24);
+            border-radius: 8px;
+            padding: 7px 8px;
+            background: rgba(10, 15, 30, 0.36);
+        }
+        .follow-road-segment-row input[type=checkbox] {
+            width: 14px;
+            height: 14px;
+            accent-color: #667eea;
+            cursor: pointer;
+            flex: 0 0 auto;
+        }
+        .follow-road-segment-label {
+            flex: 1;
+            min-width: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .follow-road-segment-mode {
+            flex: 0 0 auto;
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            border: 1px solid rgba(102,126,234,0.35);
+            border-radius: 999px;
+            padding: 2px 8px;
+            color: #dbe3ff;
+            background: rgba(102,126,234,0.18);
+        }
+        @media (max-width: 520px) {
+            .route-snap-row,
+            .stop-radius-row {
+                flex-wrap: wrap;
+            }
+            .route-snap-row button,
+            .stop-radius-row button {
+                width: 100%;
+            }
+        }
         
         .stops-list { max-height:450px; overflow-y:auto; background:#0d1117; border-radius:6px; padding:10px }
         .stop-item { padding:10px; background:#07101a; border-radius:6px; margin-bottom:8px; border-left:4px solid; display:flex; gap:8px; align-items:center; font-size:13px }
@@ -1284,6 +1432,16 @@
                             <div class="draw-mode-hint">Press <kbd>Esc</kbd> to finish drawing and lock end stop.</div>
                         </div>
 
+                        <div class="field-group route-follow-wrap">
+                            <label class="route-snap-head">
+                                <input type="checkbox" id="followRoadsToggle">
+                                <span>Follow roads (stop-wise)</span>
+                                <span class="value" id="followRoadsValue">OFF</span>
+                            </label>
+                            <div id="followRoadSegmentsPanel" class="follow-road-segments"></div>
+                            <div class="draw-mode-hint">When enabled, route path follows roads between each consecutive stop.</div>
+                        </div>
+
                         <div class="field-group stop-radius-wrap">
                             <label class="stop-radius-head">
                                 <input type="checkbox" id="showStopRadius">
@@ -1299,6 +1457,53 @@
                                     <input type="number" id="stopRadiusCustom" min="1" step="1" placeholder="Custom meters (no limit)">
                                     <button type="button" id="applyStopRadiusBtn">Apply</button>
                                 </div>
+                            </div>
+                        </div>
+
+                        <div class="field-group route-snap-wrap">
+                            <div class="route-snap-title">Transport Route Snap Settings (Road Corridor)</div>
+                            <label class="route-snap-head">
+                                <input type="checkbox" id="globalSnapEnabled">
+                                <span>Global snap enabled (perpendicular corridor)</span>
+                                <span class="value" id="globalSnapDistanceValue">10 m</span>
+                            </label>
+                            <div class="route-snap-row">
+                                <input type="range" id="globalSnapDistanceSlider" min="1" max="300" step="1" value="10">
+                                <span class="meter" id="globalSnapDistanceSliderValue">10 m</span>
+                            </div>
+                            <div class="route-snap-row">
+                                <input type="number" id="globalSnapDistanceCustom" min="1" step="1" placeholder="Global snap distance (meters)">
+                                <button type="button" id="saveGlobalSnapBtn">Save Global</button>
+                            </div>
+                            <label class="route-snap-head">
+                                <input type="checkbox" id="globalSnapShowRange">
+                                <span>Show global snap range on map</span>
+                            </label>
+
+                            <div class="route-snap-sep"></div>
+
+                            <label class="route-snap-head">
+                                <input type="checkbox" id="routeSnapOverride">
+                                <span>Use route-specific snap settings</span>
+                            </label>
+                            <div class="route-snap-controls" id="routeSnapControls">
+                                <label class="route-snap-head">
+                                    <input type="checkbox" id="routeSnapEnabled">
+                                    <span>Route snap enabled</span>
+                                    <span class="value" id="routeSnapDistanceValue">10 m</span>
+                                </label>
+                                <div class="route-snap-row">
+                                    <input type="range" id="routeSnapDistanceSlider" min="1" max="300" step="1" value="10">
+                                    <span class="meter" id="routeSnapDistanceSliderValue">10 m</span>
+                                </div>
+                                <div class="route-snap-row">
+                                    <input type="number" id="routeSnapDistanceCustom" min="1" step="1" placeholder="Route snap distance (meters)">
+                                    <button type="button" id="applyRouteSnapBtn">Apply</button>
+                                </div>
+                                <label class="route-snap-head">
+                                    <input type="checkbox" id="routeSnapShowRange">
+                                    <span>Show route snap range on map</span>
+                                </label>
                             </div>
                         </div>
 
@@ -1503,6 +1708,10 @@
                             <div class="perf-v" id="perfBusesCount">--</div>
                         </div>
                         <div class="perf-card">
+                            <div class="perf-k">Active Drivers</div>
+                            <div class="perf-v" id="perfActiveDrivers">--</div>
+                        </div>
+                        <div class="perf-card">
                             <div class="perf-k">Routes</div>
                             <div class="perf-v" id="perfRoutesCount">--</div>
                         </div>
@@ -1513,6 +1722,14 @@
                         <div class="perf-card">
                             <div class="perf-k">Classes</div>
                             <div class="perf-v" id="perfClassesCount">--</div>
+                        </div>
+                        <div class="perf-card">
+                            <div class="perf-k">Active Students</div>
+                            <div class="perf-v" id="perfActiveStudents">--</div>
+                        </div>
+                        <div class="perf-card">
+                            <div class="perf-k">Active Admins</div>
+                            <div class="perf-v" id="perfActiveAdmins">--</div>
                         </div>
                     </div>
                 </div>
@@ -1616,11 +1833,14 @@
     <script>
         let currentWaypoints = [];
         let currentStops = [];
+        let stopUndoStack = [];
+        let stopRedoStack = [];
         let editingRouteId = null;
         let routeMap = null;
         let routeMarkers = [];
         let routeLine = null;
         let stopRadiusLayers = [];
+        let snapRangeLayers = [];
         let mapMode = 'start'; // 'start' or 'stops'
         let drawMode = 'curve'; // 'straight' | 'curve' | 'freehand'
         let isFreehandDrawing = false;
@@ -1629,6 +1849,12 @@
         const FREEHAND_MIN_POINT_M = 8;
         let stopRadiusVisible = false;
         let stopRadiusMeters = 80;
+        let followRoadsEnabled = false;
+        let followRoadSegments = [];
+        const DEFAULT_ROUTE_SNAP_SETTINGS = Object.freeze({ enabled: true, distance_m: 10, show_range: false });
+        let globalRouteSnapSettings = { ...DEFAULT_ROUTE_SNAP_SETTINGS };
+        let routeSnapDraft = { override_global: false, enabled: true, distance_m: 10, show_range: false };
+        let routeLinePreviewToken = 0;
         let renderQueued = false;
         let renderToken = 0;
         
@@ -2182,9 +2408,12 @@
                 setText('perfLastLoginSuccess', formatIsoUtc(data.admin && data.admin.last_success_login));
                 setText('perfLastLoginFailed', formatIsoUtc(data.admin && data.admin.last_failed_login));
                 setText('perfBusesCount', data.buses_count);
+                setText('perfActiveDrivers', data.active_drivers);
                 setText('perfRoutesCount', data.routes_count);
                 setText('perfHostelsCount', data.hostels_count);
                 setText('perfClassesCount', data.classes_count);
+                setText('perfActiveStudents', data.active_students);
+                setText('perfActiveAdmins', data.active_admins);
                 const canViewAudit = !!CAN_ACCESS_SECURE_ADMIN;
                 renderPerfAuditRows(data.audit_logs, canViewAudit);
                 updatePerfGraphHistory(data, lagMs);
@@ -2381,12 +2610,30 @@
             return `Stop ${getNamedStopCount() + 1}`;
         }
 
+        function normalizeFollowRoadSegments(rawSegments, waypointCount, defaultValue = false) {
+            const segmentCount = Math.max(0, Number(waypointCount || 0) - 1);
+            const fallback = !!defaultValue;
+            const normalized = [];
+            if (Array.isArray(rawSegments)) {
+                for (let i = 0; i < Math.min(rawSegments.length, segmentCount); i++) {
+                    normalized.push(!!rawSegments[i]);
+                }
+            }
+            while (normalized.length < segmentCount) normalized.push(fallback);
+            return normalized;
+        }
+
+        function ensureFollowRoadSegments() {
+            followRoadSegments = normalizeFollowRoadSegments(followRoadSegments, currentWaypoints.length, followRoadsEnabled);
+        }
+
         function ensureStopsArraySize() {
             while (currentStops.length < currentWaypoints.length) currentStops.push('');
             if (currentStops.length > currentWaypoints.length) currentStops.length = currentWaypoints.length;
             if (currentWaypoints.length > 0 && (!currentStops[0] || !String(currentStops[0]).trim())) {
                 currentStops[0] = 'START';
             }
+            ensureFollowRoadSegments();
         }
 
         function addOrFixStopName(idx) {
@@ -2420,6 +2667,69 @@
                 renderMapWaypoints();
                 renderStopsList();
             });
+        }
+
+        function cloneStopState() {
+            return {
+                waypoints: currentWaypoints.map((wp) => [wp[0], wp[1]]),
+                stops: currentStops.map((s) => (s == null ? '' : String(s))),
+                mapMode: mapMode,
+                followRoadsEnabled: !!followRoadsEnabled,
+                followRoadSegments: followRoadSegments.map((flag) => !!flag)
+            };
+        }
+
+        function resetStopHistory() {
+            stopUndoStack = [];
+            stopRedoStack = [];
+        }
+
+        function pushStopUndoState() {
+            stopUndoStack.push(cloneStopState());
+            if (stopUndoStack.length > 200) stopUndoStack.shift();
+            stopRedoStack = [];
+        }
+
+        function applyStopState(state) {
+            if (!state) return;
+            currentWaypoints = (state.waypoints || []).map((wp) => [wp[0], wp[1]]);
+            currentStops = (state.stops || []).map((s) => (s == null ? '' : String(s)));
+            mapMode = state.mapMode || (currentWaypoints.length ? 'stops' : 'start');
+            followRoadsEnabled = !!state.followRoadsEnabled;
+            followRoadSegments = normalizeFollowRoadSegments(state.followRoadSegments, currentWaypoints.length, followRoadsEnabled);
+            isFreehandDrawing = false;
+            freehandLastPoint = null;
+            suppressNextClick = false;
+            if (routeMap && routeMap.dragging) {
+                try { routeMap.dragging.enable(); } catch (e) {}
+            }
+            ensureStopsArraySize();
+            updateSteps();
+            updateInstructions();
+            refreshFollowRoadUi();
+            scheduleRouteRender();
+        }
+
+        function undoStopCreation() {
+            if (!stopUndoStack.length) return;
+            stopRedoStack.push(cloneStopState());
+            const prev = stopUndoStack.pop();
+            applyStopState(prev);
+        }
+
+        function redoStopCreation() {
+            if (!stopRedoStack.length) return;
+            stopUndoStack.push(cloneStopState());
+            const next = stopRedoStack.pop();
+            applyStopState(next);
+        }
+
+        function isTextInputTarget(target) {
+            if (!target) return false;
+            const tag = (target.tagName || '').toLowerCase();
+            if (tag === 'input' || tag === 'textarea') return true;
+            if (target.isContentEditable) return true;
+            return false;
         }
 
         function updateCursorInfo() {
@@ -2531,6 +2841,373 @@
             refreshStopRadiusUi();
         }
 
+        function normalizeSnapDistance(raw, fallback) {
+            const parsed = Number(raw);
+            if (!isFinite(parsed) || parsed <= 0) return Math.max(1, Math.round(Number(fallback) || DEFAULT_ROUTE_SNAP_SETTINGS.distance_m));
+            return Math.max(1, Math.min(1000, Math.round(parsed)));
+        }
+
+        function normalizeGlobalSnapSettings(raw) {
+            const src = raw && typeof raw === 'object' ? raw : {};
+            return {
+                enabled: !!src.enabled,
+                distance_m: normalizeSnapDistance(src.distance_m, DEFAULT_ROUTE_SNAP_SETTINGS.distance_m),
+                show_range: !!src.show_range
+            };
+        }
+
+        function normalizeRouteSnapDraft(raw) {
+            const src = raw && typeof raw === 'object' ? raw : {};
+            return {
+                override_global: !!src.override_global,
+                enabled: (src.enabled == null) ? !!globalRouteSnapSettings.enabled : !!src.enabled,
+                distance_m: normalizeSnapDistance(src.distance_m, globalRouteSnapSettings.distance_m),
+                show_range: (src.show_range == null) ? !!globalRouteSnapSettings.show_range : !!src.show_range
+            };
+        }
+
+        function resetRouteSnapDraftForNewRoute() {
+            routeSnapDraft = {
+                override_global: false,
+                enabled: !!globalRouteSnapSettings.enabled,
+                distance_m: normalizeSnapDistance(globalRouteSnapSettings.distance_m, DEFAULT_ROUTE_SNAP_SETTINGS.distance_m),
+                show_range: !!globalRouteSnapSettings.show_range
+            };
+        }
+
+        function getEffectiveRouteSnapSettingsForBuilder() {
+            if (routeSnapDraft.override_global) {
+                return {
+                    enabled: !!routeSnapDraft.enabled,
+                    distance_m: normalizeSnapDistance(routeSnapDraft.distance_m, globalRouteSnapSettings.distance_m),
+                    show_range: !!routeSnapDraft.show_range
+                };
+            }
+            return normalizeGlobalSnapSettings(globalRouteSnapSettings);
+        }
+
+        function clearSnapRangeLayers() {
+            if (!routeMap || !snapRangeLayers.length) return;
+            snapRangeLayers.forEach((layer) => {
+                try { routeMap.removeLayer(layer); } catch (e) {}
+            });
+            snapRangeLayers = [];
+        }
+
+        function getPreviewRouteCoordsForSnapRange() {
+            if (routeLine && typeof routeLine.getLatLngs === 'function') {
+                const raw = routeLine.getLatLngs();
+                const points = (Array.isArray(raw) && raw.length && Array.isArray(raw[0])) ? raw[0] : raw;
+                if (Array.isArray(points) && points.length >= 2) {
+                    const mapped = points
+                        .map((pt) => {
+                            if (pt && typeof pt.lat === 'number' && typeof pt.lng === 'number') return [pt.lat, pt.lng];
+                            if (Array.isArray(pt) && pt.length >= 2) {
+                                const lat = Number(pt[0]);
+                                const lng = Number(pt[1]);
+                                if (isFinite(lat) && isFinite(lng)) return [lat, lng];
+                            }
+                            return null;
+                        })
+                        .filter(Boolean);
+                    if (mapped.length >= 2) return mapped;
+                }
+            }
+            if (Array.isArray(currentWaypoints) && currentWaypoints.length >= 2) {
+                return currentWaypoints
+                    .map((wp) => [Number(wp[0]), Number(wp[1])])
+                    .filter((wp) => isFinite(wp[0]) && isFinite(wp[1]));
+            }
+            return [];
+        }
+
+        function metersToPixelsAtLat(meters, lat, zoom) {
+            const earthCircumference = 40075016.686;
+            const latRad = Number(lat || 0) * Math.PI / 180;
+            const metersPerPixel = (earthCircumference * Math.max(0.15, Math.cos(latRad))) / Math.pow(2, Number(zoom || 15) + 8);
+            if (!isFinite(metersPerPixel) || metersPerPixel <= 0) return 1;
+            return meters / metersPerPixel;
+        }
+
+        function drawSnapRangeLayers() {
+            clearSnapRangeLayers();
+            if (!routeMap) return;
+            const effective = getEffectiveRouteSnapSettingsForBuilder();
+            if (!effective.enabled || !effective.show_range) return;
+            const coords = getPreviewRouteCoordsForSnapRange();
+            if (!coords || coords.length < 2) return;
+            const color = document.getElementById('routeColor')?.value || '#667eea';
+            const avgLat = coords.reduce((sum, wp) => sum + wp[0], 0) / coords.length;
+            const zoom = (routeMap && typeof routeMap.getZoom === 'function') ? routeMap.getZoom() : 15;
+            const corridorWidthPx = Math.max(4, Math.min(160, metersToPixelsAtLat(effective.distance_m * 2, avgLat, zoom)));
+            const corridor = L.polyline(coords, {
+                color,
+                weight: corridorWidthPx,
+                opacity: 0.14,
+                lineCap: 'round',
+                lineJoin: 'round',
+                interactive: false
+            }).addTo(routeMap);
+            const centerLine = L.polyline(coords, {
+                color,
+                weight: 2,
+                opacity: 0.42,
+                dashArray: '8 10',
+                lineCap: 'round',
+                lineJoin: 'round',
+                interactive: false
+            }).addTo(routeMap);
+            snapRangeLayers.push(corridor, centerLine);
+        }
+
+        function getFollowRoadStopLabel(idx) {
+            const raw = currentStops[idx] != null ? String(currentStops[idx]).trim() : '';
+            if (raw) return raw;
+            return idx === 0 ? 'START' : `Stop ${idx}`;
+        }
+
+        function renderFollowRoadSegmentsUi() {
+            const panel = document.getElementById('followRoadSegmentsPanel');
+            if (!panel) return;
+            ensureFollowRoadSegments();
+            if (drawMode === 'freehand' && currentWaypoints.length > 2) {
+                panel.innerHTML = '<div class="follow-road-empty">Freehand mode keeps your drawn path. Switch to curve/straight mode for per-segment road-follow controls.</div>';
+                return;
+            }
+            if (!followRoadSegments.length) {
+                panel.innerHTML = '<div class="follow-road-empty">Add START and at least one stop to configure stop-wise road following.</div>';
+                return;
+            }
+            panel.innerHTML = '';
+            followRoadSegments.forEach((enabled, segmentIdx) => {
+                const row = document.createElement('label');
+                row.className = 'follow-road-segment-row';
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = !!enabled;
+                checkbox.dataset.segment = String(segmentIdx);
+
+                const label = document.createElement('span');
+                label.className = 'follow-road-segment-label';
+                label.textContent = `${getFollowRoadStopLabel(segmentIdx)} -> ${getFollowRoadStopLabel(segmentIdx + 1)}`;
+
+                const mode = document.createElement('span');
+                mode.className = 'follow-road-segment-mode';
+                mode.textContent = enabled ? 'ROAD' : 'DIRECT';
+
+                checkbox.addEventListener('change', () => {
+                    followRoadSegments[segmentIdx] = !!checkbox.checked;
+                    refreshFollowRoadUi();
+                    scheduleRouteRender();
+                });
+
+                row.appendChild(checkbox);
+                row.appendChild(label);
+                row.appendChild(mode);
+                panel.appendChild(row);
+            });
+        }
+
+        function refreshFollowRoadUi() {
+            ensureFollowRoadSegments();
+            const toggle = document.getElementById('followRoadsToggle');
+            const value = document.getElementById('followRoadsValue');
+            const count = followRoadSegments.length;
+            if (!count) {
+                if (toggle) {
+                    toggle.indeterminate = false;
+                    toggle.checked = !!followRoadsEnabled;
+                }
+                if (value) value.textContent = followRoadsEnabled ? 'ON' : 'OFF';
+                renderFollowRoadSegmentsUi();
+                return;
+            }
+            const enabledCount = followRoadSegments.reduce((sum, flag) => sum + (flag ? 1 : 0), 0);
+            const allEnabled = enabledCount === count;
+            const noneEnabled = enabledCount === 0;
+            const mixed = !allEnabled && !noneEnabled;
+            if (toggle) {
+                toggle.indeterminate = mixed;
+                toggle.checked = allEnabled;
+            }
+            if (value) value.textContent = mixed ? 'MIX' : (allEnabled ? 'ON' : 'OFF');
+            if (!mixed) followRoadsEnabled = allEnabled;
+            renderFollowRoadSegmentsUi();
+        }
+
+        function refreshRouteSnapUi() {
+            const globalEnabled = document.getElementById('globalSnapEnabled');
+            const globalDistanceValue = document.getElementById('globalSnapDistanceValue');
+            const globalSlider = document.getElementById('globalSnapDistanceSlider');
+            const globalSliderValue = document.getElementById('globalSnapDistanceSliderValue');
+            const globalShowRange = document.getElementById('globalSnapShowRange');
+            const overrideToggle = document.getElementById('routeSnapOverride');
+            const routeControls = document.getElementById('routeSnapControls');
+            const routeEnabled = document.getElementById('routeSnapEnabled');
+            const routeDistanceValue = document.getElementById('routeSnapDistanceValue');
+            const routeSlider = document.getElementById('routeSnapDistanceSlider');
+            const routeSliderValue = document.getElementById('routeSnapDistanceSliderValue');
+            const routeShowRange = document.getElementById('routeSnapShowRange');
+            if (!globalEnabled || !globalDistanceValue || !globalSlider || !globalSliderValue || !globalShowRange || !overrideToggle || !routeControls || !routeEnabled || !routeDistanceValue || !routeSlider || !routeSliderValue || !routeShowRange) return;
+
+            globalRouteSnapSettings = normalizeGlobalSnapSettings(globalRouteSnapSettings);
+            routeSnapDraft = normalizeRouteSnapDraft(routeSnapDraft);
+
+            globalEnabled.checked = !!globalRouteSnapSettings.enabled;
+            globalShowRange.checked = !!globalRouteSnapSettings.show_range;
+            globalDistanceValue.textContent = formatStopRadiusText(globalRouteSnapSettings.distance_m);
+            globalSliderValue.textContent = formatStopRadiusText(globalRouteSnapSettings.distance_m);
+            globalSlider.value = String(Math.min(Number(globalSlider.max || 300), Math.max(Number(globalSlider.min || 1), globalRouteSnapSettings.distance_m)));
+
+            overrideToggle.checked = !!routeSnapDraft.override_global;
+            routeControls.classList.toggle('visible', !!routeSnapDraft.override_global);
+            routeEnabled.checked = !!routeSnapDraft.enabled;
+            routeShowRange.checked = !!routeSnapDraft.show_range;
+            routeDistanceValue.textContent = formatStopRadiusText(routeSnapDraft.distance_m);
+            routeSliderValue.textContent = formatStopRadiusText(routeSnapDraft.distance_m);
+            routeSlider.value = String(Math.min(Number(routeSlider.max || 300), Math.max(Number(routeSlider.min || 1), routeSnapDraft.distance_m)));
+
+            drawSnapRangeLayers();
+        }
+
+        function updateRouteLineFollowRoadPreview() {
+            routeLinePreviewToken += 1;
+            const token = routeLinePreviewToken;
+            if (!routeMap || !routeLine || currentWaypoints.length < 2 || isFreehandDrawing || currentWaypoints.length > 24) return;
+            const waypointsSnapshot = currentWaypoints.map((wp) => [wp[0], wp[1]]);
+            const segmentFlagsSnapshot = normalizeFollowRoadSegments(followRoadSegments, waypointsSnapshot.length, followRoadsEnabled);
+            if (!segmentFlagsSnapshot.some(Boolean)) {
+                try { routeLine.setLatLngs(waypointsSnapshot); } catch (e) {}
+                drawSnapRangeLayers();
+                return;
+            }
+            getOSRMRoute(waypointsSnapshot, segmentFlagsSnapshot).then((roadPath) => {
+                if (token !== routeLinePreviewToken) return;
+                if (!routeLine || !Array.isArray(roadPath) || roadPath.length < 2) return;
+                try { routeLine.setLatLngs(roadPath); } catch (e) {}
+                drawSnapRangeLayers();
+            }).catch(() => {});
+        }
+
+        async function loadGlobalRouteSnapSettings() {
+            try {
+                const res = await fetch('/api/route-snap-settings', { cache: 'no-store' });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'route_snap_settings_load_failed');
+                globalRouteSnapSettings = normalizeGlobalSnapSettings(data || {});
+                if (!routeSnapDraft.override_global) resetRouteSnapDraftForNewRoute();
+            } catch (e) {
+                globalRouteSnapSettings = normalizeGlobalSnapSettings(DEFAULT_ROUTE_SNAP_SETTINGS);
+                if (!routeSnapDraft.override_global) resetRouteSnapDraftForNewRoute();
+            }
+            refreshRouteSnapUi();
+        }
+
+        async function saveGlobalRouteSnapSettings() {
+            const payload = normalizeGlobalSnapSettings(globalRouteSnapSettings);
+            try {
+                const res = await fetch('/admin/route-snap-settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Failed to save global snap settings');
+                globalRouteSnapSettings = normalizeGlobalSnapSettings((data && data.route_snap_settings) || payload);
+                if (!routeSnapDraft.override_global) resetRouteSnapDraftForNewRoute();
+            } catch (e) {
+                alert(e.message || 'Failed to save global snap settings');
+            }
+            refreshRouteSnapUi();
+        }
+
+        function initFollowRoadControls() {
+            const toggle = document.getElementById('followRoadsToggle');
+            if (!toggle || toggle.dataset.bound === '1') return;
+            toggle.dataset.bound = '1';
+            toggle.addEventListener('change', () => {
+                followRoadsEnabled = !!toggle.checked;
+                ensureFollowRoadSegments();
+                followRoadSegments = followRoadSegments.map(() => !!followRoadsEnabled);
+                refreshFollowRoadUi();
+                scheduleRouteRender();
+            });
+            refreshFollowRoadUi();
+        }
+
+        function initRouteSnapControls() {
+            const globalEnabled = document.getElementById('globalSnapEnabled');
+            const globalSlider = document.getElementById('globalSnapDistanceSlider');
+            const globalCustom = document.getElementById('globalSnapDistanceCustom');
+            const saveGlobalBtn = document.getElementById('saveGlobalSnapBtn');
+            const globalShowRange = document.getElementById('globalSnapShowRange');
+            const overrideToggle = document.getElementById('routeSnapOverride');
+            const routeEnabled = document.getElementById('routeSnapEnabled');
+            const routeSlider = document.getElementById('routeSnapDistanceSlider');
+            const routeCustom = document.getElementById('routeSnapDistanceCustom');
+            const routeShowRange = document.getElementById('routeSnapShowRange');
+            const applyRouteBtn = document.getElementById('applyRouteSnapBtn');
+            if (!globalEnabled || !globalSlider || !globalCustom || !saveGlobalBtn || !globalShowRange || !overrideToggle || !routeEnabled || !routeSlider || !routeCustom || !routeShowRange || !applyRouteBtn) return;
+            if (globalEnabled.dataset.bound === '1') return;
+            globalEnabled.dataset.bound = '1';
+
+            globalEnabled.addEventListener('change', () => {
+                globalRouteSnapSettings.enabled = !!globalEnabled.checked;
+                refreshRouteSnapUi();
+            });
+            globalShowRange.addEventListener('change', () => {
+                globalRouteSnapSettings.show_range = !!globalShowRange.checked;
+                refreshRouteSnapUi();
+            });
+            globalSlider.addEventListener('input', () => {
+                globalRouteSnapSettings.distance_m = normalizeSnapDistance(globalSlider.value, globalRouteSnapSettings.distance_m);
+                refreshRouteSnapUi();
+            });
+            const applyGlobalCustom = () => {
+                if (!globalCustom.value.trim()) return;
+                globalRouteSnapSettings.distance_m = normalizeSnapDistance(globalCustom.value.trim(), globalRouteSnapSettings.distance_m);
+                globalCustom.value = '';
+                refreshRouteSnapUi();
+            };
+            globalCustom.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') applyGlobalCustom();
+            });
+            saveGlobalBtn.addEventListener('click', async () => {
+                applyGlobalCustom();
+                await saveGlobalRouteSnapSettings();
+            });
+
+            overrideToggle.addEventListener('change', () => {
+                routeSnapDraft.override_global = !!overrideToggle.checked;
+                refreshRouteSnapUi();
+            });
+            routeEnabled.addEventListener('change', () => {
+                routeSnapDraft.enabled = !!routeEnabled.checked;
+                refreshRouteSnapUi();
+            });
+            routeShowRange.addEventListener('change', () => {
+                routeSnapDraft.show_range = !!routeShowRange.checked;
+                refreshRouteSnapUi();
+            });
+            routeSlider.addEventListener('input', () => {
+                routeSnapDraft.distance_m = normalizeSnapDistance(routeSlider.value, routeSnapDraft.distance_m);
+                refreshRouteSnapUi();
+            });
+            const applyRouteCustom = () => {
+                if (!routeCustom.value.trim()) return;
+                routeSnapDraft.distance_m = normalizeSnapDistance(routeCustom.value.trim(), routeSnapDraft.distance_m);
+                routeCustom.value = '';
+                refreshRouteSnapUi();
+            };
+            routeCustom.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') applyRouteCustom();
+            });
+            applyRouteBtn.addEventListener('click', applyRouteCustom);
+
+            refreshRouteSnapUi();
+        }
+
         function finalizeRouteCreation() {
             if (currentWaypoints.length < 2) return;
             ensureStopsArraySize();
@@ -2538,6 +3215,7 @@
             mapMode = 'stops';
             updateSteps();
             updateInstructions();
+            refreshFollowRoadUi();
             scheduleRouteRender();
         }
 
@@ -2548,12 +3226,19 @@
             isFreehandDrawing = false;
             freehandLastPoint = null;
             suppressNextClick = false;
+            followRoadsEnabled = false;
+            followRoadSegments = [];
+            resetRouteSnapDraftForNewRoute();
+            resetStopHistory();
+            routeLinePreviewToken += 1;
             if (routeMap && routeMap.dragging) {
                 try { routeMap.dragging.enable(); } catch (e) {}
             }
             updateSteps();
             updateInstructions();
             updateCursorInfo();
+            refreshFollowRoadUi();
+            refreshRouteSnapUi();
             renderMapWaypoints();
             renderStopsList();
         }
@@ -2566,6 +3251,7 @@
                     addWaypointFromMap(lat, lng, { asStop: true });
                     finalizeRouteCreation();
                 } else {
+                    pushStopUndoState();
                     currentWaypoints = [currentWaypoints[0], [lat, lng]];
                     currentStops = [currentStops[0] || 'START', currentStops[1] || 'Stop 1'];
                     ensureStopsArraySize();
@@ -2614,7 +3300,7 @@
             if (typeof lat === 'number' && typeof lng === 'number') {
                 const last = currentWaypoints[currentWaypoints.length - 1];
                 if (!last || pointDistanceMeters(last, [lat, lng]) > 1) {
-                    addWaypointFromMap(lat, lng, { asStop: false });
+                    addWaypointFromMap(lat, lng, { asStop: true });
                 }
             }
             freehandLastPoint = null;
@@ -2657,6 +3343,9 @@
                 if (drawMode !== 'freehand') return;
                 if (isFreehandDrawing) stopFreehand();
             });
+            routeMap.on('zoomend', () => {
+                drawSnapRangeLayers();
+            });
 
             const modeSel = document.getElementById('drawMode');
             if (modeSel) {
@@ -2672,15 +3361,27 @@
                         finalizeRouteCreation();
                     } else {
                         updateInstructions();
+                        refreshFollowRoadUi();
                         scheduleRouteRender();
                     }
                 });
             }
 
             document.addEventListener('keydown', (e) => {
-                if (e.key !== 'Escape') return;
                 const routesTab = document.getElementById('routes');
                 if (!routesTab || !routesTab.classList.contains('active')) return;
+                if (isTextInputTarget(e.target)) return;
+                if ((e.ctrlKey || e.metaKey) && !e.shiftKey && String(e.key || '').toLowerCase() === 'z') {
+                    e.preventDefault();
+                    undoStopCreation();
+                    return;
+                }
+                if ((e.ctrlKey || e.metaKey) && String(e.key || '').toLowerCase() === 'y') {
+                    e.preventDefault();
+                    redoStopCreation();
+                    return;
+                }
+                if (e.key !== 'Escape') return;
                 if (drawMode === 'freehand' && isFreehandDrawing) {
                     stopFreehand();
                 } else {
@@ -2689,6 +3390,12 @@
             });
 
             initStopRadiusControls();
+            initFollowRoadControls();
+            initRouteSnapControls();
+            loadGlobalRouteSnapSettings();
+            resetRouteSnapDraftForNewRoute();
+            refreshFollowRoadUi();
+            refreshRouteSnapUi();
             updateSteps();
             updateInstructions();
             renderStopsList();
@@ -2696,6 +3403,7 @@
 
         function addWaypointFromMap(lat, lng, opts = {}) {
             const asStop = opts.asStop !== false;
+            if (asStop) pushStopUndoState();
             currentWaypoints.push([lat, lng]);
             currentStops.push('');
             ensureStopsArraySize();
@@ -2707,6 +3415,7 @@
             }
             updateSteps();
             updateInstructions();
+            if (asStop) refreshFollowRoadUi();
             scheduleRouteRender();
         }
 
@@ -2766,6 +3475,7 @@
                 try { routeMap.removeLayer(routeLine); } catch (e) {}
                 routeLine = null;
             }
+            clearSnapRangeLayers();
 
             const stopEntries = getStopListEntries();
             stopEntries.forEach(({ idx, wp, isStart }) => {
@@ -2791,23 +3501,43 @@
             }
 
             drawStopRadiusLayers(stopEntries);
+            drawSnapRangeLayers();
+            updateRouteLineFollowRoadPreview();
         }
-        async function getOSRMRoute(waypoints) {
+        async function getOSRMRoute(waypoints, segmentFollowFlags = null) {
             try {
                 if (waypoints.length < 2) return waypoints;
-                
-                // Format: lon,lat;lon,lat...
-                const coords = waypoints.map(wp => `${wp[1]},${wp[0]}`).join(';');
-                const url = `https://router.project-osrm.org/route/v1/driving/${coords}?geometries=geojson`;
-                
-                const res = await fetch(url);
-                const data = await res.json();
-                
-                if (data.routes && data.routes[0]) {
-                    // Convert GeoJSON coords (lon,lat) to Leaflet format (lat,lon)
-                    return data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+                const segmentCount = Math.max(0, waypoints.length - 1);
+                const flags = Array.isArray(segmentFollowFlags)
+                    ? segmentFollowFlags.slice(0, segmentCount).map((flag) => !!flag)
+                    : Array.from({ length: segmentCount }, () => true);
+                while (flags.length < segmentCount) flags.push(!!followRoadsEnabled);
+
+                const merged = [];
+                for (let i = 0; i < segmentCount; i++) {
+                    const from = waypoints[i];
+                    const to = waypoints[i + 1];
+                    let segment = null;
+                    if (flags[i]) {
+                        const coords = `${from[1]},${from[0]};${to[1]},${to[0]}`;
+                        const url = `https://router.project-osrm.org/route/v1/driving/${coords}?geometries=geojson`;
+                        try {
+                            const res = await fetch(url);
+                            const data = await res.json();
+                            if (data.routes && data.routes[0] && data.routes[0].geometry && Array.isArray(data.routes[0].geometry.coordinates)) {
+                                segment = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+                            }
+                        } catch (err) {
+                            segment = null;
+                        }
+                    }
+                    if (!segment || segment.length < 2) {
+                        segment = [from, to];
+                    }
+                    if (!merged.length) merged.push(...segment);
+                    else merged.push(...segment.slice(1));
                 }
-                return waypoints;
+                return merged.length >= 2 ? merged : waypoints;
             } catch(e) {
                 console.error('OSRM error:', e);
                 return waypoints;
@@ -2851,6 +3581,7 @@
                     input.setAttribute('readonly', '');
                     input.style.cursor = 'pointer';
                     renderMapWaypoints();
+                    renderFollowRoadSegmentsUi();
                 });
                 input.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter') input.blur();
@@ -2876,6 +3607,7 @@
             }
             updateSteps();
             updateInstructions();
+            refreshFollowRoadUi();
             scheduleRouteRender();
         };
 
@@ -2904,13 +3636,33 @@
             }
             finalizeRouteCreation();
             ensureStopsArraySize();
+            const waypointsForSave = currentWaypoints.map((wp) => [wp[0], wp[1]]);
+            const followRoadSegmentsForSave = normalizeFollowRoadSegments(followRoadSegments, waypointsForSave.length, followRoadsEnabled);
+            const hasRoadFollowing = followRoadSegmentsForSave.some(Boolean);
+            let pathPointsForSave = waypointsForSave;
+            if (hasRoadFollowing) {
+                pathPointsForSave = await getOSRMRoute(waypointsForSave, followRoadSegmentsForSave);
+                if (!Array.isArray(pathPointsForSave) || pathPointsForSave.length < 2) {
+                    pathPointsForSave = waypointsForSave;
+                }
+            }
+            routeSnapDraft = normalizeRouteSnapDraft(routeSnapDraft);
             
             const route = {
                 id: editingRouteId || `route_${Date.now()}`,
                 name: name,
-                waypoints: currentWaypoints,
+                waypoints: waypointsForSave,
+                path_points: pathPointsForSave,
                 stops: currentStops,
-                color: color
+                color: color,
+                follow_roads: !!hasRoadFollowing,
+                follow_roads_segments: followRoadSegmentsForSave,
+                snap_settings: {
+                    override_global: !!routeSnapDraft.override_global,
+                    enabled: !!routeSnapDraft.enabled,
+                    distance_m: normalizeSnapDistance(routeSnapDraft.distance_m, globalRouteSnapSettings.distance_m),
+                    show_range: !!routeSnapDraft.show_range
+                }
             };
             
             const res = await fetch('/api/route', {
@@ -2980,11 +3732,17 @@
                     document.getElementById('routeColor').value = route.color;
                     currentWaypoints = JSON.parse(JSON.stringify(route.waypoints));
                     currentStops = JSON.parse(JSON.stringify(route.stops || []));
+                    followRoadsEnabled = !!route.follow_roads;
+                    followRoadSegments = normalizeFollowRoadSegments(route.follow_roads_segments, currentWaypoints.length, followRoadsEnabled);
+                    routeSnapDraft = normalizeRouteSnapDraft(route.snap_settings || {});
+                    resetStopHistory();
                     ensureStopsArraySize();
                     editingRouteId = routeId;
                     mapMode = 'stops';
                     updateSteps();
                     updateInstructions();
+                    refreshFollowRoadUi();
+                    refreshRouteSnapUi();
                     renderMapWaypoints();
                     renderStopsList();
                     window.scrollTo(0, 0);

@@ -12,6 +12,7 @@ import os
 import sys
 import math
 import shutil
+import uuid
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.middleware.proxy_fix import ProxyFix
 from datetime import datetime, timezone
@@ -158,6 +159,11 @@ DEFAULT_PINS = {
 DEFAULT_UI_THEME = {
     'accent_color': '#8b64ff',
     'saturation': 120,
+}
+DEFAULT_ROUTE_SNAP_SETTINGS = {
+    'enabled': True,
+    'distance_m': 10,
+    'show_range': False,
 }
 ADMIN_ROLE_STANDARD = 'admin'
 ADMIN_ROLE_GOLD = 'gold'
@@ -807,6 +813,9 @@ def _sync_worker():
 # ---------- SSE ----------
 _subscribers_lock = threading.Lock()
 _subscribers = {}   # routeId|"all" -> [queue, ...]
+_active_admin_sessions = {}  # session_id -> {'username': str, 'last_seen': ts}
+_active_admin_lock = threading.Lock()
+ACTIVE_ADMIN_TTL_SEC = 60 * 60
 
 def broadcast(payload):
     try:
@@ -939,6 +948,10 @@ def load_credentials():
     if creds.get('ui_theme') != normalized_ui_theme:
         creds['ui_theme'] = normalized_ui_theme
         changed = True
+    normalized_route_snap = sanitize_route_snap_settings(creds.get('route_snap_settings'))
+    if creds.get('route_snap_settings') != normalized_route_snap:
+        creds['route_snap_settings'] = normalized_route_snap
+        changed = True
 
     if changed:
         save_json(CREDENTIALS_FILE, creds)
@@ -977,6 +990,84 @@ def sanitize_ui_theme(raw_theme):
 def get_ui_theme(creds=None):
     creds_obj = creds if isinstance(creds, dict) else load_credentials()
     return sanitize_ui_theme((creds_obj or {}).get('ui_theme'))
+
+def _to_bool(value, default=False):
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return bool(value)
+    if isinstance(value, str):
+        v = value.strip().lower()
+        if v in ('1', 'true', 'yes', 'on', 'enabled'):
+            return True
+        if v in ('0', 'false', 'no', 'off', 'disabled'):
+            return False
+    return bool(default)
+
+def sanitize_route_snap_settings(raw_settings):
+    settings = raw_settings if isinstance(raw_settings, dict) else {}
+    default_distance = int(DEFAULT_ROUTE_SNAP_SETTINGS['distance_m'])
+    try:
+        distance_val = int(float(settings.get('distance_m', default_distance)))
+    except (TypeError, ValueError):
+        distance_val = default_distance
+    distance_val = max(1, min(1000, distance_val))
+    return {
+        'enabled': _to_bool(settings.get('enabled'), DEFAULT_ROUTE_SNAP_SETTINGS['enabled']),
+        'distance_m': distance_val,
+        'show_range': _to_bool(settings.get('show_range'), DEFAULT_ROUTE_SNAP_SETTINGS['show_range']),
+    }
+
+def get_route_snap_settings(creds=None):
+    creds_obj = creds if isinstance(creds, dict) else load_credentials()
+    return sanitize_route_snap_settings((creds_obj or {}).get('route_snap_settings'))
+
+def sanitize_route_snap_override(raw_settings, default_settings=None):
+    fallback = sanitize_route_snap_settings(default_settings or DEFAULT_ROUTE_SNAP_SETTINGS)
+    settings = raw_settings if isinstance(raw_settings, dict) else {}
+    override_global = _to_bool(settings.get('override_global'), False)
+    try:
+        distance_val = int(float(settings.get('distance_m', fallback['distance_m'])))
+    except (TypeError, ValueError):
+        distance_val = int(fallback['distance_m'])
+    distance_val = max(1, min(1000, distance_val))
+    return {
+        'override_global': override_global,
+        'enabled': _to_bool(settings.get('enabled'), fallback['enabled']),
+        'distance_m': distance_val,
+        'show_range': _to_bool(settings.get('show_range'), fallback['show_range']),
+    }
+
+def sanitize_waypoint_list(raw_waypoints):
+    cleaned = []
+    if not isinstance(raw_waypoints, list):
+        return cleaned
+    for wp in raw_waypoints:
+        if not isinstance(wp, (list, tuple)) or len(wp) < 2:
+            continue
+        try:
+            lat = float(wp[0])
+            lng = float(wp[1])
+        except (TypeError, ValueError):
+            continue
+        if not (math.isfinite(lat) and math.isfinite(lng)):
+            continue
+        cleaned.append([lat, lng])
+    return cleaned
+
+def sanitize_follow_road_segments(raw_segments, segment_count, default_enabled=False):
+    try:
+        count = max(0, int(segment_count))
+    except (TypeError, ValueError):
+        count = 0
+    fallback = _to_bool(default_enabled, False)
+    cleaned = []
+    if isinstance(raw_segments, list):
+        for idx in range(min(len(raw_segments), count)):
+            cleaned.append(_to_bool(raw_segments[idx], fallback))
+    while len(cleaned) < count:
+        cleaned.append(fallback)
+    return cleaned
 
 def get_admin_role(admin_entry):
     if not isinstance(admin_entry, dict):
@@ -1033,6 +1124,44 @@ def current_admin_is_gold(creds=None):
 def access_denied_error():
     return {'error': 'Access denied'}
 
+# ---------- admin session tracking ----------
+def _prune_active_admin_sessions(now_ts=None):
+    now = now_ts if now_ts is not None else time.time()
+    cutoff = now - ACTIVE_ADMIN_TTL_SEC
+    with _active_admin_lock:
+        stale = [sid for sid, entry in _active_admin_sessions.items() if (entry or {}).get('last_seen', 0) < cutoff]
+        for sid in stale:
+            _active_admin_sessions.pop(sid, None)
+        return len(_active_admin_sessions)
+
+def touch_active_admin_session(username=None):
+    if not has_request_context():
+        return None
+    sess_id = session.get('admin_session_id')
+    if not sess_id:
+        sess_id = uuid.uuid4().hex
+        session['admin_session_id'] = sess_id
+    now = time.time()
+    with _active_admin_lock:
+        _active_admin_sessions[sess_id] = {
+            'username': username or session.get('admin') or 'unknown',
+            'last_seen': now
+        }
+    _prune_active_admin_sessions(now)
+    return sess_id
+
+def remove_active_admin_session():
+    if not has_request_context():
+        return
+    sess_id = session.pop('admin_session_id', None)
+    if not sess_id:
+        return
+    with _active_admin_lock:
+        _active_admin_sessions.pop(sess_id, None)
+
+def get_active_admin_count():
+    return _prune_active_admin_sessions()
+
 # ---------- auth ----------
 def login_required(fn):
     from functools import wraps
@@ -1042,8 +1171,10 @@ def login_required(fn):
             return redirect(url_for('admin_login'))
         creds = load_credentials()
         if not get_admin_record(creds, session.get('admin')):
+            remove_active_admin_session()
             session.pop('admin', None)
             return redirect(url_for('admin_login'))
+        touch_active_admin_session(session.get('admin'))
         return fn(*args, **kwargs)
     return wrapper
 
@@ -1085,12 +1216,34 @@ def admin_view():
 def admin_login():
     try:
         creds = load_credentials()
+        now_ts = int(time.time())
+
+        def get_pending_gold_login():
+            pending = session.get('pending_gold_login')
+            if not isinstance(pending, dict):
+                return None
+            username = str(pending.get('username') or '').strip()
+            try:
+                created_at = int(pending.get('created_at') or 0)
+            except (TypeError, ValueError):
+                created_at = 0
+            if not username or created_at <= 0 or (now_ts - created_at) > 300:
+                session.pop('pending_gold_login', None)
+                return None
+            admin = next((a for a in creds.get('admins', []) if a.get('username') == username), None)
+            if not admin or get_admin_role(admin) != ADMIN_ROLE_GOLD:
+                session.pop('pending_gold_login', None)
+                return None
+            return {'username': username, 'created_at': created_at}
+
         if request.method == 'GET':
+            pending_gold = get_pending_gold_login()
             return render_template(
                 'admin_login.html',
                 credentials_exist=bool(creds.get('admins')),
                 institute_name=creds.get('institute_name', 'INSTITUTE'),
-                require_gold_pin=False
+                require_gold_pin=bool(pending_gold),
+                pending_gold_username=(pending_gold.get('username') if pending_gold else '')
             )
 
         data = request.form
@@ -1101,11 +1254,13 @@ def admin_login():
         gold_login_pin = (data.get('gold_login_pin', '') or '').strip()
         error_text = None
         require_gold_pin = False
+        pending_gold_username = ''
 
         if 'admins' not in creds:
             creds['admins'] = []
 
         if action == 'signup':
+            session.pop('pending_gold_login', None)
             pin = (data.get('signup_pin', '') or '').strip()
             signup_role = role_from_signup_pin(pin, creds)
             if not signup_role:
@@ -1128,10 +1283,35 @@ def admin_login():
                 })
                 save_credentials(creds)
                 session['admin'] = username
+                touch_active_admin_session(username)
                 record_audit('admin_signup', status='success', username=username, details=f'signup_created role={signup_role}')
                 return redirect(url_for('admin_view'))
 
+        elif action == 'verify_gold_pin':
+            pending_gold = get_pending_gold_login()
+            if not pending_gold:
+                error_text = "Gold login session expired. Enter username and password again."
+                session.pop('pending_gold_login', None)
+                record_audit('admin_login', status='failed', username='anonymous', details='missing_or_expired_gold_login_session')
+            else:
+                pending_gold_username = pending_gold['username']
+                require_gold_pin = True
+                required_pin = required_login_pin_for_role(ADMIN_ROLE_GOLD, creds)
+                if not gold_login_pin:
+                    error_text = "Login pin is required."
+                    record_audit('admin_login', status='failed', username=pending_gold_username, details='missing_gold_login_pin')
+                elif gold_login_pin != required_pin:
+                    error_text = "Invalid login pin."
+                    record_audit('admin_login', status='failed', username=pending_gold_username, details='invalid_gold_login_pin')
+                else:
+                    session['admin'] = pending_gold_username
+                    session.pop('pending_gold_login', None)
+                    touch_active_admin_session(pending_gold_username)
+                    record_audit('admin_login', status='success', username=pending_gold_username, details=f'login_ok role={ADMIN_ROLE_GOLD}')
+                    return redirect(url_for('admin_view'))
+
         elif action == 'login':
+            session.pop('pending_gold_login', None)
             if not creds.get('admins'):
                 error_text = "No admin accounts exist. Please signup first."
                 record_audit('admin_login', status='failed', username=username or 'anonymous', details='no_admin_accounts')
@@ -1144,19 +1324,24 @@ def admin_login():
                     role = get_admin_role(admin)
                     if role == ADMIN_ROLE_GOLD:
                         required_pin = required_login_pin_for_role(role, creds)
-                        require_gold_pin = True
-                        if not gold_login_pin:
-                            error_text = "Login pin is required."
-                            record_audit('admin_login', status='failed', username=username, details='missing_gold_login_pin')
-                        elif gold_login_pin != required_pin:
-                            error_text = "Invalid login pin."
-                            record_audit('admin_login', status='failed', username=username, details='invalid_gold_login_pin')
+                        pending_gold_username = username
+                        if gold_login_pin:
+                            if gold_login_pin != required_pin:
+                                error_text = "Invalid login pin."
+                                require_gold_pin = True
+                                session['pending_gold_login'] = {'username': username, 'created_at': now_ts}
+                                record_audit('admin_login', status='failed', username=username, details='invalid_gold_login_pin')
+                            else:
+                                session['admin'] = username
+                                touch_active_admin_session(username)
+                                record_audit('admin_login', status='success', username=username, details=f'login_ok role={role}')
+                                return redirect(url_for('admin_view'))
                         else:
-                            session['admin'] = username
-                            record_audit('admin_login', status='success', username=username, details=f'login_ok role={role}')
-                            return redirect(url_for('admin_view'))
+                            require_gold_pin = True
+                            session['pending_gold_login'] = {'username': username, 'created_at': now_ts}
                     else:
                         session['admin'] = username
+                        touch_active_admin_session(username)
                         record_audit('admin_login', status='success', username=username, details=f'login_ok role={role}')
                         return redirect(url_for('admin_view'))
                 else:
@@ -1166,12 +1351,18 @@ def admin_login():
             error_text = "Invalid action."
             record_audit('admin_login', status='failed', username=username or 'anonymous', details='invalid_action')
 
+        if require_gold_pin and not pending_gold_username:
+            pending_gold = get_pending_gold_login()
+            pending_gold_username = pending_gold['username'] if pending_gold else ''
+            require_gold_pin = bool(pending_gold_username)
+
         return render_template(
             'admin_login.html',
             credentials_exist=bool(creds.get('admins')),
             institute_name=institute or creds.get('institute_name', 'INSTITUTE'),
             error_text=error_text,
-            require_gold_pin=require_gold_pin
+            require_gold_pin=require_gold_pin,
+            pending_gold_username=pending_gold_username
         )
     except Exception as e:
         import traceback
@@ -1182,6 +1373,7 @@ def admin_login():
 @app.route('/admin/logout')
 def admin_logout():
     username = session.get('admin') or 'anonymous'
+    remove_active_admin_session()
     session.pop('admin', None)
     record_audit('admin_logout', status='success', username=username, details='logout')
     return redirect(url_for('admin_login'))
@@ -1285,6 +1477,7 @@ def delete_admin(username):
     creds['admins'] = new
     save_credentials(creds)
     if session.get('admin') == username:
+        remove_active_admin_session()
         session.pop('admin', None)
     record_audit('admin_delete', status='success', username=actor, details=f'target={username}')
     return jsonify({'status': 'success'})
@@ -1394,6 +1587,25 @@ def update_ui_theme_settings():
     )
     return jsonify({'status': 'success', 'ui_theme': sanitized})
 
+@app.route('/admin/route-snap-settings', methods=['POST'])
+@login_required
+def update_route_snap_settings():
+    data = request.json or {}
+    sanitized = sanitize_route_snap_settings(data)
+    creds = load_credentials()
+    previous = get_route_snap_settings(creds)
+    if previous == sanitized:
+        return jsonify({'status': 'noop', 'route_snap_settings': previous})
+    creds['route_snap_settings'] = sanitized
+    save_credentials(creds)
+    record_audit(
+        'admin_route_snap_settings_update',
+        status='success',
+        username=session.get('admin') or 'anonymous',
+        details=f"enabled={sanitized.get('enabled')} distance_m={sanitized.get('distance_m')} show_range={sanitized.get('show_range')}"
+    )
+    return jsonify({'status': 'success', 'route_snap_settings': sanitized})
+
 # ---------- metrics ----------
 @app.route('/api/metrics', methods=['GET'])
 def get_metrics():
@@ -1481,6 +1693,9 @@ def admin_performance():
         'requests_total': REQUESTS_TOTAL,
         'sse_clients': sse_clients,
         'buses_count': buses_count,
+        'active_students': sse_clients,
+        'active_drivers': buses_count,
+        'active_admins': get_active_admin_count(),
         'routes_count': len(locs.get('routes', [])),
         'hostels_count': len(locs.get('hostels', [])),
         'classes_count': len(locs.get('classes', [])),
@@ -1840,19 +2055,57 @@ def get_routes():
     locs = load_json(LOCATIONS_FILE, {"hostels": [], "classes": [], "routes": []})
     return jsonify(locs.get('routes', []))
 
+@app.route('/api/route-snap-settings', methods=['GET'])
+def get_route_snap_settings_api():
+    creds = load_credentials()
+    return jsonify(get_route_snap_settings(creds))
+
 @app.route('/api/route', methods=['POST'])
 def create_route():
-    data = request.json
+    data = request.json or {}
     locs = load_json(LOCATIONS_FILE, {"hostels": [], "classes": [], "routes": []})
+    waypoints = sanitize_waypoint_list(data.get('waypoints'))
+    if len(waypoints) < 2:
+        return jsonify({'error': 'Route requires at least 2 valid waypoints'}), 400
+
+    path_points = sanitize_waypoint_list(data.get('path_points'))
+    if len(path_points) < 2:
+        path_points = [list(wp) for wp in waypoints]
+
+    stops_raw = data.get('stops', [])
+    stops = []
+    if isinstance(stops_raw, list):
+        for idx in range(min(len(stops_raw), len(waypoints))):
+            v = stops_raw[idx]
+            stops.append(str(v).strip() if v is not None else '')
+    while len(stops) < len(waypoints):
+        stops.append('')
+
+    route_id = str(data.get('id') or f"route_{len(locs.get('routes', [])) + 1}")
+    route_name = str(data.get('name') or '').strip()
+    if not route_name:
+        return jsonify({'error': 'Route name is required'}), 400
+    color = str(data.get('color') or '#FF5722').strip() or '#FF5722'
+    follow_roads_input = _to_bool(data.get('follow_roads'), False)
+    follow_roads_segments = sanitize_follow_road_segments(data.get('follow_roads_segments'), len(waypoints) - 1, follow_roads_input)
+    follow_roads = any(follow_roads_segments)
+    creds = load_credentials()
+    global_snap = get_route_snap_settings(creds)
+    route_snap = sanitize_route_snap_override(data.get('snap_settings'), global_snap)
+
     route = {
-        'id': data.get('id', f"route_{len(locs.get('routes', [])) + 1}"),
-        'name': data['name'],
-        'waypoints': data['waypoints'],
-        'stops': data.get('stops', []),
-        'color': data.get('color', '#FF5722')
+        'id': route_id,
+        'name': route_name,
+        'waypoints': waypoints,
+        'path_points': path_points,
+        'stops': stops,
+        'color': color,
+        'follow_roads': follow_roads,
+        'follow_roads_segments': follow_roads_segments,
+        'snap_settings': route_snap,
     }
     routes = locs.get('routes', [])
-    idx = next((i for i, r in enumerate(routes) if r['id'] == route['id']), -1)
+    idx = next((i for i, r in enumerate(routes) if str(r.get('id')) == str(route['id'])), -1)
     if idx >= 0:
         routes[idx] = route
     else:
