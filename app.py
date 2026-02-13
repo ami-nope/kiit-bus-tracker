@@ -1744,10 +1744,16 @@ def admin_performance_export():
             status = str(entry.get('status') or '--').replace('\n', ' ').replace('\r', ' ')
             ip = str(entry.get('ip') or '--').replace('\n', ' ').replace('\r', ' ')
             details = str(entry.get('details') or '--').replace('\n', ' ').replace('\r', ' ')
+            ts_md = ts.replace('|', '\\|')
+            user_md = user.replace('|', '\\|')
+            event_md = event.replace('|', '\\|')
+            status_md = status.replace('|', '\\|')
+            ip_md = ip.replace('|', '\\|')
+            details_md = details.replace('|', '\\|')
             lines.append(
-                f'| {ts.replace("|", "\\|")} | {user.replace("|", "\\|")} | '
-                f'{event.replace("|", "\\|")} | {status.replace("|", "\\|")} | '
-                f'{ip.replace("|", "\\|")} | {details.replace("|", "\\|")} |'
+                f'| {ts_md} | {user_md} | '
+                f'{event_md} | {status_md} | '
+                f'{ip_md} | {details_md} |'
             )
         body = '\n'.join(lines) + '\n'
         mimetype = 'text/markdown'
