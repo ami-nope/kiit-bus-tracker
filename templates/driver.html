@@ -193,6 +193,22 @@
         let driverRouteLine = null;
         let routesLayer = null;
         let routesPolylinesMap = {};
+        const BHUBANESWAR_CORE_BOUNDS = L.latLngBounds([20.195, 85.74], [20.44, 85.93]);
+        const BHUBANESWAR_PADDING_KM = 10;
+        let driverBoundaryRect = null;
+
+        function expandBoundsByKm(bounds, km) {
+            const center = bounds.getCenter();
+            const latPad = km / 110.574;
+            const lngDenom = 111.320 * Math.max(0.2, Math.cos(center.lat * Math.PI / 180));
+            const lngPad = km / lngDenom;
+            return L.latLngBounds(
+                [bounds.getSouth() - latPad, bounds.getWest() - lngPad],
+                [bounds.getNorth() + latPad, bounds.getEast() + lngPad]
+            );
+        }
+
+        const BHUBANESWAR_LIMIT_BOUNDS = expandBoundsByKm(BHUBANESWAR_CORE_BOUNDS, BHUBANESWAR_PADDING_KM);
         // Buildings (hostels/classes) removed from driver map
 
         
@@ -286,9 +302,23 @@
             if(driverMap) return;
             const center = (allRoutes && allRoutes[0] && allRoutes[0].waypoints && allRoutes[0].waypoints[0]) ? [allRoutes[0].waypoints[0][0], allRoutes[0].waypoints[0][1]] : [20.355,85.819];
             try{
-                driverMap = L.map('driverMap', { zoomControl: false }).setView(center, 15);
+                driverMap = L.map('driverMap', {
+                    zoomControl: false,
+                    maxBounds: BHUBANESWAR_LIMIT_BOUNDS,
+                    maxBoundsViscosity: 1.0
+                }).setView(center, 15);
                 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', { maxZoom:19 }).addTo(driverMap);
                 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png', { maxZoom:19, attribution:'' }).addTo(driverMap);
+                if (!driverBoundaryRect) {
+                    driverBoundaryRect = L.rectangle(BHUBANESWAR_LIMIT_BOUNDS, {
+                        color: '#22c55e',
+                        weight: 2,
+                        opacity: 0.82,
+                        fill: false,
+                        dashArray: '8,6',
+                        interactive: false
+                    }).addTo(driverMap);
+                }
             }catch(e){ console.warn('Leaflet init failed', e); }
         }
 

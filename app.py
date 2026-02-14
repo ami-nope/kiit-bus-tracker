@@ -118,6 +118,14 @@ def detect_stop_info(bus_id, lat, lng, route_id):
     return result
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+_requested_data_dir = str(os.environ.get('DATA_DIR', BASE_DIR) or BASE_DIR).strip()
+if not os.path.isabs(_requested_data_dir):
+    _requested_data_dir = os.path.join(BASE_DIR, _requested_data_dir)
+try:
+    os.makedirs(_requested_data_dir, exist_ok=True)
+    DATA_DIR = _requested_data_dir
+except Exception:
+    DATA_DIR = BASE_DIR
 
 app = Flask(__name__)
 app.config['WTF_CSRF_ENABLED'] = False
@@ -136,10 +144,15 @@ app.config.update(
 )
 
 # ---------- file paths ----------
-BUSES_FILE = os.path.join(BASE_DIR, 'buses_location.json')
-LOCATIONS_FILE = os.path.join(BASE_DIR, 'locations.json')
-CREDENTIALS_FILE = os.path.join(BASE_DIR, 'credentials.json')
-AUDIT_FILE = os.path.join(BASE_DIR, 'admin_audit.json')
+BUSES_FILE_NAME = 'buses_location.json'
+LOCATIONS_FILE_NAME = 'locations.json'
+CREDENTIALS_FILE_NAME = 'credentials.json'
+AUDIT_FILE_NAME = 'admin_audit.json'
+
+BUSES_FILE = os.path.join(DATA_DIR, BUSES_FILE_NAME)
+LOCATIONS_FILE = os.path.join(DATA_DIR, LOCATIONS_FILE_NAME)
+CREDENTIALS_FILE = os.path.join(DATA_DIR, CREDENTIALS_FILE_NAME)
+AUDIT_FILE = os.path.join(DATA_DIR, AUDIT_FILE_NAME)
 
 PIN_ADMIN_SIGNUP = 'admin_signup_pin'
 PIN_GOLD_SIGNUP = 'gold_signup_pin'
@@ -303,12 +316,40 @@ def _update_credentials_cache(payload):
 
 def ensure_files():
     if not os.path.exists(BUSES_FILE):
+        legacy = os.path.join(BASE_DIR, BUSES_FILE_NAME)
+        if os.path.abspath(legacy) != os.path.abspath(BUSES_FILE) and os.path.exists(legacy):
+            try:
+                shutil.copy2(legacy, BUSES_FILE)
+            except Exception:
+                pass
+    if not os.path.exists(BUSES_FILE):
         save_json(BUSES_FILE, {})
+    if not os.path.exists(LOCATIONS_FILE):
+        legacy = os.path.join(BASE_DIR, LOCATIONS_FILE_NAME)
+        if os.path.abspath(legacy) != os.path.abspath(LOCATIONS_FILE) and os.path.exists(legacy):
+            try:
+                shutil.copy2(legacy, LOCATIONS_FILE)
+            except Exception:
+                pass
     if not os.path.exists(LOCATIONS_FILE):
         save_locations(copy.deepcopy(DEFAULT_LOCATIONS_PAYLOAD))
     if not os.path.exists(CREDENTIALS_FILE):
+        legacy = os.path.join(BASE_DIR, CREDENTIALS_FILE_NAME)
+        if os.path.abspath(legacy) != os.path.abspath(CREDENTIALS_FILE) and os.path.exists(legacy):
+            try:
+                shutil.copy2(legacy, CREDENTIALS_FILE)
+            except Exception:
+                pass
+    if not os.path.exists(CREDENTIALS_FILE):
         save_json(CREDENTIALS_FILE, copy.deepcopy(DEFAULT_CREDENTIALS_PAYLOAD))
         _update_credentials_cache(copy.deepcopy(DEFAULT_CREDENTIALS_PAYLOAD))
+    if not os.path.exists(AUDIT_FILE):
+        legacy = os.path.join(BASE_DIR, AUDIT_FILE_NAME)
+        if os.path.abspath(legacy) != os.path.abspath(AUDIT_FILE) and os.path.exists(legacy):
+            try:
+                shutil.copy2(legacy, AUDIT_FILE)
+            except Exception:
+                pass
     if not os.path.exists(AUDIT_FILE):
         save_json(AUDIT_FILE, [])
 

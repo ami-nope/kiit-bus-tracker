@@ -801,6 +801,21 @@ let bus = null;
 let currentRouteId = null;
 let simRunning = false;
 const DEFAULT_MAP_ZOOM = 17;
+const BHUBANESWAR_CORE_BOUNDS = L.latLngBounds([20.195, 85.74], [20.44, 85.93]);
+const BHUBANESWAR_PADDING_KM = 10;
+
+function expandBoundsByKm(bounds, km) {
+  const center = bounds.getCenter();
+  const latPad = km / 110.574;
+  const lngDenom = 111.320 * Math.max(0.2, Math.cos(center.lat * Math.PI / 180));
+  const lngPad = km / lngDenom;
+  return L.latLngBounds(
+    [bounds.getSouth() - latPad, bounds.getWest() - lngPad],
+    [bounds.getNorth() + latPad, bounds.getEast() + lngPad]
+  );
+}
+
+const BHUBANESWAR_LIMIT_BOUNDS = expandBoundsByKm(BHUBANESWAR_CORE_BOUNDS, BHUBANESWAR_PADDING_KM);
 
 // Physics
 const BOOST = 2.5;           // shift multiplier
@@ -898,9 +913,20 @@ function snapToNearestRoutePoint() {
 }
 
 // --- Map ---
-const map = L.map("map").setView([lat, lng], DEFAULT_MAP_ZOOM);
+const map = L.map("map", {
+  maxBounds: BHUBANESWAR_LIMIT_BOUNDS,
+  maxBoundsViscosity: 1.0
+}).setView([lat, lng], DEFAULT_MAP_ZOOM);
 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', { maxZoom:19 }).addTo(map);
 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png', { maxZoom:19 }).addTo(map);
+L.rectangle(BHUBANESWAR_LIMIT_BOUNDS, {
+  color: '#22c55e',
+  weight: 2,
+  opacity: 0.82,
+  fill: false,
+  dashArray: '8,6',
+  interactive: false
+}).addTo(map);
 
 const marker = L.circleMarker([lat, lng], {
   radius: 8, color: '#34d399', weight: 3, fillColor: '#34d399', fillOpacity: 0.9

@@ -3680,6 +3680,9 @@
         const AUTO_PAN_PADDING_PX = 80;
         const DEFAULT_TILE_ZOOM = 16;
         const MIN_AUTO_FIT_ZOOM = 16;
+        const BHUBANESWAR_CORE_BOUNDS = L.latLngBounds([20.195, 85.74], [20.44, 85.93]);
+        const BHUBANESWAR_PADDING_KM = 10;
+        const BHUBANESWAR_LIMIT_BOUNDS = expandBoundsByKm(BHUBANESWAR_CORE_BOUNDS, BHUBANESWAR_PADDING_KM);
         const SPATIAL_SYNC_MIN_GAP_MS = 180;
         const DESTINATION_PRESETS = {
             'campus gate': { label: 'Campus Gate', lat: 20.3529, lng: 85.8182 },
@@ -3712,6 +3715,17 @@
         let routeStackFlowMomentumRaf = null;
         let routeStackFlowMomentumVelocity = 0;
         const busEtaTrendCache = {}; // busNum -> { etaSec, ts }
+
+        function expandBoundsByKm(bounds, km) {
+            const center = bounds.getCenter();
+            const latPad = km / 110.574;
+            const lngDenom = 111.320 * Math.max(0.2, Math.cos(center.lat * Math.PI / 180));
+            const lngPad = km / lngDenom;
+            return L.latLngBounds(
+                [bounds.getSouth() - latPad, bounds.getWest() - lngPad],
+                [bounds.getNorth() + latPad, bounds.getEast() + lngPad]
+            );
+        }
 
         // Cached DOM element refs - populated once in initMap, avoids getElementById in hot paths
         const _dom = {};
@@ -7014,9 +7028,19 @@
                 preferCanvas: true,
                 markerZoomAnimation: false,
                 fadeAnimation: false,
-                zoomAnimation: !isLowPerfMode()
+                zoomAnimation: !isLowPerfMode(),
+                maxBounds: BHUBANESWAR_LIMIT_BOUNDS,
+                maxBoundsViscosity: 1.0
             }).setView([20.3549, 85.8161], DEFAULT_TILE_ZOOM);
             setMapTiles(true);
+            L.rectangle(BHUBANESWAR_LIMIT_BOUNDS, {
+                color: '#22c55e',
+                weight: 2,
+                opacity: 0.8,
+                fill: false,
+                dashArray: '8,6',
+                interactive: false
+            }).addTo(map);
             refreshMapStatusPanel();
             ensureTrailPane();
             if (trailRefreshTimerId) { clearInterval(trailRefreshTimerId); trailRefreshTimerId = null; }
