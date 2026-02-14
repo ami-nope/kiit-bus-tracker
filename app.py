@@ -702,9 +702,17 @@ _bus_destination_ts = {}  # bus_id -> monotonic timestamp when destination reach
 
 def _init_app():
     global _buses, _worker_started, _audit_logs
+    init_t0 = time.perf_counter()
+    app.logger.info('_init_app start')
+    step_t0 = time.perf_counter()
     ensure_files()
+    app.logger.info('_init_app ensure_files done in %.1fms', (time.perf_counter() - step_t0) * 1000.0)
+    step_t0 = time.perf_counter()
     raw = load_json(BUSES_FILE, {})
+    app.logger.info('_init_app load buses json done in %.1fms', (time.perf_counter() - step_t0) * 1000.0)
+    step_t0 = time.perf_counter()
     logs = load_json(AUDIT_FILE, [])
+    app.logger.info('_init_app load audit json done in %.1fms', (time.perf_counter() - step_t0) * 1000.0)
     _audit_logs = prune_audit_logs(logs if isinstance(logs, list) else [])
     if _audit_logs != (logs if isinstance(logs, list) else []):
         save_json(AUDIT_FILE, _audit_logs)
@@ -724,13 +732,27 @@ def _init_app():
     if not _worker_started:
         _worker_started = True
         threading.Thread(target=_sync_worker, daemon=True).start()
+    app.logger.info('_init_app done in %.1fms', (time.perf_counter() - init_t0) * 1000.0)
 
 @app.before_request
 def _before():
     global REQUESTS_TOTAL, BANDWIDTH_IN_BYTES
+    trace = None
+    try:
+        if request.path in ('/', '/student'):
+            trace = uuid.uuid4().hex[:8]
+            request.environ['root_trace_id'] = trace
+            app.logger.info('[req:%s] before_request start path=%s', trace, request.path)
+    except Exception:
+        trace = None
     if not hasattr(app, '_ready'):
+        ready_t0 = time.perf_counter()
+        if trace:
+            app.logger.info('[req:%s] app not ready, running _init_app', trace)
         _init_app()
         app._ready = True
+        if trace:
+            app.logger.info('[req:%s] _init_app finished in %.1fms', trace, (time.perf_counter() - ready_t0) * 1000.0)
     REQUESTS_TOTAL += 1
     try:
         in_len = request.content_length
@@ -896,10 +918,14 @@ def sse_events():
                     })
 
 # ---------- credentials helpers ----------
-def load_credentials():
+def load_credentials(persist_changes=True):
+    t0 = time.perf_counter()
     default_creds = {"admins": [], "institute_name": "INSTITUTE"}
     creds = load_json(CREDENTIALS_FILE, default_creds)
     if not isinstance(creds, dict):
+        elapsed_ms = (time.perf_counter() - t0) * 1000.0
+        if elapsed_ms > 120:
+            app.logger.warning('load_credentials non-dict fallback in %.1fms', elapsed_ms)
         return dict(default_creds)
 
     changed = False
@@ -953,8 +979,15 @@ def load_credentials():
         creds['route_snap_settings'] = normalized_route_snap
         changed = True
 
-    if changed:
+    if changed and persist_changes:
+        save_t0 = time.perf_counter()
         save_json(CREDENTIALS_FILE, creds)
+        save_elapsed_ms = (time.perf_counter() - save_t0) * 1000.0
+        if save_elapsed_ms > 120:
+            app.logger.warning('load_credentials save_json slow: %.1fms', save_elapsed_ms)
+    total_elapsed_ms = (time.perf_counter() - t0) * 1000.0
+    if total_elapsed_ms > 120:
+        app.logger.warning('load_credentials total slow: %.1fms changed=%s', total_elapsed_ms, changed)
     return creds
 
 def save_credentials(data):
@@ -1184,18 +1217,38 @@ def health_check():
     return 'OK', 200
 
 @app.route('/')
+def test_root():
+    plain_root = str(os.environ.get('ROOT_PLAIN_TEXT_DEBUG', '')).strip().lower() in ('1', 'true', 'yes')
+    if plain_root:
+        app.logger.info('GET / -> plain text fallback route')
+        return 'server running', 200
+    return _render_student_view()
+
+def _render_student_view():
+    trace = request.environ.get('root_trace_id') or uuid.uuid4().hex[:8]
+    app.logger.info('[student_view:%s] start', trace)
+    creds_t0 = time.perf_counter()
+    creds = load_credentials(persist_changes=False)
+    creds_ms = (time.perf_counter() - creds_t0) * 1000.0
+    app.logger.info('[student_view:%s] load_credentials done in %.1fms', trace, creds_ms)
+    template_t0 = time.perf_counter()
+    rendered = render_template('student.html', institute_name=creds.get('institute_name', 'INSTITUTE'))
+    template_ms = (time.perf_counter() - template_t0) * 1000.0
+    app.logger.info('[student_view:%s] render_template done in %.1fms', trace, template_ms)
+    return rendered
+
+@app.route('/student')
 def student_view():
-    creds = load_credentials()
-    return render_template('student.html', institute_name=creds.get('institute_name', 'INSTITUTE'))
+    return _render_student_view()
 
 @app.route('/driver')
 def driver_view():
-    creds = load_credentials()
+    creds = load_credentials(persist_changes=False)
     return render_template('driver.html', institute_name=creds.get('institute_name', 'INSTITUTE'))
 
 @app.route('/simulator')
 def simulator_view():
-    creds = load_credentials()
+    creds = load_credentials(persist_changes=False)
     return render_template('simulator.html', institute_name=creds.get('institute_name', 'INSTITUTE'))
 
 @app.route('/admin')
