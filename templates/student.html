@@ -332,6 +332,59 @@
         }
         .header-brand {
             min-width: 0;
+            display: flex;
+            align-items: center;
+        }
+        .brand-tile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            border-radius: var(--apple-radius-md);
+            border: 1px solid rgba(172, 132, 255, 0.42);
+            background:
+                linear-gradient(155deg, rgba(13, 15, 25, 0.96), rgba(16, 12, 31, 0.94));
+            box-shadow:
+                0 10px 24px rgba(2, 8, 20, 0.40),
+                inset 0 1px 0 rgba(255,255,255,0.08),
+                0 0 0 1px rgba(0,0,0,0.25);
+            backdrop-filter: blur(8px) saturate(120%);
+            -webkit-backdrop-filter: blur(8px) saturate(120%);
+        }
+        .brand-logo-wrap {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(190, 155, 255, 0.34);
+            background: linear-gradient(165deg, rgba(38, 31, 66, 0.9), rgba(21, 17, 36, 0.9));
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.10);
+            flex: 0 0 auto;
+        }
+        .brand-logo-wrap img {
+            width: 30px;
+            height: 30px;
+            display: block;
+            filter: drop-shadow(0 2px 4px rgba(95, 74, 160, 0.34));
+        }
+        .brand-text {
+            min-width: 0;
+        }
+        .header .brand-text h1 {
+            margin: 0;
+            font-size: 21px;
+            line-height: 1.15;
+            letter-spacing: -0.02em;
+            color: #f5f8ff;
+        }
+        .header .brand-text p {
+            margin: 2px 0 0 0;
+            font-size: 11px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #aeb8cf;
         }
         .header-assistant-slot {
             min-width: 0;
@@ -3299,8 +3352,15 @@
 <body class="app-shell">
     <div class="header">
         <div class="header-brand">
-            <h1><span class="icon">&#128652;</span>Campus Transport System</h1>
-            <p>Powered by KIIT Transport Live tracking-Ami</p>
+            <div class="brand-tile" aria-label="Campus Transport System">
+                <span class="brand-logo-wrap">
+                    <img src="{{ url_for('static', filename='favicons/favicon-student.svg') }}" alt="Campus Transport Logo">
+                </span>
+                <div class="brand-text">
+                    <h1>Campus Transport System</h1>
+                    <p>KIIT Transport Live Tracking</p>
+                </div>
+            </div>
         </div>
         <div class="header-assistant-slot">
             <div class="assistant-panel search-panel" id="assistantPanel">
