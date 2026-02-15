@@ -1,1985 +1,5 @@
 [
   {
-    "ts": "2026-02-13T01:16:46.647209Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/112 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:46.671289Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/113 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:46.685680Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/114 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:46.704700Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/115 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:46.720891Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/116 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:46.733432Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/117 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:46.746880Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/118 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:46.760193Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/119 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:46.845780Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=GET path=/api/buses status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:47.468236Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/100 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:47.481462Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/101 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:47.494910Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/102 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:47.508414Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/103 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:47.522169Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/104 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:47.535770Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/105 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:47.554582Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/106 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:47.567377Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/107 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:47.581503Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/108 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:47.596938Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/109 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:47.610612Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/110 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:47.623804Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/111 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:47.636537Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/112 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:47.656475Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/113 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:47.671684Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/114 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:47.685239Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/115 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:47.702100Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/116 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:47.716814Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/117 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:47.731440Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/118 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:47.747222Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/119 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:48.039161Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=GET path=/api/buses status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:48.471841Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/100 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:48.484248Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/101 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:48.497157Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/102 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:48.510009Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/103 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:48.527063Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/104 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:48.540293Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/105 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:48.559926Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/106 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:48.574073Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/107 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:48.589357Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/108 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:48.603518Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/109 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:48.616713Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/110 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:48.629754Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/111 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:48.643762Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/112 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:48.663733Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/113 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:48.676748Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/114 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:48.688260Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/115 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:48.700698Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/116 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:48.714326Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/117 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:48.728778Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/118 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:48.742497Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/119 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:49.244379Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=GET path=/api/buses status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:49.384716Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/100 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:49.399005Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/101 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:49.413974Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/102 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:49.429927Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/103 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:49.445781Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/104 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:49.460679Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/105 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:49.479344Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/106 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:49.492136Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/107 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:49.504662Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/108 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:49.518558Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/109 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:49.531729Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/110 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:49.544370Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/111 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:49.557821Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/112 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:49.576221Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/113 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:49.588912Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/114 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:49.602934Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/115 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:49.616944Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/116 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:49.629755Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/117 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:49.641744Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/118 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:49.653673Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/119 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:49.665958Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/100 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:49.687730Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/101 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:49.699472Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/102 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:49.712862Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/103 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:49.725206Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/104 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:49.737586Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/105 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:49.751276Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/106 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:49.763512Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/107 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:49.781179Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/108 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:49.794866Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/109 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:49.806845Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/110 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:49.820970Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/111 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:49.833647Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/112 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:50.094622Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/100 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:50.106358Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/101 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:50.117782Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/102 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:50.130785Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/103 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:50.144136Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/104 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:50.156682Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/105 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:50.175033Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/106 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:50.186642Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/107 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:50.199999Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/108 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:50.212411Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/109 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:50.227165Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/110 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:50.244579Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/111 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:50.259669Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/112 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:50.279854Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/113 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:50.292814Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/114 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:50.304401Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/115 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:50.318229Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/116 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:50.329933Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/117 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:50.343440Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/118 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:50.355659Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/119 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:50.596271Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/100 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:50.607816Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/101 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:50.619309Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/102 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:50.632696Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/103 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:50.645693Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/104 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:50.657509Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/105 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:50.674341Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/106 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:50.686708Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/107 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:50.699011Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/108 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:50.711906Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/109 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:50.723204Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/110 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:50.736084Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/111 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:50.748734Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/112 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:50.766325Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/113 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:50.779059Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/114 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:50.791243Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/115 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:50.805207Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/116 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:50.817952Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/117 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:50.830594Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/118 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:50.842124Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/119 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.094745Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/100 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.106394Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/101 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.117903Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/102 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.129929Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/103 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.141033Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/104 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.152294Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/105 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.170113Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/106 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.184256Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/107 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.197276Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/108 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.208503Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/109 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.220283Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/110 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.232469Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/111 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.248588Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/112 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.267185Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/113 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.279883Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/114 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.291073Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/115 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.304942Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/116 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.316559Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/117 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.329214Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/118 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.341257Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=POST path=/api/bus/119 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.355857Z",
-    "event": "Deleted transport",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "bus=100 route=route_1770557690099 lat=20.350160162851683 lng=85.81652561869547",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.366120Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=DELETE path=/api/bus/100 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.383428Z",
-    "event": "Deleted transport",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "bus=101 route=route_1770557136564 lat=20.349332744249065 lng=85.81939653142013",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.391960Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=DELETE path=/api/bus/101 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.403547Z",
-    "event": "Deleted transport",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "bus=102 route=route_1770557136564 lat=20.349682079648613 lng=85.81792401283789",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.411859Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=DELETE path=/api/bus/102 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.423535Z",
-    "event": "Deleted transport",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "bus=103 route=route_1770557136564 lat=20.35068174150385 lng=85.81944003982639",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.432079Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=DELETE path=/api/bus/103 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.443060Z",
-    "event": "Deleted transport",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "bus=104 route=route_1770557136564 lat=20.351021881228956 lng=85.81588531935736",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.451413Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=DELETE path=/api/bus/104 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.461517Z",
-    "event": "Deleted transport",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "bus=105 route=route_1770557136564 lat=20.351036377854157 lng=85.81500152665319",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.470852Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=DELETE path=/api/bus/105 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.483884Z",
-    "event": "Deleted transport",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "bus=106 route=route_1770557690099 lat=20.352067928355364 lng=85.81929943062906",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.492448Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=DELETE path=/api/bus/106 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.503295Z",
-    "event": "Deleted transport",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "bus=107 route=route_1770557690099 lat=20.350203631640664 lng=85.8163688981806",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.513220Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=DELETE path=/api/bus/107 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.530195Z",
-    "event": "Deleted transport",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "bus=108 route=route_1770557136564 lat=20.355227624312352 lng=85.81942498144132",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.539243Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=DELETE path=/api/bus/108 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.550848Z",
-    "event": "Deleted transport",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "bus=109 route=route_1770875818214 lat=20.356818941474284 lng=85.81937768250282",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.559040Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=DELETE path=/api/bus/109 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.569184Z",
-    "event": "Deleted transport",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "bus=110 route=route_1770875818214 lat=20.347879390632144 lng=85.8071444531622",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.579129Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=DELETE path=/api/bus/110 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.591351Z",
-    "event": "Deleted transport",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "bus=111 route=route_1770875818214 lat=20.34959000553905 lng=85.8071423347525",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.600889Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=DELETE path=/api/bus/111 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.612081Z",
-    "event": "Deleted transport",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "bus=112 route=route_1770875818214 lat=20.354160988748067 lng=85.8193508858761",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.620681Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=DELETE path=/api/bus/112 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.631468Z",
-    "event": "Deleted transport",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "bus=113 route=route_1770557690099 lat=20.350807016109076 lng=85.81474921869425",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.641144Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=DELETE path=/api/bus/113 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.654056Z",
-    "event": "Deleted transport",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "bus=114 route=route_1770557136564 lat=20.351255448157023 lng=85.81297557519609",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.662916Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=DELETE path=/api/bus/114 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.673904Z",
-    "event": "Deleted transport",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "bus=115 route=route_1770557136564 lat=20.349528977209978 lng=85.81834720174328",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.682763Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=DELETE path=/api/bus/115 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.698378Z",
-    "event": "Deleted transport",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "bus=116 route=route_1770557136564 lat=20.355619051982547 lng=85.8194258585885",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.707326Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=DELETE path=/api/bus/116 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.719538Z",
-    "event": "Deleted transport",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "bus=117 route=route_1770557690099 lat=20.349465721194743 lng=85.81934743774355",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.727858Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=DELETE path=/api/bus/117 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.739035Z",
-    "event": "Deleted transport",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "bus=118 route=route_1770557690099 lat=20.349520323054065 lng=85.8183792008429",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.747598Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=DELETE path=/api/bus/118 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.759442Z",
-    "event": "Deleted transport",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "bus=119 route=route_1770875818214 lat=20.353374366085298 lng=85.81216566787838",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:51.768161Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=DELETE path=/api/bus/119 status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:53.254862Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=GET path=/admin/performance status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:53.740399Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=GET path=/api/buses status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:54.935235Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=GET path=/api/buses status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:55.166662Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=GET path=/ status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:55.242225Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=GET path=/api/buses status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:55.255510Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=GET path=/api/bus-routes status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:55.268659Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=GET path=/api/routes status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:55.572636Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=GET path=/api/hostels status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:55.583246Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=GET path=/api/classes status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:56.149532Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=GET path=/api/metrics status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:56.455795Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=GET path=/api/buses status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:57.643332Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=GET path=/api/buses status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:16:58.844637Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=GET path=/api/buses status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:17:00.047142Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=GET path=/api/buses status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:17:01.271867Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=GET path=/api/buses status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:17:02.450200Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=GET path=/api/buses status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:17:03.655849Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=GET path=/api/buses status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:17:04.855569Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=GET path=/api/buses status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:17:06.048166Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=GET path=/api/buses status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:17:07.245695Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=GET path=/api/buses status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:17:08.446828Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=GET path=/api/buses status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:17:09.648385Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=GET path=/api/buses status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:17:27.644085Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=GET path=/api/buses status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:17:28.845605Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=GET path=/api/buses status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:17:30.038578Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=GET path=/api/buses status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:17:31.239007Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=GET path=/api/buses status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:17:32.442153Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=GET path=/api/buses status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:17:33.644079Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=GET path=/api/buses status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:17:34.846429Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=GET path=/api/buses status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:17:36.048034Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=GET path=/api/buses status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:17:37.240284Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=GET path=/api/buses status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:17:49.384158Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=GET path=/api/buses status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:17:50.579499Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=GET path=/api/buses status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:17:51.778737Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=GET path=/api/buses status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:18:02.105168Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=GET path=/api/buses status=200",
-    "ua": ""
-  },
-  {
-    "ts": "2026-02-13T01:18:03.302526Z",
-    "event": "admin_request",
-    "status": "success",
-    "username": "ami_nope",
-    "ip": "10.5.96.154",
-    "details": "method=GET path=/api/buses status=200",
-    "ua": ""
-  },
-  {
     "ts": "2026-02-13T01:18:04.500726Z",
     "event": "admin_request",
     "status": "success",
@@ -17997,6 +16017,1986 @@
     "username": "koko",
     "ip": "127.0.0.1",
     "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T04:22:29.163493Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/ status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T04:22:29.306329Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/ui-theme status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T04:22:29.314253Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/route-snap-settings status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T04:22:29.380636Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T04:22:29.386634Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T04:22:29.400375Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/bus-routes status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T04:22:29.408187Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/routes status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T04:22:29.731523Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/hostels status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T04:22:29.736881Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/classes status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T04:22:30.298054Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/metrics status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T04:22:30.593893Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T04:22:31.794474Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T04:22:32.994092Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T04:22:33.752036Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:58:31.577808Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/ status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:58:31.719022Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/ui-theme status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:58:31.730589Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/route-snap-settings status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:58:31.781728Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:58:31.791981Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:58:31.804815Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/bus-routes status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:58:31.814186Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/routes status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:58:32.125106Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/hostels status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:58:32.133754Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/classes status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:58:32.698755Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/metrics status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:58:32.992305Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:58:34.191726Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:58:35.390299Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:58:36.592119Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:58:37.791538Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:58:38.990762Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:58:40.195598Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:58:41.451408Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:58:41.463811Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:58:42.667185Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:58:44.247023Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:58:47.366639Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:58:47.380984Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:58:48.558466Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:58:49.760482Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:58:50.957601Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:58:52.158098Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:58:53.357720Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:58:54.940569Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/ status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:58:55.082246Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/ui-theme status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:58:55.092665Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/route-snap-settings status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:58:55.112854Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:58:55.122253Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:58:55.131762Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/bus-routes status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:58:55.143207Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/routes status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:58:55.455706Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/hostels status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:58:55.463836Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/classes status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:58:56.035388Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/metrics status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:58:56.248923Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:58:56.324333Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:58:57.525834Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:58:58.724101Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:58:59.924334Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:59:01.125174Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:59:01.969198Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:59:01.978556Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:59:03.164763Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:59:04.373013Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:59:05.566235Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:59:06.767113Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:59:07.242510Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:59:08.253504Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:59:19.252600Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:59:20.259070Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:59:31.253111Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:59:32.251315Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:59:32.763790Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:59:32.772497Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:59:38.418041Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:59:38.428168Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:59:43.251536Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:59:44.246351Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:59:55.251416Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:59:56.245633Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:59:58.493832Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:59:58.502364Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T06:59:59.693287Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:00:00.893030Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:00:02.092588Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:00:07.251838Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:00:08.250843Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:00:20.259164Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:00:32.254387Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:00:44.248944Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:00:56.252959Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:01:11.247840Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:01:11.253812Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:02:11.259541Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:02:11.265537Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:03:11.259802Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:03:11.265484Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:04:11.248137Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:04:11.254051Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:05:11.252247Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:05:11.258078Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:06:11.248838Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:06:11.255012Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:06:50.696174Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:06:50.708863Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:06:51.898759Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:06:53.099588Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:06:54.300490Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:06:56.225470Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:06:56.235750Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:06:57.432411Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:07:03.752728Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:07:03.764502Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:07:07.909173Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:07:07.918098Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:07:09.106489Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:07:09.884064Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/ status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:07:09.892185Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:07:10.201153Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/ui-theme status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:07:10.209194Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/route-snap-settings status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:07:10.381443Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:07:10.389687Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:07:10.400690Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/bus-routes status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:07:10.408847Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/routes status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:07:10.716826Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/hostels status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:07:10.725239Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/classes status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:07:11.252615Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:07:11.298893Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/metrics status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:07:11.594814Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:07:12.797680Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:07:13.310084Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:07:13.321999Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:07:14.455740Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:07:15.657717Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:07:16.857636Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:07:17.878276Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:07:17.888552Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:07:19.072953Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:07:20.278256Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:07:21.478054Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:07:22.382238Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:07:22.681645Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:07:23.881883Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:07:35.252630Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:07:47.254295Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:07:59.243927Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:08:02.813279Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:08:02.824406Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:08:04.017053Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:08:05.215974Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:08:06.435549Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:08:07.615809Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:08:08.814664Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:08:10.015676Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:08:10.382721Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:08:11.215272Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:08:11.249161Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:08:12.416269Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:08:13.617388Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:08:15.575395Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:08:15.585212Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:08:16.776340Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:08:17.977283Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:08:19.183959Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:08:20.379301Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:08:21.582112Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:08:22.939231Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:08:22.950536Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:08:35.269393Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:08:47.255792Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:08:59.250237Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:09:11.250758Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:09:11.256990Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:09:23.251005Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:10:11.251450Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:10:11.257683Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:11:11.251647Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:11:11.257512Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:12:11.249042Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:12:11.255424Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:13:04.238910Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:13:04.252527Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:13:05.437859Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:13:06.159793Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:13:06.169953Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/ status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:13:06.407732Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/ui-theme status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:13:06.416436Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/route-snap-settings status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:13:06.587210Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:13:06.595860Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:13:06.606602Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/bus-routes status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:13:06.615588Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/routes status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:13:06.922897Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/hostels status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:13:06.931719Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/classes status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:13:07.504077Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/metrics status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:13:07.795641Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:13:09.002875Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:13:10.204359Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:13:11.251911Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:13:11.401978Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:13:12.603404Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:13:13.671565Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/admin/login status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:13:19.244033Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:13:26.773492Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "koko",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/admin/login status=200 action=login",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:13:31.112060Z",
+    "event": "admin_login",
+    "status": "success",
+    "username": "ami_nope",
+    "ip": "127.0.0.1",
+    "details": "login_ok role=gold",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:13:31.119079Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "ami_nope",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/admin/login status=302 action=verify_gold_pin",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:13:31.164729Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "ami_nope",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/admin status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:13:31.238735Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "ami_nope",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:13:31.251338Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "ami_nope",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/metrics status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:13:31.261684Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "ami_nope",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/ui-theme status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:13:31.272349Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "ami_nope",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:13:37.238218Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "ami_nope",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:13:39.650612Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "ami_nope",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/hostels status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:13:39.658711Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "ami_nope",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/classes status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:13:39.761059Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "ami_nope",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/hostels status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:13:39.771188Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "ami_nope",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/classes status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:13:40.705872Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "ami_nope",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/admin/performance status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:13:43.248136Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "ami_nope",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:13:45.709507Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "ami_nope",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/admin/performance status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:13:46.940089Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "ami_nope",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:13:46.950246Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "ami_nope",
+    "ip": "127.0.0.1",
+    "details": "method=GET path=/api/buses status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:13:48.037453Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "ami_nope",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
+    "ua": ""
+  },
+  {
+    "ts": "2026-02-14T07:13:51.711519Z",
+    "event": "admin_request",
+    "status": "success",
+    "username": "ami_nope",
+    "ip": "127.0.0.1",
+    "details": "method=POST path=/api/presence/student status=200",
     "ua": ""
   }
 ]

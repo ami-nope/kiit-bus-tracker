@@ -11,7 +11,7 @@
     <link rel="preconnect" href="https://d.basemaps.cartocdn.com" crossorigin/>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script>
         (function() {
             try {
@@ -23,6 +23,10 @@
     </script>
     <style>
         :root {
+            --font-ui: "Helvetica Neue", Helvetica, "SF Pro Text", "Segoe UI", Arial, sans-serif;
+            --font-classic: "Apple Garamond", Garamond, "Times New Roman", serif;
+            --font-display: "Cormorant Garamond", "Apple Garamond", Garamond, serif;
+            --font-script: "Blacksword", "Snell Roundhand", "Apple Chancery", "Segoe Script", cursive;
             --bg: #07070a;
             --bg-gradient1: rgba(99,102,241,0.12);
             --bg-gradient2: rgba(236,72,153,0.10);
@@ -67,7 +71,7 @@
             --map-bg: #e8e8e8;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; background-image:
+        body { font-family: var(--font-ui); background: var(--bg); color: var(--text); min-height: 100vh; background-image:
             radial-gradient(circle at 20% 20%, var(--bg-gradient1), transparent 40%),
             radial-gradient(circle at 80% 30%, var(--bg-gradient2), transparent 40%);
             background-attachment: fixed; transition: background 0.3s, color 0.3s; }
@@ -84,7 +88,7 @@
         #map { height: 500px; border-radius: 16px; border: 2px solid rgba(255,255,255,0.18); box-shadow: 0 0 0 1px rgba(130,100,255,0.12), 0 8px 28px var(--card-shadow); background: var(--map-bg); }
 
         .card { background: var(--card-bg); border-radius: 16px; padding: 12px; margin-bottom: 12px; border: 1px solid var(--card-border); backdrop-filter: blur(18px) saturate(140%); box-shadow: 0 8px 28px var(--card-shadow); transition: all 0.25s ease; }
-        .card h3 { color: var(--text-heading); font-size:15px; margin-bottom:10px }
+        .card h3 { color: var(--text-heading); font-size:15px; margin-bottom:10px; font-family: var(--font-display); }
 
         .stats-grid { display:grid; grid-template-columns: 1fr 1fr; gap:8px }
         .stat-box { background: var(--stat-bg); border:1px solid rgba(255,255,255,0.05); border-radius: 8px; padding:8px; text-align:center }
@@ -270,7 +274,7 @@
             overflow: hidden;
         }
         body {
-            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: var(--font-ui);
             font-weight: 400;
             height: 100vh;
             height: 100dvh;
@@ -378,6 +382,8 @@
             line-height: 1.15;
             letter-spacing: -0.02em;
             color: #f5f8ff;
+            font-family: var(--font-display);
+            font-weight: 600;
         }
         .header .brand-text p {
             margin: 2px 0 0 0;
@@ -385,6 +391,16 @@
             letter-spacing: 0.08em;
             text-transform: uppercase;
             color: #aeb8cf;
+            font-family: var(--font-classic);
+            font-style: italic;
+        }
+        .brand-script {
+            font-family: var(--font-script);
+            letter-spacing: 0.02em;
+            text-transform: none;
+            font-size: 1.1em;
+            margin-left: 2px;
+            color: #d8c5ff;
         }
         .header-assistant-slot {
             min-width: 0;
@@ -412,6 +428,15 @@
             flex-wrap: nowrap;
             justify-self: end;
             min-width: 0;
+        }
+        button,
+        input,
+        select,
+        textarea,
+        .theme-btn,
+        .admin-link,
+        .header-quick-btn {
+            font-family: var(--font-ui);
         }
         .header-quick-stack {
             display: flex;
@@ -2454,13 +2479,13 @@
                 padding-left: 0;
                 padding-right: 0;
             }
-            .header-brand h1 {
+            .header .brand-text h1 {
                 font-size: 22px;
                 white-space: nowrap;
                 overflow: visible;
                 text-overflow: clip;
             }
-            .header-brand p {
+            .header .brand-text p {
                 font-size: 12px;
                 white-space: nowrap;
                 overflow: hidden;
@@ -2644,7 +2669,7 @@
             .map-status-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
         @media (max-width: 768px) {
-            .header h1 { font-size: 20px; }
+            .header .brand-text h1 { font-size: 20px; }
             .header-actions { width: 100%; justify-content: flex-start; }
             .route-summary-head {
                 flex-direction: column;
@@ -3358,7 +3383,7 @@
                 </span>
                 <div class="brand-text">
                     <h1>Campus Transport System</h1>
-                    <p>KIIT Transport Live Tracking</p>
+                    <p>KIIT Transport <span class="brand-script">Live</span> Tracking</p>
                 </div>
             </div>
         </div>
